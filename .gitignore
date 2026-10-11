@@ -1,0 +1,21 @@
+.build/
+dist/
+.DS_Store
+__pycache__/
+*.provisionprofile
+*.mobileprovision
+*.p8
+*.p12
+
+# Private working evidence and generated outputs
+artifacts/
+design/
+research/
+.env
+.env.*
+*.keydesk
+*.keychain
+*.keychain-db
+*.cer
+*.pem
+*.log

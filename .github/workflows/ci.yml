@@ -1,0 +1,23 @@
+name: Source checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  macos:
+    runs-on: macos-15
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.3.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Toolchain
+        run: swift --version
+      - name: Unit and isolated app tests
+        run: swift test
+      - name: Public export and privacy boundaries
+        run: python3 scripts/test-public-source.py
+      - name: Demo build without signing credentials
+        env:
+          KEYDESK_SIGNING_MODE: adhoc
+        run: ./scripts/build-app.sh
+      - name: Distribution negative checks
+        run: python3 scripts/test-release-tools.py

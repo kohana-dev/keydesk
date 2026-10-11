@@ -1,0 +1,589 @@
+[
+  {
+    "provider": "OpenAI",
+    "file": "openai",
+    "hex": "111111",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/openai.svg",
+    "brandSource": "https://github.com/lobehub/lobe-icons",
+    "license": "MIT",
+    "sha256": "a595df6b423920c67a7f8f73c063e4bfb72d415948097b6cac063a2366bb5186"
+  },
+  {
+    "provider": "Anthropic",
+    "file": "anthropic",
+    "hex": "191919",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/anthropic.svg",
+    "brandSource": "https://www.anthropic.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "1cc599f6ebce2016dc388cf84e54a52c6b13487655c7e243554d654c7bce1882"
+  },
+  {
+    "provider": "Google",
+    "file": "google",
+    "hex": "4285F4",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/google-color.svg",
+    "brandSource": "https://github.com/lobehub/lobe-icons",
+    "license": "MIT",
+    "sha256": "4e6aa8892ef15a6b431f40f2c9045979bf7e2357524e7bbb89b353cf4f32a5ac"
+  },
+  {
+    "provider": "Google Ads",
+    "file": "googleads",
+    "hex": "4285F4",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/googleads.svg",
+    "brandSource": "https://ads.google.com/home/",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "729bf1f97587dd60e7592a98993543fec7ec3583a907a0e54b9fd88f7f28726f"
+  },
+  {
+    "provider": "Google Cloud",
+    "file": "googlecloud",
+    "hex": "4285F4",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/googlecloud-color.svg",
+    "brandSource": "https://github.com/lobehub/lobe-icons",
+    "license": "MIT",
+    "sha256": "c0faf37b180dfc1efe12440c039047b0e1c60a3c424cca6616e580f6f219a7dc"
+  },
+  {
+    "provider": "Azure",
+    "file": "azure",
+    "hex": "111111",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/azure-color.svg",
+    "brandSource": "https://github.com/lobehub/lobe-icons",
+    "license": "MIT",
+    "sha256": "abc639d094593943c1b201270f4903c74d02d2e26acf26abf592a29c222c5181"
+  },
+  {
+    "provider": "AWS",
+    "file": "aws",
+    "hex": "111111",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/aws-color.svg",
+    "brandSource": "https://github.com/lobehub/lobe-icons",
+    "license": "MIT",
+    "sha256": "b23f044479fe5c80f7df0a9515f969e5ea710c5f40d26dffa08969a0151731f3"
+  },
+  {
+    "provider": "Cloudflare",
+    "file": "cloudflare",
+    "hex": "F38020",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/cloudflare.svg",
+    "brandSource": "https://www.cloudflare.com/logo/",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "408096d99907fd99e0863cb5d73f77a72537c6a85fd8d5e2704178a83a891f08"
+  },
+  {
+    "provider": "Vercel",
+    "file": "vercel",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/vercel.svg",
+    "brandSource": "https://vercel.com/geist/brands",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "57f1e4135486c566e9878fddd259f7f6bf8ec43f31e7e6e38a36d9e814a1c0e0"
+  },
+  {
+    "provider": "Netlify",
+    "file": "netlify",
+    "hex": "00C7B7",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/netlify.svg",
+    "brandSource": "https://www.netlify.com/press/",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "adbe4ef3579ca1ef95e1903ff8599a5a55e5c6531fab3f7edaf2b4adee0f4ef9"
+  },
+  {
+    "provider": "Supabase",
+    "file": "supabase",
+    "hex": "3FCF8E",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/supabase.svg",
+    "brandSource": "https://github.com/supabase/supabase/blob/4031a7549f5d46da7bc79c01d56be4177dc7c114/packages/common/assets/images/supabase-logo-wordmark--light.svg",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "61bf16d93be418f723ae1e137e57afdad4f185352fbc6dea9482af1e0a89ccf7"
+  },
+  {
+    "provider": "Firebase",
+    "file": "firebase",
+    "hex": "DD2C00",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/firebase.svg",
+    "brandSource": "https://firebase.google.com/brand-guidelines",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "3f46d84a41479d7789cc36b82c2b6852e6bbbfd30ebee5b7a3aef7d49758295a"
+  },
+  {
+    "provider": "Clerk",
+    "file": "clerk",
+    "hex": "6C47FF",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/clerk.svg",
+    "brandSource": "https://clerk.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "b7d1fd4e6fd82c09d4028660eb9b08d152aed5776320128b08b6c2424cc8143f"
+  },
+  {
+    "provider": "Auth0",
+    "file": "auth0",
+    "hex": "EB5424",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/auth0.svg",
+    "brandSource": "https://auth0.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "cad263a6fac5f35ed2eab436051c09ea48254994bdd708fce5f87500bd29f09b"
+  },
+  {
+    "provider": "Stripe",
+    "file": "stripe",
+    "hex": "635BFF",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/stripe.svg",
+    "brandSource": "https://stripe.com/newsroom/information",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "130c6d957b8977f5eda2928267b9df531ca038a400a801765d263801bb1bd870"
+  },
+  {
+    "provider": "Paddle",
+    "file": "paddle",
+    "hex": "FDDD35",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/paddle.svg",
+    "brandSource": "https://www.paddle.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "dd792261c6badda146ba15c07286d7baa5eb5fb380405261bb3c859043dd6432"
+  },
+  {
+    "provider": "RevenueCat",
+    "file": "revenuecat",
+    "hex": "F2545B",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/revenuecat.svg",
+    "brandSource": "https://www.revenuecat.com/integrations",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "1e224d9067e9b9b2e7366d4f38c1670d5c6131baf9b408a1a6039a8c8f285156"
+  },
+  {
+    "provider": "Apple API",
+    "file": "appleapi",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/apple.svg",
+    "brandSource": "https://www.apple.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "2a1509dccd25e6d2bc7a11a8e52941077e1a48555e192ce638699b9f083c2a7c"
+  },
+  {
+    "provider": "App Store Connect",
+    "file": "appstoreconnect",
+    "hex": "0D96F6",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/appstore.svg",
+    "brandSource": "https://developer.apple.com/app-store",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "9a9817ff6a315c46f3844eb278f008b4bbcc26eae82bdb8f12f9e12edbfeb078"
+  },
+  {
+    "provider": "Google Play",
+    "file": "googleplay",
+    "hex": "414141",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/googleplay.svg",
+    "brandSource": "https://partnermarketinghub.withgoogle.com/brands/google-play/visual-identity/primary-logos/",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "81818efe46f3d59d5d320063df77746016dc2c4a64b94be5abcf26824f74c6e7"
+  },
+  {
+    "provider": "Android",
+    "file": "android",
+    "hex": "3DDC84",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/android.svg",
+    "brandSource": "https://partnermarketinghub.withgoogle.com/brands/android/visual-identity/visual-identity/logo-lock-ups",
+    "license": {
+      "type": "CC-BY-3.0"
+    },
+    "sha256": "ff571c5e21163f07dd7176d4670411344f55409d36eb6346b402210ad7c02c4b"
+  },
+  {
+    "provider": "GitHub",
+    "file": "github",
+    "hex": "181717",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/github.svg",
+    "brandSource": "https://github.com/logos",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "3bf8cceead820aec50d4ee825a3fd02c5a1cd6665cc9cf4cbf3d9c8861a204bb"
+  },
+  {
+    "provider": "GitLab",
+    "file": "gitlab",
+    "hex": "FC6D26",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/gitlab.svg",
+    "brandSource": "https://about.gitlab.com/press/press-kit/",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "c7c39058bd1b6f9f40334383bd5136bb8c5ba5e6a24200f2d1f18365e2526e28"
+  },
+  {
+    "provider": "Resend",
+    "file": "resend",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/resend.svg",
+    "brandSource": "https://resend.com/brand",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "1a95a84811b2f856852afdbcb475419d9f8d18d6cc9dd7353d89a246162662eb"
+  },
+  {
+    "provider": "SendGrid",
+    "file": "sendgrid",
+    "hex": "51A9E3",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/14.15.0/icons/sendgrid.svg",
+    "brandSource": "https://sendgrid.com/en-us/resource/brand",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "94df2211ec2e414fa69adc06f7c7f8b93c44755380853a72e04e237433544247"
+  },
+  {
+    "provider": "Mailgun",
+    "file": "mailgun",
+    "hex": "F06B66",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/mailgun.svg",
+    "brandSource": "https://mailgun.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "7bacd93481dfd805ed0d21a1e7dc545382c0670be1d8691b213fed0c153ffd21"
+  },
+  {
+    "provider": "Twilio",
+    "file": "twilio",
+    "hex": "F22F46",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/14.15.0/icons/twilio.svg",
+    "brandSource": "https://www.twilio.com/company/brand",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "52dcf3b6cea65fdc9b5b525aa2bb9517f405a58c68d464f207f0ddf60c0114ea"
+  },
+  {
+    "provider": "Slack",
+    "file": "slack",
+    "hex": "4A154B",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/14.15.0/icons/slack.svg",
+    "brandSource": "https://slack.com/brand-guidelines",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "f23c317b279f53dcd2260a6cd2e279f7a696f87dcb3da259d6201f05bbc45b0d"
+  },
+  {
+    "provider": "Discord",
+    "file": "discord",
+    "hex": "5865F2",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/discord.svg",
+    "brandSource": "https://discord.com/branding",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "1d364b72c9eaf1fe37d17ca88cd8fb541308dc0f3b09e2ab3b824f380b3493d5"
+  },
+  {
+    "provider": "Notion",
+    "file": "notion",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/notion.svg",
+    "brandSource": "https://www.notion.so",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "b17d2a2b592a06252efef522d5205f0c7a958f748d40df1011ed081417e42f85"
+  },
+  {
+    "provider": "Linear",
+    "file": "linear",
+    "hex": "5E6AD2",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/linear.svg",
+    "brandSource": "https://linear.app",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "90b91b61090f4f9c94f9cb24769642278f03e8eedcfe5680738cf3a186bfc00f"
+  },
+  {
+    "provider": "Sentry",
+    "file": "sentry",
+    "hex": "362D59",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/sentry.svg",
+    "brandSource": "https://sentry.io/branding/",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "8ba32902ffbac503784607374f57df5e3cbcf57a99d0adff03e735575500adc6"
+  },
+  {
+    "provider": "PostHog",
+    "file": "posthog",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/posthog.svg",
+    "brandSource": "https://posthog.com/handbook/company/brand-assets",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "5bf868765c8159a0d308d5577c86f2fc2f76d63795182a5a39bc362d5d4329f1"
+  },
+  {
+    "provider": "Mixpanel",
+    "file": "mixpanel",
+    "hex": "7856FF",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/mixpanel.svg",
+    "brandSource": "https://mixpanel.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "ef2991fa5082f2bd28a63da31de062730dcf3b8e769266d4875d95d001b4db19"
+  },
+  {
+    "provider": "Algolia",
+    "file": "algolia",
+    "hex": "003DFF",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/algolia.svg",
+    "brandSource": "https://algolia.frontify.com/d/1AZwVNcFZiu7/style-guide#/basics/algolia-logo",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "e8e2ceeccecf49866ef4e7ac85018b54d4d0cbe3ccf2f63be407324bd2a59f40"
+  },
+  {
+    "provider": "Meilisearch",
+    "file": "meilisearch",
+    "hex": "FF5CAA",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/meilisearch.svg",
+    "brandSource": "https://www.meilisearch.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "ed4366b985f794a5364e164a770ff6c0bd4029f1cdc849ccb9a934c15137f163"
+  },
+  {
+    "provider": "MongoDB",
+    "file": "mongodb",
+    "hex": "47A248",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/mongodb.svg",
+    "brandSource": "https://www.mongodb.com/pressroom",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "6698757ee85997e8167b2eacaff8395d6987954185488f2e90b88ef387fec6c7"
+  },
+  {
+    "provider": "Neon",
+    "file": "neon",
+    "hex": "34D59A",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/neon.svg",
+    "brandSource": "https://neon.com/brand",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "5750d31d5f07d3e5bcf7db3d7202111f863d39cb2f78aeeec0987a427819387e"
+  },
+  {
+    "provider": "PlanetScale",
+    "file": "planetscale",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/planetscale.svg",
+    "brandSource": "https://planetscale.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "ab0f55fdb46c4495ee5528752bf23333479bf200d4af2347215849155ee2c6b8"
+  },
+  {
+    "provider": "Upstash",
+    "file": "upstash",
+    "hex": "00E9A3",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/upstash.svg",
+    "brandSource": "https://upstash.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "a4a5e46e5be6ad38140cd3ad59dec2022ccbe6aba6d9ffaf67ee6d376c179f1e"
+  },
+  {
+    "provider": "Redis",
+    "file": "redis",
+    "hex": "FF4438",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/redis.svg",
+    "brandSource": "https://redis.io/brand-guidelines",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "428b86deb14c8bdacdcdf75987fe454f367bcd078a7e4ae3f84de29aa5bdf136"
+  },
+  {
+    "provider": "Turso",
+    "file": "turso",
+    "hex": "4FF8D2",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/turso.svg",
+    "brandSource": "https://turso.tech",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "1944fde231d3137dcf5a5601ad0078087b375e8b90ce81158b1ef120867b2b2f"
+  },
+  {
+    "provider": "DigitalOcean",
+    "file": "digitalocean",
+    "hex": "0080FF",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/digitalocean.svg",
+    "brandSource": "https://www.digitalocean.com/press/",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "21c374a43a70f8a833ea6c84c904e64f5a20586714b1e0a16b34cb1d9cf29998"
+  },
+  {
+    "provider": "Render",
+    "file": "render",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/render.svg",
+    "brandSource": "https://render.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "bd1597c44b4417a0f22f4ae6df79f935b4afd850f7a6a6717090b6f46f28e6d6"
+  },
+  {
+    "provider": "Railway",
+    "file": "railway",
+    "hex": "0B0D0E",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/railway.svg",
+    "brandSource": "https://railway.app",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "1e386a6d03360dd84cd858bc69b3ac9452afc212846a197f7a890898439a7f1d"
+  },
+  {
+    "provider": "Fly.io",
+    "file": "flyio",
+    "hex": "24175B",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/flydotio.svg",
+    "brandSource": "https://fly.io/docs/about/brand",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "8497d184fd8ad4cb6a9faf1961f95b60905d529088099d4c3467b1fed2bdc55f"
+  },
+  {
+    "provider": "Replicate",
+    "file": "replicate",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/replicate.svg",
+    "brandSource": "https://replicate.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "e59687194f210fc30319202cc66185e83a0bd8962c0d60ab4257bb10b07050d8"
+  },
+  {
+    "provider": "Hugging Face",
+    "file": "huggingface",
+    "hex": "FFD21E",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/huggingface-color.svg",
+    "brandSource": "https://github.com/lobehub/lobe-icons",
+    "license": "MIT",
+    "sha256": "5d39d66bb6c9b026d3cb5de7bd9978dad3906570df2aca8f00078a6f8a3d0f5e"
+  },
+  {
+    "provider": "ElevenLabs",
+    "file": "elevenlabs",
+    "hex": "000000",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/elevenlabs.svg",
+    "brandSource": "https://elevenlabs.io/brand",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "e7bf01c62c849c3bd59eb117b7479cc8cc47daf941a3cdaaafc4791610fb2a40"
+  },
+  {
+    "provider": "DeepSeek",
+    "file": "deepseek",
+    "hex": "5786FE",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/deepseek.svg",
+    "brandSource": "https://www.deepseek.com",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "7a55a0a7391d116eba7d32807d6838478f9209f6034612941e74fbb14934e2ef"
+  },
+  {
+    "provider": "Groq",
+    "file": "groq",
+    "hex": "111111",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/groq.svg",
+    "brandSource": "https://github.com/lobehub/lobe-icons",
+    "license": "MIT",
+    "sha256": "078d5cf6e7a54905040c15ddacf5ea33c13042fe7739e820cedc2096e4406651"
+  },
+  {
+    "provider": "Mistral",
+    "file": "mistral",
+    "hex": "FA520F",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/mistralai.svg",
+    "brandSource": "https://chat.mistral.ai",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "88f00cf2e82e4d36bb4fdd0e913df200c6e7d6162ec627cc58cfdd6a4eb17d18"
+  },
+  {
+    "provider": "Perplexity",
+    "file": "perplexity",
+    "hex": "1FB8CD",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/dc7b10662a0a2cfdfc9305e2a2b06c023c30724a/icons/perplexity.svg",
+    "brandSource": "https://www.perplexity.ai",
+    "license": {
+      "type": "CC0-1.0"
+    },
+    "sha256": "57220c29378ce5e615e7244d2fdfcf5a44fad40dad81a99f2e0e4260c726ca74"
+  },
+  {
+    "provider": "FAL",
+    "file": "fal",
+    "hex": "111111",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/fal-color.svg",
+    "brandSource": "https://github.com/lobehub/lobe-icons",
+    "license": "MIT",
+    "sha256": "577d952ac6f863d6b0dd129918597692230b2fe0633cb4ea0e0a5085aa3f8c7d"
+  },
+  {
+    "provider": "Restic",
+    "file": "restic",
+    "hex": "555555",
+    "source": "https://raw.githubusercontent.com/restic/restic/5127c4abf921857fde4ae51f566c86028c8c2911/doc/logo/logo.png",
+    "brandSource": "https://github.com/restic/restic",
+    "license": "BSD-2-Clause repository; brand identification",
+    "sha256": "8497552381692db99074c3ec51fce6afc17b2ce74bf2a5d52301cca34b5bda13"
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "omitted_for_redistribution_review": [
+    "Amplitude",
+    "Postmark"
+  ],
+  "fallback": "text initials"
+}
