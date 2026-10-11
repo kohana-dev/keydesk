@@ -3,7 +3,7 @@
 A local macOS secret vault for individual developers. Store API keys by project
 and dev/staging/prod environment; let approved tools use them through a signed
 CLI without putting values into AI chat. SwiftUI, CryptoKit and Security;
-no external Swift package dependencies. Current version: 0.6.0 beta.
+no external Swift package dependencies. Current version: 0.6.1 beta.
 
 개인 개발자를 위한 macOS 로컬 API 키 금고입니다. 실제 개인 사용과
 Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며,
@@ -24,7 +24,7 @@ Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며
 
 ## Install / build
 
-Download the signed, notarized [Keydesk 0.6.0 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.6.0/Keydesk-0.6.0-macOS-arm64.zip).
+Download the signed, notarized [Keydesk 0.6.1 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.6.1/Keydesk-0.6.1-macOS-arm64.zip).
 Requires macOS 14 or later on an Apple Silicon Mac. Intel builds are not provided.
 Unzip, move Keydesk.app to Applications (or ~/Applications), and open it normally.
 No Apple Developer account is needed. Authenticate through macOS when prompted;
@@ -100,3 +100,5 @@ keydesk run --project my-app --env dev --files GOOGLE_APPLICATION_CREDENTIALS --
 Selected variables hold private temporary file paths. Files are removed on command exit, cancellation and vault lock; intentional `--keep-running` preserves them until exit. Files are limited to 1 MiB each (the encrypted snapshot limit remains 16 MiB). Only regular files are accepted. Source files are preserved. File-bearing vaults require 0.6.0+, use format 2, and cannot be opened by earlier versions. This also applies to their backups.
 
 AI companion skills instruct Codex and Claude to pass source paths directly to the CLI without reading their contents. Update installed skills with `python3 scripts/install-ai-skills.py --update`; previous skills are backed up.
+
+For CLI-first AI development, use the [project CLI adapter and readiness status](docs/project-cli.md). Project manifests contain variable names and types only; execution still uses the signed CLI and native approval.
