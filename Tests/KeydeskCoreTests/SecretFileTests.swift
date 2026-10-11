@@ -117,4 +117,14 @@ struct SecretFileTests {
         #expect(!FileManager.default.fileExists(atPath: abandoned.path))
         #expect(FileManager.default.fileExists(atPath: live.path) && FileManager.default.fileExists(atPath: unrelated.path))
     }
+
+    @Test func pipeLineTransportStillSupportsMCPStdinAndMultipleMessages() throws {
+        let pipe = Pipe()
+        try pipe.fileHandleForWriting.write(contentsOf: Data("first\nsecond\n".utf8))
+        try pipe.fileHandleForWriting.close()
+        defer { try? pipe.fileHandleForReading.close() }
+        #expect(try SocketTransport.readLine(from: pipe.fileHandleForReading.fileDescriptor) == Data("first".utf8))
+        #expect(try SocketTransport.readLine(from: pipe.fileHandleForReading.fileDescriptor) == Data("second".utf8))
+        #expect(try SocketTransport.readLine(from: pipe.fileHandleForReading.fileDescriptor) == nil)
+    }
 }

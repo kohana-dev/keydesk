@@ -45,10 +45,10 @@ extension VaultModel {
                 try grants[id]!.reserve(session: request.session, projectID: projectID, environment: request.environment, connectionID: nil, operation: "metadata", resource: nil)
                 let variables = snapshot.bindings.filter { $0.projectID == projectID && $0.environment == request.environment }.sorted { $0.variable < $1.variable }.compactMap { binding -> JSONValue? in
                     guard let credential = snapshot.credentials.first(where: { $0.id == binding.credentialID }) else { return nil }
-                    return .object(["variable": .string(binding.variable), "provider": .string(ProviderName.canonical(credential.provider))])
+                    return .object(["variable": .string(binding.variable), "provider": .string(ProviderName.canonical(credential.provider)), "kind": .string(credential.currentFile == nil ? "value" : "file")])
                 }
                 let usage = "keydesk run --project \(projectID.uuidString) --env \(request.environment.rawValue) --only VARIABLE -- <command>"
-                brokerResult(channel, .object(["variables": .array(variables), "usage": .string(usage), "note": .string("Each run is approved by the user in the Keydesk app. Values are never returned here.")]))
+                brokerResult(channel, .object(["variables": .array(variables), "usage": .string(usage), "fileUsage": .string("keydesk run --project \(projectID.uuidString) --env \(request.environment.rawValue) --files FILE_VARIABLE -- <command>"), "note": .string("Each run is approved by the user in the Keydesk app. Values are never returned here.")]))
             case "request_access":
                 guard Set(a.keys).isSubset(of: ["operation", "duration", "maximumCalls"]), a["operation"] == nil || a["operation"]?.string == "metadata",
                       brokerApproval == nil, approval == nil, grants.count < 32 else { throw VaultError.accessDenied }

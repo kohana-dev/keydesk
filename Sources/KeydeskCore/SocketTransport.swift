@@ -32,6 +32,9 @@ public enum SocketTransport {
     }
     public static func readLine(from fd: Int32, maximum: Int = 1_048_576, deadlineSeconds: Double? = nil) throws -> Data? {
         var result = Data(), buffer = [UInt8](repeating: 0, count: 8192)
+        var fileInfo = stat()
+        guard fstat(fd, &fileInfo) == 0 else { throw POSIXError(.EBADF) }
+        let isSocket = (fileInfo.st_mode & S_IFMT) == S_IFSOCK
         let deadline = deadlineSeconds.map { DispatchTime.now().uptimeNanoseconds + UInt64(max(0, min($0, 60)) * 1_000_000_000) }
         while result.count < maximum {
             if let deadline {
@@ -42,6 +45,15 @@ public enum SocketTransport {
                 let ready = poll(&readiness, 1, remaining)
                 if ready < 0 && errno == EINTR { continue }
                 guard ready > 0 else { throw POSIXError(.ETIMEDOUT) }
+            }
+            if !isSocket {
+                var byte: UInt8 = 0
+                let count = Darwin.read(fd, &byte, 1)
+                if count < 0 && errno == EINTR { continue }
+                if count == 0 { return result.isEmpty ? nil : result }
+                guard count > 0 else { throw POSIXError(.EIO) }
+                if byte == 10 { return result }
+                result.append(byte); continue
             }
             let peeked = recv(fd, &buffer, buffer.count, MSG_PEEK)
             if peeked < 0 && errno == EINTR { continue }
