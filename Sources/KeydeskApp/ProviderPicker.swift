@@ -14,6 +14,12 @@ struct ProviderPicker: View {
     }
     private var matches: [ProviderCatalog.Category] { ProviderCatalog.matching(browseAll ? "" : query) }
     private var names: [String] { matches.flatMap(\.providers) }
+    private var recommendationHeight: CGFloat {
+        let custom = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let customRow = !custom.isEmpty && !ProviderName.options.contains(where: { $0.caseInsensitiveCompare(custom) == .orderedSame })
+        let content = matches.count * 28 + names.count * 36 + (customRow ? 48 : 0) + (matches.isEmpty ? 40 : 0) + 8
+        return CGFloat(min(220, max(64, content)))
+    }
     private func select(_ name: String) {
         query = name; provider = name; expanded = false; browseAll = false; highlighted = nil; focused = false
     }
@@ -86,7 +92,7 @@ struct ProviderPicker: View {
                             if matches.isEmpty { Text("일치하는 서비스가 없습니다. 입력한 이름을 사용할 수 있습니다.").font(.caption).foregroundStyle(.secondary).padding(10) }
                         }.padding(4)
                     }
-                    .frame(maxHeight: 220)
+                    .frame(height: recommendationHeight)
                     .onChange(of: highlighted) { if let highlighted { proxy.scrollTo(highlighted, anchor: .center) } }
                 }
                 .background(.white, in: RoundedRectangle(cornerRadius: 8))
