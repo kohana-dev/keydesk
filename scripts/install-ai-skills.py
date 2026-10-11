@@ -12,3 +12,11 @@ for target in targets:
   backup=target.with_name('SKILL.md.backup-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ'));shutil.copyfile(target,backup)
  shutil.copyfile(source,target)
 print('Keydesk companion skills installed; no account or key access.')
+
+adapter=source.parents[3]/'scripts/keydesk-project.py'
+command=pathlib.Path.home()/'.local/bin/keydesk-project'
+if command.exists() and command.read_bytes()!=adapter.read_bytes():
+ if not a.update:raise SystemExit('Conflicting keydesk-project preserved; use --update')
+ shutil.copyfile(command,command.with_name('keydesk-project.backup-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')))
+command.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(adapter,command);command.chmod(0o755)
+print('Project CLI adapter installed; native Keydesk approval remains required.')

@@ -12,6 +12,7 @@ enum KeydeskCommand {
     keydesk store --project <이름> --env <dev|staging|prod> --name <VAR> --stdin
     keydesk store --project <이름> --env <dev|staging|prod> --name <VAR> --from-env-file <경로>
     keydesk lock
+    keydesk status
     keydesk delete-project --project <이름|UUID> --delete-exclusive-keys
     keydesk verify-recovery
     keydesk install
@@ -30,7 +31,7 @@ enum KeydeskCommand {
             let args = Array(CommandLine.arguments.dropFirst())
             let result: Int32
             if args.first == "mcp" { result = try MCPServer.run(Array(args.dropFirst())) }
-            else if args.first == "store" || args.first == "store-file" || args.first == "delete-project" || args == ["verify-recovery"] || args == ["lock"] { result = try service(args) }
+            else if args.first == "store" || args.first == "store-file" || args.first == "delete-project" || args == ["verify-recovery"] || args == ["lock"] || args == ["status"] { result = try service(args) }
             else if args == ["install"] { try install(); result = 0 }
             else { result = try run(args, terminal: terminal) }
             terminal.restore(); exit(terminal.terminationExitCode ?? result)

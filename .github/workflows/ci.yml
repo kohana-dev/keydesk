@@ -13,6 +13,8 @@ jobs:
         run: swift --version
       - name: Unit and isolated app tests
         run: swift test
+      - name: Project CLI selection and configuration boundaries
+        run: python3 scripts/test-project-cli.py
       - name: Public export and privacy boundaries
         run: python3 scripts/test-public-source.py
       - name: Demo build without signing credentials

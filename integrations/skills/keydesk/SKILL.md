@@ -5,6 +5,8 @@ description: Store newly created or received API keys and development secrets in
 
 Use Keydesk on this Mac to keep credentials out of chat, source code, command arguments and logs. The signed CLI is `~/.local/bin/keydesk`; if it cannot connect, launch `~/Applications/Keydesk.app`.
 
+Prefer CLI commands over computer use. In a configured project, run `~/.local/bin/keydesk-project describe` to discover the project and variable names from `keydesk.project.json`, then `~/.local/bin/keydesk-project status` for vault readiness and backup status. The manifest contains metadata only. Select the environment and exact names explicitly, for example `~/.local/bin/keydesk-project run --env prod --files GOOGLE_APPLICATION_CREDENTIALS -- python3 deploy.py`. It invokes the signed Keydesk CLI and keeps normal human approval. Do not inspect the temporary secret file or environment through an AI read tool. UI is needed only for user authentication/approval or an app-only operation. If no manifest exists, use the raw CLI with the established project name. `keydesk status` returns no project names or values and reports backup as unknown while locked.
+
 Choose the project's existing name and the correct `dev`, `staging` or `prod` environment. If neither session context nor project configuration establishes the target, ask for the project/environment; do not guess for production. Keydesk accepts a new project name on first store.
 
 ## Store a new key
@@ -25,7 +27,7 @@ Do not read, cat or grep the env file's values into tool output. For a provider 
 
 Never put the key in an `echo`, command argument, shell tracing output or temporary plaintext file. If the key is only visible in a user interface, ask the user to paste it into Keydesk's secure input, rather than requesting it in chat or using screen capture on the value.
 
-A `stored` receipt means the encrypted vault was updated; iCloud upload status must still be checked in the app. A `queued` receipt means the locked app accepted an encrypted deposit on this Mac only. Tell the user it will be merged and backed up after the next unlock, and do not claim off-device protection before then. No unlock or execution approval is needed to queue a new key. Never overwrite a duplicate key by deleting or renaming its existing binding to evade the collision check. Preserve source env files unless removal is part of the user's requested migration; disclose that they remain.
+A `stored` receipt means the encrypted vault was updated; iCloud upload status must still be checked with `keydesk status` (or the app). A `queued` receipt means the locked app accepted an encrypted deposit on this Mac only. Tell the user it will be merged and backed up after the next unlock, and do not claim off-device protection before then. No unlock or execution approval is needed to queue a new key. Never overwrite a duplicate key by deleting or renaming its existing binding to evade the collision check. Preserve source env files unless removal is part of the user's requested migration; disclose that they remain.
 
 ## Use an existing key
 

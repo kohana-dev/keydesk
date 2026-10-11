@@ -58,7 +58,7 @@ final class CLIServer: @unchecked Sendable {
                         guard request.session.count <= 128, request.project.count <= 128, request.tool.count <= 64 else { throw VaultError.invalidData }
                         let bound = BrokerRequest(session: "pid:\(peerPID):\(request.session)", project: request.project, environment: request.environment, tool: request.tool, arguments: request.arguments)
                         broker(bound, channel)
-                    } else if ["store", "store-file", "verify-recovery", "lock", "delete-project"].contains(json["kind"]?.string ?? "") {
+                    } else if ["store", "store-file", "verify-recovery", "lock", "delete-project", "status"].contains(json["kind"]?.string ?? "") {
                         service(try JSONDecoder().decode(ServiceRequest.self, from: data), channel)
                     } else {
                         let request = try JSONDecoder().decode(CLIRequest.self, from: data)

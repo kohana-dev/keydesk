@@ -56,6 +56,18 @@ extension VaultModel {
         defer { channel.finish() }
         do {
             switch request.kind {
+            case "status":
+                // Signed local clients can inspect readiness, never vault metadata or values.
+                refreshCloudUpload()
+                let pending = (try? FileManager.default.contentsOfDirectory(at: depositDirectory, includingPropertiesForKeys: nil).filter { $0.pathExtension == "deposit" }.count) ?? 0
+                let report: JSONValue = .object([
+                    "locked": .bool(snapshot == nil), "busy": .bool(busy),
+                    "pendingDeposits": .number(Double(pending)),
+                    "backup": .string(snapshot == nil ? "unknown_locked" : (backupFailure != nil ? "failed" : (hasUnbackedChanges ? "pending" : "verified"))),
+                    "cloudUpload": .string(snapshot == nil ? "unknown_locked" : String(describing: cloudUpload))
+                ])
+                channel.send(CLIEvent(kind: "stdout", data: try JSONEncoder().encode(report) + Data([10])))
+                channel.send(CLIEvent(kind: "exit", exitCode: 0))
             case "delete-project":
                 guard let current = snapshot, let project = request.project else { throw VaultError.locked }
                 let result = try current.deletingProject(project)
