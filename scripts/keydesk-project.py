@@ -71,6 +71,12 @@ def main():
     run.add_argument('--only')
     run.add_argument('--files')
     run.add_argument('command', nargs=argparse.REMAINDER)
+    request = sub.add_parser('request', help='Call an official API through the local broker; native approval still applies')
+    request.add_argument('--env', required=True, choices=sorted(ENVIRONMENTS))
+    request.add_argument('--key', required=True)
+    request.add_argument('--method', choices=['GET','HEAD','POST','PUT','PATCH','DELETE'], default='GET')
+    request.add_argument('--url', required=True)
+    request.add_argument('--body-file')
     store = sub.add_parser('store-file', help='Deposit a file without reading it into AI output')
     store.add_argument('--env', required=True, choices=sorted(ENVIRONMENTS))
     store.add_argument('--name', required=True)
@@ -97,6 +103,13 @@ def main():
                 return 0
             if args.action == 'run':
                 invocation = run_arguments(config, args.env, args.only, args.files, args.command)
+            elif args.action == 'request':
+                selected = select_names(args.key, config['bindings'].get(args.env, {}), 'value')
+                if len(selected) != 1:
+                    raise ValueError('Select exactly one value key')
+                invocation = ['request', '--project', config['project'], '--env', args.env, '--key', selected[0], '--method', args.method, '--url', args.url]
+                if args.body_file:
+                    invocation += ['--body-file', str(Path(args.body_file).absolute())]
             else:
                 select_names(args.name, config['bindings'].get(args.env, {}), 'file')
                 invocation = ['store-file', '--project', config['project'], '--env', args.env, '--name', args.name, '--from-file', str(Path(args.from_file).absolute())]

@@ -3,7 +3,7 @@
 A local macOS secret vault for individual developers. Store API keys by project
 and dev/staging/prod environment; let approved tools use them through a signed
 CLI without putting values into AI chat. SwiftUI, CryptoKit and Security;
-no external Swift package dependencies. Current version: 0.6.2 beta.
+no external Swift package dependencies. Current source version: 0.7.0 beta.
 
 개인 개발자를 위한 macOS 로컬 API 키 금고입니다. 실제 개인 사용과
 Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며,
@@ -20,11 +20,12 @@ Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며
 - Automatic service classification from clear variable names, brand logos,
   categorized inline service recommendations; ambiguous API_KEY stays Other.
 - `keydesk run`, stdin tokens and interactive CLI support.
-- Codex and Claude companion skill; optional metadata-only MCP.
+- Codex and Claude companion skill; MCP metadata and approved API requests.
+- Local HTTPS API broker with exact request grants; unified approval status and revocation.
 
 ## Install / build
 
-Download the signed, notarized [Keydesk 0.6.2 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.6.2/Keydesk-0.6.2-macOS-arm64.zip).
+Download the signed, notarized [Keydesk 0.7.0 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.7.0/Keydesk-0.7.0-macOS-arm64.zip).
 Requires macOS 14 or later on an Apple Silicon Mac. Intel builds are not provided.
 Unzip, move Keydesk.app to Applications (or ~/Applications), and open it normally.
 No Apple Developer account is needed. Authenticate through macOS when prompted;
@@ -55,6 +56,7 @@ variables required by a command:
 ```sh
 keydesk store --project my-app --env dev --name OPENAI_API_KEY --from-env-file /absolute/path/.env
 keydesk run --project my-app --env dev --only OPENAI_API_KEY -- npm run dev
+keydesk request --project my-app --env dev --key CLOUDFLARE_API_TOKEN --method GET --url https://api.cloudflare.com/client/v4/user/tokens/verify
 keydesk run --project my-app --env dev --stdin-key GITHUB_TOKEN -- gh auth login --with-token
 keydesk run --project my-app --env dev --only API_KEY --interactive -- tool-login
 ```
@@ -64,7 +66,8 @@ vault; check upload status separately. `queued` means encrypted on this Mac
 only until the next unlock and successful backup. Duplicates are not overwritten.
 Install the companion skill with `python3 scripts/install-ai-skills.py`.
 Explicit invocation: Codex `$keydesk`, Claude `/keydesk`. Automatic skill
-selection depends on the model. MCP provides names, never secret values.
+selection depends on the model. MCP provides authorized names and `request_http`; no key-reading tool.
+See [local API broker](docs/local-api-broker.md) for supported providers, grants and limits.
 
 First execution requires user approval. An exact safe development invocation
 can be remembered for 30 minutes. Locking, editing keys and quitting clear it.

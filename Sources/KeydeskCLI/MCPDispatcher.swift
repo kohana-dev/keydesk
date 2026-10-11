@@ -31,6 +31,22 @@ final class MCPDispatcher: @unchecked Sendable {
                 self.lock.lock()
                 guard self.reserved.contains(identifier), !self.cancelled.contains(identifier) else { self.lock.unlock(); connection.closeConnection(); return }
                 self.connections[identifier] = connection; self.lock.unlock()
+                if name == "request_http" {
+                    guard Set(arguments.keys).isSubset(of: ["key", "method", "url", "body"]),
+                          let key = arguments["key"]?.string, let method = arguments["method"]?.string, let url = arguments["url"]?.string,
+                          arguments["body"] == nil || arguments["body"]?.string != nil else { throw VaultError.invalidData }
+                    let request = APIRequest(project: self.project, environment: self.environment, variable: key, method: method, url: url, body: arguments["body"]?.string)
+                    _ = try request.validated(); try connection.send(request)
+                    var payload: JSONValue?, failure = false
+                    while let data = try SocketTransport.readLine(from: connection.fd, maximum: 2_100_000) {
+                        let event = try JSONDecoder().decode(CLIEvent.self, from: data)
+                        if event.kind == "stdout", let bytes = event.data { payload = try JSONDecoder().decode(JSONValue.self, from: bytes) }
+                        if event.kind == "error" { payload = .object(["error": .string(event.text ?? "api_denied")]); failure = true; break }
+                        if event.kind == "exit" { failure = event.exitCode != 0; break }
+                    }
+                    guard let payload else { throw VaultError.locked }
+                    self.toolResult(id, payload: payload, failure: failure); return
+                }
                 try connection.send(BrokerRequest(session: self.session, project: self.project, environment: self.environment, tool: name, arguments: arguments))
                 guard let data = try SocketTransport.readLine(from: connection.fd) else { throw VaultError.locked }
                 let response = try JSONDecoder().decode(JSONValue.self, from: data)
@@ -40,6 +56,10 @@ final class MCPDispatcher: @unchecked Sendable {
                 self.result(id, .object(["content": .array([.object(["type": .string("text"), "text": .string(text)])]), "structuredContent": payload, "isError": .bool(failure)]))
             } catch { self.result(id, .object(["content": .array([.object(["type": .string("text"), "text": .string("앱 연결이 끊겼거나 금고가 잠겨 있습니다.")])]), "isError": .bool(true)])) }
         }
+    }
+    private func toolResult(_ id: JSONValue, payload: JSONValue, failure: Bool) {
+        let text = String(decoding: (try? JSONEncoder().encode(payload)) ?? Data(), as: UTF8.self)
+        result(id, .object(["content": .array([.object(["type": .string("text"), "text": .string(text)])]), "structuredContent": payload, "isError": .bool(failure)]))
     }
     func cancel(_ id: JSONValue) {
         let identifier = identifier(id)

@@ -7,7 +7,7 @@ final class CLIServer: @unchecked Sendable {
     private let path: String
     private let trustedHelper: URL?
     init(path: String = SocketTransport.socketPath, trustedHelper: URL? = nil) { self.path = path; self.trustedHelper = trustedHelper }
-    func start(deliver: @escaping @Sendable (CLIApproval) -> Void, broker: @escaping @Sendable (BrokerRequest, CLIChannel) -> Void, service: @escaping @Sendable (ServiceRequest, CLIChannel) -> Void = { _, channel in channel.finish() }) throws {
+    func start(deliver: @escaping @Sendable (CLIApproval) -> Void, broker: @escaping @Sendable (BrokerRequest, CLIChannel) -> Void, api: @escaping @Sendable (APIRequest, CLIChannel) -> Void = { _, channel in channel.finish() }, service: @escaping @Sendable (ServiceRequest, CLIChannel) -> Void = { _, channel in channel.finish() }) throws {
         let requirement = try trustedHelper.map { try PeerVerifier.requirement(for: $0) }
         let directory = URL(fileURLWithPath: path).deletingLastPathComponent()
         try VaultFileStore.preparePrivateDirectory(directory)
@@ -58,6 +58,10 @@ final class CLIServer: @unchecked Sendable {
                         guard request.session.count <= 128, request.project.count <= 128, request.tool.count <= 64 else { throw VaultError.invalidData }
                         let bound = BrokerRequest(session: "pid:\(peerPID):\(request.session)", project: request.project, environment: request.environment, tool: request.tool, arguments: request.arguments)
                         broker(bound, channel)
+                    } else if json["kind"]?.string == "api-request" {
+                        let request = try JSONDecoder().decode(APIRequest.self, from: data)
+                        _ = try request.validated()
+                        api(request, channel)
                     } else if ["store", "store-file", "verify-recovery", "lock", "delete-project", "status", "revoke-runs"].contains(json["kind"]?.string ?? "") {
                         service(try JSONDecoder().decode(ServiceRequest.self, from: data), channel)
                     } else {

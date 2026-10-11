@@ -26,7 +26,7 @@ struct KeydeskApp: App {
             CommandGroup(replacing: .newItem) {}
             CommandMenu("금고") {
                 Button("대기 중인 실행 승인 보기") { model.showPendingApproval() }
-                    .disabled(model.approval == nil && model.brokerApproval == nil)
+                    .disabled(model.approval == nil && model.brokerApproval == nil && model.apiApproval == nil)
                 Button("금고 잠금", systemImage: "lock") { model.lock() }.keyboardShortcut("l", modifiers: [.command, .shift])
             }
         }

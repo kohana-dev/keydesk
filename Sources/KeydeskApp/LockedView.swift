@@ -8,8 +8,9 @@ struct LockedView: View {
     @State private var recoveryURL: URL?
     var body: some View {
         VStack(spacing: 22) {
-            Image(systemName: "lock.shield").font(.system(size: 48)).foregroundStyle(Theme.accent)
-                .padding(26).background(Theme.accent.opacity(0.09), in: RoundedRectangle(cornerRadius: 24))
+            Image(systemName: "lock").font(.system(size: 36, weight: .light)).foregroundStyle(Theme.ink)
+                .padding(24).background(.white, in: RoundedRectangle(cornerRadius: 16))
+                .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.border, lineWidth: 0.5))
             if model.exists || model.isDemo { lockedContent } else { firstRunContent }
             if model.busy { ProgressView().controlSize(.small) }
             Text("로컬 보관 · iCloud 암호화 백업 · CLI 연결").font(.caption).foregroundStyle(.secondary).padding(.top, 20)
@@ -20,7 +21,7 @@ struct LockedView: View {
         .sheet(isPresented: $recovering) { RecoveryView(model: model, initialURL: recoveryURL) }
     }
     @ViewBuilder private var lockedContent: some View {
-        Text("금고가 잠겨 있습니다").font(.largeTitle.bold())
+        Text("금고가 잠겨 있습니다").font(.system(size: 28, weight: .semibold))
         Text("인증 후 프로젝트와 키를 확인할 수 있습니다.").foregroundStyle(.secondary)
         Button("금고 열기", systemImage: "touchid") { Task { await model.unlock() } }
             .buttonStyle(.borderedProminent).controlSize(.large).disabled(model.busy)
@@ -47,7 +48,7 @@ struct LockedView: View {
     }
     private func message(_ title: String, _ detail: String) -> some View {
         VStack(spacing: 10) {
-            Text(title).font(.largeTitle.bold())
+            Text(title).font(.system(size: 28, weight: .semibold))
             Text(detail).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
     }

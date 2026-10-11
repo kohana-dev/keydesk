@@ -10,10 +10,10 @@ struct DetailView: View {
     var body: some View {
         if let credential = model.detail {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                VStack(alignment: .leading, spacing: 28) {
                     HStack(spacing: 13) {
                         ProviderIcon(provider: credential.provider)
-                        VStack(alignment: .leading, spacing: 5) { Text(credential.name).font(.title2.bold()); Text(credential.provider).foregroundStyle(.secondary) }
+                        VStack(alignment: .leading, spacing: 5) { Text(credential.name).font(.system(size: 23, weight: .semibold)); Text(credential.provider).foregroundStyle(.secondary) }
                         Spacer()
                         Button("즐겨찾기", systemImage: credential.favorite ? "star.fill" : "star") { model.toggleFavorite(credential.id) }.labelStyle(.iconOnly).foregroundStyle(.orange)
                         Button("정보 편집", systemImage: "pencil") { editing = true }.labelStyle(.iconOnly)
@@ -26,7 +26,8 @@ struct DetailView: View {
                             Text("\(file.data.count)바이트 · 원본 바이트와 파일명 보존").font(.caption)
                             Text("keydesk run --files 변수명으로 실행 도구에 임시 파일 경로를 전달합니다. 실행 종료 시 삭제됩니다.").font(.caption).foregroundStyle(.secondary)
                             SecretFileReplacement(model: model, credential: credential)
-                        }.padding(20).background(Theme.canvas, in: RoundedRectangle(cornerRadius: 14))
+                        }.padding(18).background(Theme.canvas, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Theme.border, lineWidth: 0.5))
                     } else {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack { Text("키 값").font(.headline); Spacer(); Text("보기 15초 · 복사 30초").font(.caption).foregroundStyle(.secondary) }
@@ -42,7 +43,8 @@ struct DetailView: View {
                             Spacer()
                             Button("키 교체", systemImage: "arrow.triangle.2.circlepath") { rotating = true }
                         }
-                    }.padding(20).background(Theme.canvas, in: RoundedRectangle(cornerRadius: 14))
+                    }.padding(18).background(Theme.canvas, in: RoundedRectangle(cornerRadius: 9))
+                        .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Theme.border, lineWidth: 0.5))
                     }
                     if !credential.account.isEmpty { field("발급 계정", credential.account) }
                     if !credential.note.isEmpty { field("메모", credential.note) }
@@ -52,13 +54,14 @@ struct DetailView: View {
                         if bindings.isEmpty { Text("연결된 프로젝트가 없습니다.").foregroundStyle(.secondary) }
                         ForEach(bindings) { binding in
                             VStack(alignment: .leading, spacing: 9) {
-                                HStack { Image(systemName: "folder").foregroundStyle(.purple); Text(model.snapshot?.projects.first { $0.id == binding.projectID }?.name ?? ""); Spacer(); Text(binding.environment.title).font(.caption).foregroundStyle(binding.environment == .production ? .orange : .secondary) }
+                                HStack { Image(systemName: "folder").foregroundStyle(.secondary); Text(model.snapshot?.projects.first { $0.id == binding.projectID }?.name ?? ""); Spacer(); Text(binding.environment.title).font(.caption).foregroundStyle(binding.environment == .production ? .orange : .secondary) }
                                 HStack { Text(binding.variable).font(.system(.caption, design: .monospaced)); Spacer(); Button("변수명 복사", systemImage: "doc.on.doc") { model.copyText(binding.variable) }.labelStyle(.iconOnly) }
                                 HStack {
                                     Button("참조 복사") { model.copyText("keydesk://\(binding.projectID.uuidString)/\(binding.environment.rawValue)/\(binding.variable)") }
                                     Button("실행 명령 복사") { model.copyText("keydesk run --project \(binding.projectID.uuidString) --env \(binding.environment.rawValue) \(credential.currentFile == nil ? "--only" : "--files") \(binding.variable) -- npm run dev") }
                                 }.font(.caption)
-                            }.padding(14).background(Theme.canvas, in: RoundedRectangle(cornerRadius: 10))
+                            }.padding(14).background(Theme.canvas, in: RoundedRectangle(cornerRadius: 7))
+                                .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.border, lineWidth: 0.5))
                         }
                     }
                     VStack(alignment: .leading, spacing: 10) {
@@ -80,7 +83,7 @@ struct DetailView: View {
                         Button("금고에서 삭제", role: .destructive) { deleting = true }
                     }
                     Text("삭제와 연결 해제는 제공사의 API 키를 폐기하지 않습니다. 과거 백업에는 값이 남을 수 있습니다.").font(.caption).foregroundStyle(.secondary)
-                }.padding(28)
+                }.padding(32)
             }
             .id(credential.id)
             .sheet(isPresented: $rotating) { RotateView(model: model, credential: credential) }

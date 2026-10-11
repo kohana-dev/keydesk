@@ -6,6 +6,7 @@ import KeydeskCore
 enum KeydeskCommand {
     static let help = """
     keydesk run --project <이름|UUID> --env <dev|staging|prod> [--only <VAR,VAR>] [--stdin-key <VAR>] [--interactive] [--keep-running] -- <명령> [인자...]
+    keydesk request --project <이름|UUID> --env <dev|staging|prod> --key <VAR> --method <GET|POST|PUT|PATCH|DELETE> --url <공식 HTTPS API 주소> [--body-file <JSON 경로>]
     keydesk mcp --project <UUID> --env <dev|staging|prod>
     keydesk store-file --project <이름> --env <dev|staging|prod> --name <PATH_VAR> --from-file <경로>
     keydesk run --project <이름|UUID> --env dev --files <PATH_VAR,...> -- <명령> [인자...]
@@ -18,6 +19,8 @@ enum KeydeskCommand {
     keydesk verify-recovery
     keydesk install
 
+    request: 로컬 앱이 공식 API 주소에만 인증값을 삽입합니다. 응답 JSON의 status/body/approval 확인. HTTP 4xx·5xx는 종료 코드 2.
+    주소·쿼리·메서드·본문이 같은 요청만 제한된 승인 재사용. 자동 재시도·리다이렉트 없음.
     앱에서 금고를 열고 승인해야 합니다. 실행 코드는 전달된 키를 읽을 수 있습니다.
     delete-project: 잠금 해제된 금고에서 프로젝트와 전용 키 삭제. 공유 키는 보존. 과거 백업·제공사 키는 별도.
     --only: 환경변수로 전달할 이름을 명시해야 합니다. 생략 시 모든 키를 전달하지 않습니다.
@@ -32,6 +35,7 @@ enum KeydeskCommand {
             let args = Array(CommandLine.arguments.dropFirst())
             let result: Int32
             if args.first == "mcp" { result = try MCPServer.run(Array(args.dropFirst())) }
+            else if args.first == "request" { result = try apiRequest(Array(args.dropFirst())) }
             else if args.first == "store" || args.first == "store-file" || args.first == "delete-project" || args == ["verify-recovery"] || args == ["lock"] || args == ["status"] || args == ["revoke-runs"] { result = try service(args) }
             else if args == ["install"] { try install(); result = 0 }
             else { result = try run(args, terminal: terminal) }

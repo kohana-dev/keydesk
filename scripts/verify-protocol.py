@@ -6,7 +6,7 @@ assert p.returncode==0 and not p.stderr
 r=[json.loads(line) for line in p.stdout.splitlines()]
 assert [item['error']['code'] for item in r[:4]]==[-32700,-32600,-32600,-32000]
 assert r[4]['result']['protocolVersion']=='2025-11-25'
-assert sorted(t['name'] for t in r[5]['result']['tools'])==['list_connections','request_access','revoke_access']
+assert sorted(t['name'] for t in r[5]['result']['tools'])==['list_connections','request_access','request_http','revoke_access']
 assert r[6]['error']['code']==-32602 and r[7]['result']=={}
 assert r[8]['error']['code']==-32600 and r[9]['error']['code']==-32601
 pathlib.Path('artifacts/protocol-verification.json').write_text(json.dumps({'passed':True,'stdout_only_json':True,'responses':r},indent=2,ensure_ascii=False))

@@ -20,6 +20,8 @@ final class ApprovalPanelController: NSObject, NSWindowDelegate {
         if let approval = model.approval {
             guard !model.reusingDevelopmentApproval else { return }
             show(CLIApprovalView(model: model, approval: approval), title: "Keydesk · 실행 승인")
+        } else if let approval = model.apiApproval {
+            show(APIApprovalView(model: model, approval: approval), title: "Keydesk · API 사용 승인")
         } else if let approval = model.brokerApproval {
             show(BrokerApprovalView(model: model, approval: approval), title: "Keydesk · AI 연결 승인")
         } else {
@@ -61,6 +63,7 @@ final class ApprovalPanelController: NSObject, NSWindowDelegate {
         guard !closingFromModel, let model else { return }
         panel = nil
         if model.approval != nil { model.rejectCLI() }
+        if model.apiApproval != nil { model.rejectAPI() }
         if model.brokerApproval != nil { model.rejectBroker() }
     }
 }

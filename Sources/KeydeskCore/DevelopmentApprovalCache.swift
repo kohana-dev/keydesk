@@ -4,13 +4,15 @@ import CryptoKit
 /// Memory-only permission for an exact invocation. This is not a sandbox: loaded
 /// dependencies and child programs are not attested, and approved tools can copy secrets.
 public struct DevelopmentApprovalCache {
-    private struct Entry {
+    public struct Entry: Identifiable, Sendable {
+        public let id: UUID
+        public let invocation: CLIRequest
         let request: Data
-        let executablePath: String
+        public let executablePath: String
         let executableDigest: Data
         let artifacts: Data
-        let expiresAt: Date
-        var remainingUses: Int
+        public let expiresAt: Date
+        public var remainingUses: Int
     }
     private var entries: [Entry] = []
     public init() {}
@@ -52,7 +54,7 @@ public struct DevelopmentApprovalCache {
         entries.removeAll { $0.expiresAt <= now || $0.request == data }
         if entries.count >= 32 { entries.removeFirst() }
         let production = request.environment == .production
-        entries.append(Entry(request: data, executablePath: executable.path, executableDigest: executable.digest, artifacts: digest, expiresAt: now.addingTimeInterval(production ? 300 : 1800), remainingUses: production ? 10 : Int.max))
+        entries.append(Entry(id: UUID(), invocation: request, request: data, executablePath: executable.path, executableDigest: executable.digest, artifacts: digest, expiresAt: now.addingTimeInterval(production ? 300 : 1800), remainingUses: production ? 10 : Int.max))
     }
     public func allows(_ request: CLIRequest, executable: ExecutableIdentity, now: Date = Date()) -> Bool {
         matchingIndex(request, executable: executable, now: now) != nil
@@ -64,8 +66,18 @@ public struct DevelopmentApprovalCache {
     /// Reserve before starting, so concurrent callers cannot exceed the production budget.
     public mutating func consume(_ request: CLIRequest, executable: ExecutableIdentity, now: Date = Date()) -> Bool {
         guard let index = matchingIndex(request, executable: executable, now: now) else { return false }
-        entries[index].remainingUses -= 1
+        if entries[index].remainingUses != Int.max { entries[index].remainingUses -= 1 }
         return true
     }
+    public func approvalReason(_ request: CLIRequest, executable: ExecutableIdentity, now: Date = Date()) -> String {
+        guard Self.eligible(request) else { return "위험 경고 또는 실행 모드 때문에 매번 확인이 필요합니다." }
+        guard let data = try? encoded(request), let entry = entries.first(where: { $0.request == data }) else { return "새 명령이거나 프로젝트·키·폴더·명령이 변경됐습니다." }
+        if entry.expiresAt <= now { return "기억한 명령 승인이 만료됐습니다." }
+        if entry.remainingUses <= 0 { return "허용한 재실행 횟수를 모두 사용했습니다." }
+        if entry.executablePath != executable.path || entry.executableDigest != executable.digest { return "실행 파일이 변경됐습니다." }
+        return "직접 지정한 파일이나 패키지 설정이 변경됐습니다."
+    }
+    public func active(now: Date = Date()) -> [Entry] { entries.filter { $0.expiresAt > now && $0.remainingUses > 0 } }
+    public mutating func revoke(_ id: UUID) { entries.removeAll { $0.id == id } }
     public mutating func clear() { entries.removeAll() }
 }

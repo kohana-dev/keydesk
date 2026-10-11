@@ -36,6 +36,11 @@ final class VaultModel {
             activity()
         }
     }
+    var apiApproval: APIApproval? { didSet { onApprovalChange?() } }
+    var apiApprovals = APIApprovalCache()
+    var apiTasks: [UUID: Task<Void, Never>] = [:]
+    var apiRunning: [UUID: APIRequest] = [:]
+    let apiTransport: any APITransport
     private var developmentApprovals = DevelopmentApprovalCache()
     @ObservationIgnored private(set) var reusingDevelopmentApproval = false
     var cliAvailable = false
@@ -66,6 +71,7 @@ final class VaultModel {
     private var idleTimer: Timer?
     private var lastActivity = Date()
     var generation = UUID()
+    var runningInvocations: [UUID: CLIRequest] = [:]
     private var runningProcesses = [UUID: RunningCommand]()
     private var observers = [NSObjectProtocol]()
 
@@ -78,11 +84,12 @@ final class VaultModel {
     }
 
     init(demo: Bool = false, demoSocket: String? = nil, directory: URL? = nil, defaultBackupDirectory: URL? = VaultModel.iCloudBackupDirectory,
-         keys: (any VaultKeyStore)? = nil, serve: Bool = true, observeSystemEvents: Bool = true) {
+         keys: (any VaultKeyStore)? = nil, apiTransport: any APITransport = CurlAPITransport(), serve: Bool = true, observeSystemEvents: Bool = true) {
+        self.apiTransport = apiTransport
         isDemo = demo
         let storedMinutes = UserDefaults.standard.object(forKey: "autoLockMinutes") as? Int
         autoLockMinutes = !demo && [0, 5, 15, 30, 60].contains(storedMinutes ?? -1) ? storedMinutes! : 30
-        self.keys = keys ?? SystemKeyStore()
+        self.keys = keys ?? (demo ? DemoKeyStore() : SystemKeyStore())
         self.defaultBackupDirectory = demo ? nil : defaultBackupDirectory
         server = CLIServer(path: demoSocket ?? SocketTransport.socketPath, trustedHelper: demo ? nil : Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/keydesk"))
         let directory = directory ?? (demo ? URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("Keydesk-demo-\(UUID())") : FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Keydesk"))
@@ -95,6 +102,8 @@ final class VaultModel {
                     Task { @MainActor in self?.receive(approval) }
                 }, broker: { [weak self] request, channel in
                     Task { @MainActor in self?.receiveBroker(request, channel: channel) }
+                }, api: { [weak self] request, channel in
+                    Task { @MainActor in self?.receiveAPI(request, channel: channel) }
                 }, service: { [weak self] request, channel in
                     Task { @MainActor in await self?.receiveService(request, channel: channel) }
                 })
@@ -145,17 +154,18 @@ final class VaultModel {
     func lock() {
         // Never drop the key while changes exist only on this Mac.
         flushBackup()
-        generation = UUID(); developmentApprovals.clear(); hideValue(); clipboard.clearOwned()
+        generation = UUID(); revokeAllAPI(); developmentApprovals.clear(); hideValue(); clipboard.clearOwned()
         if let approval { approval.channel.send(CLIEvent(kind: "error", text: "금고가 잠겼습니다.")); approval.channel.finish() }
         approval = nil
         rejectBroker(); revokeAllGrants()
         for process in runningProcesses.values where process.isRunning && !process.keepRunning { process.terminate() }
         runningProcesses = runningProcesses.filter { $0.value.keepRunning && $0.value.isRunning }
+        runningInvocations = runningInvocations.filter { runningProcesses[$0.key] != nil }
         snapshot = nil; key = nil; envelope = nil; selectedCredential = nil; selectedProject = nil
         backedUpRevision = nil; lastBackupAt = nil; lastBackupFile = nil; cloudUpload = .notCloud
         search = ""; notice = nil; error = nil; busy = false
     }
-    func stopRunning() { for process in runningProcesses.values { process.terminate() }; runningProcesses.removeAll() }
+    func stopRunning() { for process in runningProcesses.values { process.terminate() }; runningProcesses.removeAll(); runningInvocations.removeAll() }
     func shutdown() {
         idleTimer?.invalidate(); idleTimer = nil
         stopRunning(); lock(); server.stop()
@@ -245,7 +255,7 @@ final class VaultModel {
         let sealed = try VaultCrypto.seal(next, header: header, wrappedKey: envelope.recoveryWrappedKey, key: key)
         try store.write(sealed, expectedRevision: envelope.header.revision)
         self.snapshot = next; self.envelope = sealed; activity()
-        if invalidateGrants { developmentApprovals.clear(); rejectBroker(); revokeAllGrants(); rejectCLI() }
+        if invalidateGrants { revokeAllAPI(); developmentApprovals.clear(); rejectBroker(); revokeAllGrants(); rejectCLI() }
         scheduleBackup()
     }
     func addProject(_ name: String) throws {
@@ -399,11 +409,11 @@ final class VaultModel {
     func showPendingApproval() { approvalPresenter?.update() }
 
     func receive(_ request: CLIApproval) {
-        guard snapshot != nil, !busy, approval == nil, brokerApproval == nil, runningProcesses.count < 4 else {
+        guard snapshot != nil, !busy, approval == nil, brokerApproval == nil, apiApproval == nil, runningProcesses.count < 4 else {
             request.channel.send(CLIEvent(kind: "error", text: "금고가 잠겨 있거나 다른 승인을 처리 중입니다.")); request.channel.finish(); return
         }
         reusingDevelopmentApproval = developmentApprovals.allows(request.request, executable: request.executable)
-        request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? "기억한 명령 승인으로 실행합니다." : "Keydesk 앱에서 실행을 승인해 주세요."))
+        request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? "기억한 명령 승인으로 실행합니다." : developmentApprovals.approvalReason(request.request, executable: request.executable) + " Keydesk에서 실행을 승인해 주세요."))
         approval = request
         if reusingDevelopmentApproval {
             Task { @MainActor [weak self] in await self?.acceptCLI() }
@@ -420,6 +430,10 @@ final class VaultModel {
     func rejectCLI() {
         approval?.channel.send(CLIEvent(kind: "error", text: "실행을 취소했습니다.")); approval?.channel.finish(); approval = nil
     }
+    var rememberedRuns: [DevelopmentApprovalCache.Entry] { developmentApprovals.active() }
+    var runningCommands: [(UUID, RunningCommand)] { runningProcesses.map { ($0.key, $0.value) } }
+    func revokeRun(_ id: UUID) { developmentApprovals.revoke(id) }
+    func terminateRun(_ id: UUID) { runningProcesses[id]?.terminate() }
     func clearDevelopmentApprovals() { developmentApprovals.clear() }
 
     func acceptCLI(remember: Bool = false) async {
@@ -441,8 +455,9 @@ final class VaultModel {
             let id = approval.id
             if remember { try? developmentApprovals.remember(approval.request, executable: approval.executable) }
             let process = try CommandRunner.start(approval.request, secrets: secrets, channel: approval.channel, approvedExecutable: approval.executable, files: files) { [weak self] in
-                Task { @MainActor in self?.runningProcesses.removeValue(forKey: id) }
+                Task { @MainActor in self?.runningProcesses.removeValue(forKey: id); self?.runningInvocations.removeValue(forKey: id) }
             }
+            runningInvocations[id] = approval.request
             runningProcesses[id] = process
             self.approval = nil; activity()
             notify("CLI를 실행했습니다. 실행 코드는 전달된 키를 읽을 수 있습니다.")

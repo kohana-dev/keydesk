@@ -10,8 +10,8 @@ struct AIConnectionsView: View {
     private var command: String { "\(quoted(model.cliURL.path)) mcp --project \(project?.uuidString ?? "") --env \(environment.rawValue)" }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Label("AI 연결", systemImage: "sparkles").font(.title2.bold())
-            Text("Codex·Claude Code가 이 프로젝트의 키 이름(예: OPENAI_API_KEY)을 조회할 수 있게 합니다. 키 값은 전달하지 않습니다. AI가 키를 실제로 쓰려면 keydesk run 실행을 이 앱에서 매번 승인해야 하고, 승인한 명령은 키를 읽을 수 있습니다.").font(.caption).foregroundStyle(.secondary)
+            Label("AI 연결 · 승인 상태", systemImage: "sparkles").font(.title2.bold())
+            Text("CLI 명령은 선택한 키·파일을 실행 프로그램에 전달하고, API 요청은 앱이 인증값을 넣어 호출합니다. 최초 승인이 필요하며 동일한 요청은 제한된 허가를 재사용할 수 있습니다. MCP 키 이름 조회 허가는 별도입니다.").font(.caption).foregroundStyle(.secondary)
             HStack {
                 Picker("프로젝트", selection: $project) { ForEach(model.snapshot?.projects ?? []) { Text($0.name).tag(Optional($0.id)) } }
                 Picker("환경", selection: $environment) { ForEach(EnvironmentName.allCases, id: \.self) { Text($0.title).tag($0) } }
@@ -21,21 +21,9 @@ struct AIConnectionsView: View {
                 Button("Claude Code 연결 명령 복사") { model.copyText("claude mcp add --scope project keydesk -- \(command)") }.disabled(project == nil)
                 Button("설정 JSON 저장") { export() }.disabled(project == nil)
             }
-            Text("활성 이름 조회 허가").font(.caption.bold())
-            List {
-                ForEach(Array(model.grants.values).sorted { $0.expiresAt < $1.expiresAt }) { grant in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text("키 이름 조회 · \(grant.environment.title)").font(.headline)
-                            Text("\(grant.usedCalls)/\(grant.maximumCalls)회 · \(grant.expiresAt.formatted())까지").font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Button("철회", role: .destructive) { model.revokeGrant(grant.id) }
-                    }
-                }
-                if model.grants.isEmpty { Text("활성 사용 허가가 없습니다.").foregroundStyle(.secondary) }
-            }.frame(height: 200)
-            HStack { Button("모든 AI 허가 철회", role: .destructive) { model.revokeAllGrants() }; Spacer(); Button("닫기") { dismiss() }.keyboardShortcut(.cancelAction) }
+            ApprovalStatusView(model: model).frame(height: 380)
+            Text("철회는 새 실행을 막습니다. 이미 실행 중인 작업은 종료·취소를 따로 요청하세요. 외부 API에 이미 반영된 작업은 취소되지 않을 수 있습니다.").font(.caption).foregroundStyle(.secondary)
+            HStack { Button("모든 반복·조회 허가 철회", role: .destructive) { model.revokeAllPermissions() }; Spacer(); Button("닫기") { dismiss() }.keyboardShortcut(.cancelAction) }
         }.padding(28).frame(width: 780)
         .onAppear { project = model.selectedProject ?? model.snapshot?.projects.first?.id; environment = model.environment }
     }

@@ -43,7 +43,21 @@ The user unlocks the vault and approves the first run. An exact development invo
 
 Do not print, encode, inspect process environments, expose or send keys just to check they exist. Verify tool success or a boolean presence check. Output masking covers exact raw values, not arbitrary transformations; approved tools can read and transmit the injected secret. `--keep-running` retains a process and its already-injected secrets after vault lock; use it only when that persistent development behavior is intended.
 
-Keydesk MCP is metadata-only. It can list authorized variable/provider names, not secret values or provider API responses. Use `keydesk run` for actual work.
+## Call an API without receiving its authentication value
+
+Keydesk 0.7.0 adds a local HTTP broker. Check `keydesk --help` for `request` before using it on an older installation. For direct HTTP work prefer this path over giving a token to curl or an AI-authored script:
+
+```sh
+~/.local/bin/keydesk request --project my-app --env dev --key CLOUDFLARE_API_TOKEN --method GET --url https://api.cloudflare.com/client/v4/user/tokens/verify
+```
+
+In a configured project, `keydesk-project request --env dev --key NAME --method GET --url URL` selects an existing value binding from the manifest. For a JSON write request use `--body-file /absolute/path/request.json`. Keep authentication values out of that file. The broker supports value keys for OpenAI, Anthropic, GitHub, Cloudflare, Paddle, RevenueCat, Stripe, Resend, Vercel and Sentry on their fixed official API hosts. It rejects custom/private endpoints, redirects and arbitrary headers. Apple .p8, Google service-account files, SDK/build/deploy tools and unsupported providers continue to use `keydesk run --files/--only`; do not convert stored file contents into a token yourself.
+
+The user must approve the initial request. If they choose reuse, the exact project, environment, key version, method, URL including query and JSON body can repeat for five minutes/ten additional requests in prod, or thirty minutes/100 additional requests in dev/staging. Changed requests need fresh approval. Do not select reuse or click approval on the user's behalf. Expiry/rejection ends the attempt; wait for the user before retrying. AI cannot widen these policies. Approval status and per-grant revocation are in the app's AI connection screen.
+
+Stdout is JSON containing `requestId`, HTTP `status`, response `body`, `approval` (`new` or `reused`) and `credentialDelivery`. HTTP 4xx/5xx returns exit code 2; transport/approval failures return 1. Fake-key 401 responses prove routing, not valid provider authentication. No automatic retry occurs; a timeout/cancellation may have an unknown external outcome. Verify writes before retrying. The broker blocks common reflections of the selected token, but API responses may still contain sensitive account data. Do not request credential-export endpoints or forward sensitive results to unrelated services.
+
+MCP exposes `request_http` with `key`, `method`, `url` and optional JSON-string `body`, using the same broker and human approval as CLI. Its project/environment are fixed by server configuration. Metadata tools still require their separate name-listing grant. Neither path provides a key-reading tool. Run commands receive raw values/files and retain the limitations described above.
 
 ## Store and use an original secret file
 

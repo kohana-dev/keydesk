@@ -3,6 +3,7 @@ import KeydeskCore
 
 enum MCPServer {
     static let definitions: JSONValue = .array([
+        tool("request_http", "Ask Keydesk to call a fixed official HTTPS API with one stored value key. Human approval required initially; identical requests can reuse a bounded grant. Returns API data, not authentication values. Files and SDK commands use keydesk run.", ["key": stringSchema, "method": .object(["type": .string("string"), "enum": .array(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"].map(JSONValue.string))]), "url": .object(["type": .string("string"), "maxLength": .number(8192)]), "body": .object(["type": .string("string"), "maxLength": .number(262144)])], ["key", "method", "url"]),
         tool("list_connections", "List the environment variable names and provider names stored for this project and environment, plus the keydesk run command to use them. Never returns key values. Requires request_access first.", [:], []),
         tool("request_access", "Ask the user, in the Keydesk app, to allow this session to list variable names for a limited time and number of calls.", ["operation": .object(["type": .string("string"), "enum": .array([.string("metadata")])]), "duration": .object(["type": .string("integer"), "minimum": .number(1), "maximum": .number(600)]), "maximumCalls": .object(["type": .string("integer"), "minimum": .number(1), "maximum": .number(20)])], []),
         tool("revoke_access", "Revoke a name-listing permission granted to this session.", ["grantId": stringSchema], ["grantId"])
@@ -44,7 +45,7 @@ enum MCPServer {
                 let requested = message["params"]?["protocolVersion"]?.string ?? ""
                 let supported = ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"]
                 let version = supported.contains(requested) ? requested : "2025-11-25"
-                dispatcher.result(id, .object(["protocolVersion": .string(version), "capabilities": .object(["tools": .object([:])]), "serverInfo": .object(["name": .string("keydesk"), "version": .string("0.5.4")]), "instructions": .string("Keydesk exposes only variable names for one project. To use a key, run the program through `keydesk run --only NAME -- command`; the user approves each run in the Keydesk app. Never try to print, encode or transmit key values.")]))
+                dispatcher.result(id, .object(["protocolVersion": .string(version), "capabilities": .object(["tools": .object([:])]), "serverInfo": .object(["name": .string("keydesk"), "version": .string("0.7.0")]), "instructions": .string("Keydesk exposes metadata and request_http for one project. request_http calls approved official APIs without giving keys to your process. For SDK commands or files use keydesk run. Initial approval is in the app; exact requests can reuse time-limited grants. Never try to print, encode or transmit key values.")]))
                 initialized = true
             case "ping": dispatcher.result(id, .object([:]))
             case "tools/list":

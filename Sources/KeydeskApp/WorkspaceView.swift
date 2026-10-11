@@ -37,19 +37,19 @@ struct WorkspaceView: View {
         .onChange(of: model.environment) { model.selectedCredential = nil; model.hideValue() }
     }
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 10) {
-                Image(systemName: "key.horizontal.fill").foregroundStyle(.white).padding(9).background(Theme.accent, in: RoundedRectangle(cornerRadius: 10))
-                Text("Keydesk").font(.title2.bold())
+                Image(systemName: "key.horizontal.fill").foregroundStyle(Theme.ink).font(.system(size: 19, weight: .semibold))
+                Text("Keydesk").font(.system(size: 19, weight: .semibold))
             }.padding(.top, 14)
             VStack(spacing: 6) {
-                nav("모든 키", symbol: "square.grid.2x2", color: Theme.accent, selected: model.selectedProject == nil && !model.favoritesOnly) { model.selectedProject = nil; model.favoritesOnly = false }
+                nav("모든 키", symbol: "square.grid.2x2", color: Theme.ink, selected: model.selectedProject == nil && !model.favoritesOnly) { model.selectedProject = nil; model.favoritesOnly = false }
                 nav("즐겨찾기", symbol: "star", color: .orange, selected: model.favoritesOnly) { model.selectedProject = nil; model.favoritesOnly = true }
             }
             HStack { Text("프로젝트").font(.caption.bold()).foregroundStyle(.secondary); Spacer(); Button("프로젝트 추가", systemImage: "plus") { projectSheet = true }.labelStyle(.iconOnly) }
             VStack(spacing: 6) {
                 ForEach(model.snapshot?.projects ?? []) { project in
-                    nav(project.name, symbol: "folder", color: Theme.projectColors[abs(project.colorIndex % 3)], selected: model.selectedProject == project.id) { model.selectedProject = project.id; model.favoritesOnly = false }
+                    nav(project.name, symbol: "folder", color: Theme.projectColors[0], selected: model.selectedProject == project.id) { model.selectedProject = project.id; model.favoritesOnly = false }
                 }
             }
             Spacer()
@@ -57,7 +57,7 @@ struct WorkspaceView: View {
                 Button("암호화 백업", systemImage: "externaldrive.badge.timemachine") { saveBackup() }
                 Button("복구 검증", systemImage: "arrow.counterclockwise") { recoverySheet = true }
                 Button("활동 기록", systemImage: "clock.arrow.circlepath") { activitySheet = true }
-                Button("AI 연결", systemImage: "sparkles") { aiSheet = true }
+                Button("AI 연결", systemImage: "terminal") { aiSheet = true }
                 Button("백업·CLI 설정", systemImage: "gearshape") { settingsSheet = true }
                 Button("금고 잠금", systemImage: "lock") { model.lock() }
             }.buttonStyle(.plain)
@@ -92,14 +92,19 @@ struct WorkspaceView: View {
     }
     private func nav(_ title: String, symbol: String, color: Color, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack { Image(systemName: symbol).foregroundStyle(color).frame(width: 22); Text(title).lineLimit(1); Spacer() }.padding(10).contentShape(Rectangle())
-                .background(selected ? Color.white : Color.clear, in: RoundedRectangle(cornerRadius: 9))
+            HStack { Image(systemName: symbol).foregroundStyle(selected ? Theme.accent : color).frame(width: 22); Text(title).font(.system(size: 13, weight: selected ? .semibold : .regular)).lineLimit(1); Spacer() }.padding(.horizontal, 10).padding(.vertical, 9).contentShape(Rectangle())
+                .background(selected ? Theme.selection : Color.clear, in: RoundedRectangle(cornerRadius: 6))
         }.buttonStyle(.plain)
     }
     private var keyList: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack { Text(model.selectedProject.flatMap { id in model.snapshot?.projects.first { $0.id == id }?.name } ?? (model.favoritesOnly ? "즐겨찾기" : "모든 키")).font(.title2.bold()); Spacer() }
-            TextField("이름, 서비스, 계정 검색", text: $model.search).textFieldStyle(.roundedBorder)
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("이름, 서비스, 계정 검색", text: $model.search).textFieldStyle(.plain)
+                if !model.search.isEmpty { Button("검색 지우기", systemImage: "xmark.circle.fill") { model.search = "" }.labelStyle(.iconOnly).buttonStyle(.plain).foregroundStyle(.secondary) }
+            }.padding(10).background(Theme.canvas, in: RoundedRectangle(cornerRadius: 7))
+                .overlay(RoundedRectangle(cornerRadius: 7).strokeBorder(Theme.border, lineWidth: 0.5))
             if model.selectedProject != nil {
                 Picker("환경", selection: $model.environment) {
                     ForEach(EnvironmentName.allCases, id: \.self) { Text($0.rawValue.uppercased()).tag($0) }
@@ -113,22 +118,22 @@ struct WorkspaceView: View {
                 Button("키 추가", systemImage: "plus") { addSheet = true }.buttonStyle(.borderedProminent)
             }
             ScrollView {
-                LazyVStack(spacing: 7) {
+                LazyVStack(spacing: 2) {
                     ForEach(model.credentials) { credential in
                         Button { model.selectedCredential = credential.id; model.activity() } label: {
                             HStack(spacing: 12) {
                                 ProviderIcon(provider: credential.provider)
-                                VStack(alignment: .leading, spacing: 5) { Text(credential.name).font(.body.weight(.semibold)).lineLimit(1); Text(credential.provider).font(.caption).foregroundStyle(.secondary) }
+                                VStack(alignment: .leading, spacing: 5) { Text(credential.name).font(.system(size: 13, weight: .semibold)).lineLimit(1); Text(credential.provider + (credential.currentFile == nil ? " · API 키" : " · 파일")).font(.caption).foregroundStyle(.secondary) }
                                 Spacer()
                                 if credential.favorite { Image(systemName: "star.fill").foregroundStyle(.orange).font(.caption) }
-                            }.padding(12).contentShape(Rectangle()).background(model.selectedCredential == credential.id ? Theme.accent.opacity(0.09) : Theme.canvas, in: RoundedRectangle(cornerRadius: 12))
+                            }.padding(.horizontal, 10).padding(.vertical, 12).contentShape(Rectangle()).background(model.selectedCredential == credential.id ? Theme.selection : Color.clear, in: RoundedRectangle(cornerRadius: 7))
                         }.buttonStyle(.plain)
                     }
                     if model.credentials.isEmpty { ContentUnavailableView("키가 없습니다", systemImage: "key", description: Text(model.search.isEmpty ? "키를 등록하거나 기존 키를 연결하세요." : "다른 검색어를 입력하세요.")) }
                 }
             }
             Text(model.isDemo ? "데모 변경은 임시 금고에만 저장됩니다." : "개발 도구에는 keydesk run으로 선택한 키만 전달합니다.").font(.caption).foregroundStyle(.secondary)
-        }.padding(22)
+        }.padding(18)
     }
     private func saveBackup() {
         let panel = NSSavePanel(); panel.nameFieldStringValue = "Keydesk-backup-\(Date().formatted(.iso8601.year().month().day())).keydesk"

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct CLIRequest: Codable, Sendable {
+public struct CLIRequest: Codable, Sendable, Equatable {
     public let project: String
     public let environment: EnvironmentName
     public let command: [String]

@@ -7,6 +7,7 @@ import subprocess
 import os
 import sys
 import unittest
+from unittest.mock import patch
 spec = importlib.util.spec_from_file_location('project_cli', Path(__file__).with_name('keydesk-project.py'))
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 
@@ -38,5 +39,19 @@ class ProjectCLI(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d); (root/'original').write_text(json.dumps(self.config)); (root/m.CONFIG_NAME).symlink_to(root/'original')
             with self.assertRaises(ValueError): m.load_config(root)
+    def test_request_preserves_literal_url_and_does_not_read_body(self):
+        with tempfile.TemporaryDirectory() as d:
+            cli = Path(d)/'.local/bin/keydesk'; cli.parent.mkdir(parents=True); cli.touch()
+            argv = ['keydesk-project', 'request', '--env', 'prod', '--key', 'TOKEN', '--method', 'POST', '--url', 'https://api.cloudflare.com/x?q=$(no-shell)', '--body-file', 'not-read.json']
+            with patch.object(sys, 'argv', argv), patch.object(m.Path, 'home', return_value=Path(d)), patch.object(m, 'load_config', return_value=(Path(d),self.config)), patch.object(m.subprocess, 'call', return_value=0) as call:
+                self.assertEqual(m.main(), 0)
+                args = call.call_args.args[0]
+                self.assertEqual(args[:12], [str(cli),'request','--project','Example App','--env','prod','--key','TOKEN','--method','POST','--url','https://api.cloudflare.com/x?q=$(no-shell)'])
+                self.assertEqual(args[12:], ['--body-file',str(Path('not-read.json').absolute())])
+    def test_request_rejects_file_and_multiple_key_selection(self):
+        for key in ['GOOGLE_APPLICATION_CREDENTIALS','TOKEN,TOKEN','MISSING']:
+            with patch.object(sys, 'argv', ['keydesk-project','request','--env','prod','--key',key,'--url','https://api.cloudflare.com/']), patch.object(m, 'load_config', return_value=(Path('/tmp'),self.config)), patch.object(m.subprocess, 'call') as call:
+                self.assertEqual(m.main(), 2)
+                call.assert_not_called()
 
 unittest.main()
