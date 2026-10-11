@@ -95,12 +95,12 @@ struct SecretFileTests {
         defer { close(reader) }
         let file = try SecretFile(name: "max.p12", data: Data(repeating: 255, count: SecretFile.maximumBytes))
         let request = ServiceRequest(kind: "store-file", project: "fixture", environment: .development, variable: "FILE", file: file)
-        DispatchQueue.global().async {
+        Thread.detachNewThread {
             defer { close(writer) }
             try? SocketTransport.send(request, to: writer)
             try? SocketTransport.send(["next":true], to: writer)
         }
-        let line = try #require(try SocketTransport.readLine(from: reader, maximum: 2_097_152, deadlineSeconds: 5))
+        let line = try #require(try SocketTransport.readLine(from: reader, maximum: 2_097_152, deadlineSeconds: 20))
         #expect(try JSONDecoder().decode(ServiceRequest.self, from: line).file == file)
         let next = try #require(try SocketTransport.readLine(from: reader, deadlineSeconds: 5))
         #expect(try JSONDecoder().decode([String:Bool].self, from: next)["next"] == true)

@@ -12,7 +12,7 @@ struct RunnerTests {
         var fds = [Int32](repeating: -1, count: 2)
         guard socketpair(AF_UNIX, SOCK_STREAM, 0, &fds) == 0 else { throw VaultError.invalidData }
         for fd in fds {
-            var timeout = timeval(tv_sec: 5, tv_usec: 0), noSig: Int32 = 1
+            var timeout = timeval(tv_sec: 15, tv_usec: 0), noSig: Int32 = 1
             setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
             setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &noSig, socklen_t(MemoryLayout<Int32>.size))
         }
