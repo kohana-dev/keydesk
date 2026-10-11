@@ -52,7 +52,7 @@ struct SettingsView: View {
                 Text("5분").tag(5); Text("15분").tag(15); Text("30분").tag(30); Text("60분").tag(60); Text("화면 잠금 시").tag(0)
             }
             Text("Mac 화면 잠금·잠자기에는 항상 금고가 잠깁니다.").font(.caption).foregroundStyle(.secondary)
-            Button("기억한 개발 명령 승인 해제") { model.clearDevelopmentApprovals(); model.notify("기억한 개발 명령 승인을 해제했습니다.") }
+            Button("기억한 명령 승인 해제") { model.clearDevelopmentApprovals(); model.notify("기억한 명령 승인을 해제했습니다.") }
             Divider()
             Text("개발 CLI").font(.headline)
             Text("CLI를 ~/.local/bin에 연결합니다. 셸 설정과 다른 프로그램은 덮어쓰지 않습니다.").font(.caption).foregroundStyle(.secondary)

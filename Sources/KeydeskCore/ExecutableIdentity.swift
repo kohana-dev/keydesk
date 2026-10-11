@@ -27,7 +27,7 @@ public struct ExecutableIdentity: Sendable {
             throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "승인할 실행 파일이 변경되었습니다. 새 요청을 보내 주세요."])
         }
     }
-    private static func hashFile(_ path: String) throws -> Data {
+    static func hashFile(_ path: String) throws -> Data {
         let fd = Darwin.open(path, O_RDONLY | O_NOFOLLOW | O_NONBLOCK | O_CLOEXEC)
         guard fd >= 0 else { throw VaultError.accessDenied }
         defer { close(fd) }

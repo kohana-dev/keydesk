@@ -56,6 +56,10 @@ extension VaultModel {
         defer { channel.finish() }
         do {
             switch request.kind {
+            case "revoke-runs":
+                clearDevelopmentApprovals()
+                channel.send(CLIEvent(kind: "status", text: "기억한 실행 승인을 모두 해제했습니다. 이미 실행 중인 프로세스는 유지됩니다. 종료하려면 금고를 잠그세요."))
+                channel.send(CLIEvent(kind: "exit", exitCode: 0))
             case "status":
                 // Signed local clients can inspect readiness, never vault metadata or values.
                 refreshCloudUpload()

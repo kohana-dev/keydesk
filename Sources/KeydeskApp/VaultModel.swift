@@ -403,7 +403,7 @@ final class VaultModel {
             request.channel.send(CLIEvent(kind: "error", text: "금고가 잠겨 있거나 다른 승인을 처리 중입니다.")); request.channel.finish(); return
         }
         reusingDevelopmentApproval = developmentApprovals.allows(request.request, executable: request.executable)
-        request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? "기억한 개발 명령 승인으로 실행합니다." : "Keydesk 앱에서 실행을 승인해 주세요."))
+        request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? "기억한 명령 승인으로 실행합니다." : "Keydesk 앱에서 실행을 승인해 주세요."))
         approval = request
         if reusingDevelopmentApproval {
             Task { @MainActor [weak self] in await self?.acceptCLI() }
@@ -427,7 +427,9 @@ final class VaultModel {
         guard let approval else { return }
         let token = generation
         do {
-            if approval.request.environment == .production && !isDemo {
+            let reuse = reusingDevelopmentApproval && developmentApprovals.consume(approval.request, executable: approval.executable)
+            if reusingDevelopmentApproval && !reuse { throw VaultError.accessDenied }
+            if approval.request.environment == .production && !isDemo && !reuse {
                 _ = try await keys.authenticate(reason: "Production 키를 CLI에 전달하기 위해 인증합니다.")
             }
             guard approval.channel.isConnected, token == generation, let snapshot, self.approval?.id == approval.id else { throw VaultError.locked }
@@ -435,13 +437,13 @@ final class VaultModel {
             guard matches.count == 1 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "프로젝트가 없거나 이름이 중복됩니다. 프로젝트 UUID를 사용하세요."]) }
             let files = try approval.request.selectedFiles(from: snapshot.files(projectID: matches[0].id, environment: approval.request.environment))
             let secrets = try approval.request.selectedSecrets(from: snapshot.environment(projectID: matches[0].id, environment: approval.request.environment))
-            try mutate(invalidateGrants: false) { $0.record("CLI 실행 승인 · \(approval.request.environment.title)") }
+            try mutate(invalidateGrants: false) { $0.record("CLI 실행 승인 · \(approval.request.environment.title) · \(reuse ? "기억한 승인" : "새 승인")") }
             let id = approval.id
+            if remember { try? developmentApprovals.remember(approval.request, executable: approval.executable) }
             let process = try CommandRunner.start(approval.request, secrets: secrets, channel: approval.channel, approvedExecutable: approval.executable, files: files) { [weak self] in
                 Task { @MainActor in self?.runningProcesses.removeValue(forKey: id) }
             }
             runningProcesses[id] = process
-            if remember { try? developmentApprovals.remember(approval.request, executable: approval.executable) }
             self.approval = nil; activity()
             notify("CLI를 실행했습니다. 실행 코드는 전달된 키를 읽을 수 있습니다.")
         } catch {

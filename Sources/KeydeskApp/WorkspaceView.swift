@@ -104,7 +104,7 @@ struct WorkspaceView: View {
                 Picker("환경", selection: $model.environment) {
                     ForEach(EnvironmentName.allCases, id: \.self) { Text($0.rawValue.uppercased()).tag($0) }
                 }.pickerStyle(.segmented)
-                if model.environment == .production { Label("Production · 값 사용 시 재인증", systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.orange) }
+                if model.environment == .production { Label("Production · 최초 승인 시 재인증", systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.orange) }
             }
             HStack {
                 Text("\(model.credentials.count)개 키").font(.caption).foregroundStyle(.secondary)

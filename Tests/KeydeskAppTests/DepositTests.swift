@@ -34,7 +34,7 @@ struct DepositTests {
         #expect(model.snapshot?.credentials.first?.currentValue == payload.value)
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 1)
     }
-    @Test func productionRunRequiresAuthenticationAndCannotBeRemembered() async throws {
+    @Test func productionReuseRequiresInitialAuthenticationAndRevokesOnLock() async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("prod-auth-test-\(UUID())")
         let keys = MemoryKeyStore()
         let model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: keys, serve: false, observeSystemEvents: false)
@@ -58,9 +58,22 @@ struct DepositTests {
         model.receive(try CLIApproval(request: invocation, channel: accepted))
         await model.acceptCLI(remember: true)
         #expect(keys.authentications == baseline + 2)
+        keys.denyAuthentication = true // A reused grant must not request OS authentication.
         let (again, againClient) = try RunnerTests().sockets()
         defer { again.finish(); close(againClient) }
         model.receive(try CLIApproval(request: invocation, channel: again))
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(model.approval == nil)
+        #expect(keys.authentications == baseline + 2)
+        var againEvents: [String] = []
+        while let line = try SocketTransport.readLine(from: againClient) { againEvents.append(try JSONDecoder().decode(CLIEvent.self, from: line).kind) }
+        #expect(againEvents.contains("started") && againEvents.contains("exit"))
+        keys.denyAuthentication = false
+        model.lock()
+        await model.unlock()
+        let (afterLock, afterLockClient) = try RunnerTests().sockets()
+        defer { afterLock.finish(); close(afterLockClient) }
+        model.receive(try CLIApproval(request: invocation, channel: afterLock))
         try await Task.sleep(for: .milliseconds(20))
         #expect(model.approval != nil)
         model.rejectCLI()

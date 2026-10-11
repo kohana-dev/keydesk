@@ -3,7 +3,7 @@
 A local macOS secret vault for individual developers. Store API keys by project
 and dev/staging/prod environment; let approved tools use them through a signed
 CLI without putting values into AI chat. SwiftUI, CryptoKit and Security;
-no external Swift package dependencies. Current version: 0.6.1 beta.
+no external Swift package dependencies. Current version: 0.6.2 beta.
 
 개인 개발자를 위한 macOS 로컬 API 키 금고입니다. 실제 개인 사용과
 Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며,
@@ -24,7 +24,7 @@ Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며
 
 ## Install / build
 
-Download the signed, notarized [Keydesk 0.6.1 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.6.1/Keydesk-0.6.1-macOS-arm64.zip).
+Download the signed, notarized [Keydesk 0.6.2 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.6.2/Keydesk-0.6.2-macOS-arm64.zip).
 Requires macOS 14 or later on an Apple Silicon Mac. Intel builds are not provided.
 Unzip, move Keydesk.app to Applications (or ~/Applications), and open it normally.
 No Apple Developer account is needed. Authenticate through macOS when prompted;
@@ -68,7 +68,7 @@ selection depends on the model. MCP provides names, never secret values.
 
 First execution requires user approval. An exact safe development invocation
 can be remembered for 30 minutes. Locking, editing keys and quitting clear it.
-Production and risky commands require approval every time. Default auto-lock
+Production defaults to approval each time, with optional five-minute exact-command reuse. Risk-warning commands always require approval. Default auto-lock
 is 30 minutes; screen lock and sleep also trigger locking. Approved tools can
 read and transmit injected keys. Output masking covers exact values only.
 `--keep-running` intentionally allows an approved process to retain its keys
@@ -102,3 +102,5 @@ Selected variables hold private temporary file paths. Files are removed on comma
 AI companion skills instruct Codex and Claude to pass source paths directly to the CLI without reading their contents. Update installed skills with `python3 scripts/install-ai-skills.py --update`; previous skills are backed up.
 
 For CLI-first AI development, use the [project CLI adapter and readiness status](docs/project-cli.md). Project manifests contain variable names and types only; execution still uses the signed CLI and native approval.
+
+Production command reuse is optional: initial user approval and OS authentication can authorize the exact invocation for five minutes and ten additional starts. Expiry is fixed; lock, credential mutation and app exit revoke it. This reduces confirmation opportunities and is not a sandbox or an attestation of every loaded dependency. Commands with risk warnings and persistent/interactive production requests cannot be remembered.
