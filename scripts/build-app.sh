@@ -18,6 +18,7 @@ app_dir="$stage_root/Keydesk.app"
 final_app="$PWD/dist/Keydesk.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Helpers" "$app_dir/Contents/Resources"
 cp -R Resources/ProviderLogos "$app_dir/Contents/Resources/ProviderLogos"
+cp LICENSE THIRD_PARTY_NOTICES.md "$app_dir/Contents/Resources/"
 cp "$build_dir/KeydeskDesktop" "$app_dir/Contents/MacOS/Keydesk"
 cp "$build_dir/keydesk" "$app_dir/Contents/Helpers/keydesk"
 cat > "$app_dir/Contents/Info.plist" <<'PLIST'
