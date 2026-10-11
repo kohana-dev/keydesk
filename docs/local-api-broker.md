@@ -14,6 +14,7 @@ Supported fixed origins:
 | Provider | Host | Authentication |
 | --- | --- | --- |
 | OpenAI | api.openai.com | Bearer |
+| Gemini | generativelanguage.googleapis.com | x-goog-api-key |
 | Anthropic | api.anthropic.com | x-api-key; version 2023-06-01 |
 | GitHub | api.github.com | Bearer; API version 2022-11-28 |
 | Cloudflare | api.cloudflare.com | Bearer API token (not global key/email) |
@@ -60,4 +61,4 @@ MCP `request_http` accepts `key`, `method`, `url`, optional JSON-string `body` a
 
 Unit tests cover target checks, bounded JSON parsing, exact request/version binding, expiry/budget, individual revocation, lock and mutation invalidation, production OS authentication, reuse without reauthentication and common token reflection rejection. Existing CLI/file/PTY tests continue to run. Real Codex/Claude smoke tests use disposable fake keys: provider authentication errors prove transport and client integration, not valid authenticated provider operations. No claim of independent security audit, complete DLP or process sandboxing is made.
 
-Authentication references: [Cloudflare](https://developers.cloudflare.com/api/resources/user/subresources/tokens/methods/verify/), [Paddle](https://developer.paddle.com/api-reference/about/authentication/), [RevenueCat](https://www.revenuecat.com/docs/api-v2).
+Authentication references: [Gemini](https://ai.google.dev/gemini-api/docs/api-key), [Cloudflare](https://developers.cloudflare.com/api/resources/user/subresources/tokens/methods/verify/), [Paddle](https://developer.paddle.com/api-reference/about/authentication/), [RevenueCat](https://www.revenuecat.com/docs/api-v2).

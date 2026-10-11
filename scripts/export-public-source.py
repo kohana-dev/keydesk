@@ -36,7 +36,7 @@ def export(destination):
   for f in (ROOT/'Resources/ProviderLogos').glob('*LICENSE*'):shutil.copy2(f,assets/f.name)
   (assets/'manifest.json').write_text(json.dumps(approved,indent=2)+'\n')
   (assets/'distribution-policy.json').write_text(json.dumps({'omitted_for_redistribution_review':sorted(EXCLUDED_BRANDS),'fallback':'text initials'},indent=2)+'\n')
-  (assets/'README.md').write_text('55 reviewed-source brand assets; Postmark and Amplitude use text initials. See THIRD_PARTY_NOTICES.md. No network downloads at runtime.\n')
+  (assets/'README.md').write_text('56 reviewed-source brand assets; Postmark and Amplitude use text initials. See THIRD_PARTY_NOTICES.md. No network downloads at runtime.\n')
   scan(tree)
   hashes={str(f.relative_to(tree)):hashlib.sha256(f.read_bytes()).hexdigest() for f in sorted(tree.rglob('*')) if f.is_file()}
   final=destination/'Keydesk-source'

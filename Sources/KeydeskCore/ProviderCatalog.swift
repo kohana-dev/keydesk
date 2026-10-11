@@ -7,7 +7,7 @@ public enum ProviderCatalog {
         public var id: String { title }
     }
     public static let categories: [Category] = [
-        Category(title: "AI · 모델", providers: ["OpenAI", "Anthropic", "Replicate", "Hugging Face", "ElevenLabs", "DeepSeek", "Groq", "Mistral", "Perplexity", "FAL"]),
+        Category(title: "AI · 모델", providers: ["OpenAI", "Anthropic", "Gemini", "Replicate", "Hugging Face", "ElevenLabs", "DeepSeek", "Groq", "Mistral", "Perplexity", "FAL"]),
         Category(title: "클라우드 · 배포", providers: ["Google Cloud", "Azure", "AWS", "Cloudflare", "Vercel", "Netlify", "DigitalOcean", "Render", "Railway", "Fly.io"]),
         Category(title: "결제 · 구독", providers: ["Stripe", "Paddle", "RevenueCat"]),
         Category(title: "앱 · 플랫폼", providers: ["Apple API", "App Store Connect", "Google Play", "Android", "Google", "Google Ads"]),
@@ -20,6 +20,7 @@ public enum ProviderCatalog {
     ]
     private static let aliases: [String: String] = [
         "OpenAI": "오픈에이아이 챗지피티 chatgpt", "Anthropic": "앤트로픽 클로드 claude",
+        "Gemini": "제미나이 gem google gemini 구글 ai studio",
         "Paddle": "패들 결제 payment", "Stripe": "스트라이프 결제 payment",
         "RevenueCat": "레비뉴캣 구독 subscription", "Cloudflare": "클라우드플레어 d1 r2 workers",
         "Apple API": "애플 인증 signin", "App Store Connect": "애플 앱스토어 인앱결제 iap",
@@ -44,6 +45,7 @@ public enum ProviderCatalog {
             name.removeFirst(prefix.count)
         }
         let prefixes: [(String, String)] = [
+            ("GEMINI_", "Gemini"), ("GOOGLE_GEMINI_", "Gemini"), ("GOOGLE_GENERATIVE_AI_", "Gemini"),
             ("GOOGLE_ADS_", "Google Ads"), ("GOOGLE_CLOUD_", "Google Cloud"),
             ("GOOGLE_PLAY_", "Google Play"), ("GOOGLE_", "Google"),
             ("APPLE_IAP_", "App Store Connect"), ("APP_STORE_", "App Store Connect"), ("APPLE_", "Apple API"),

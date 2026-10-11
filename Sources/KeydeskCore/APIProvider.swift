@@ -9,6 +9,7 @@ public struct APIProvider: Sendable {
     public let extraHeaders: [String: String]
     public static let supported: [APIProvider] = [
         .init(name: "OpenAI", hosts: ["api.openai.com"], header: "Authorization", prefix: "Bearer ", extraHeaders: [:]),
+        .init(name: "Gemini", hosts: ["generativelanguage.googleapis.com"], header: "x-goog-api-key", prefix: "", extraHeaders: [:]),
         .init(name: "Anthropic", hosts: ["api.anthropic.com"], header: "x-api-key", prefix: "", extraHeaders: ["anthropic-version": "2023-06-01"]),
         .init(name: "GitHub", hosts: ["api.github.com"], header: "Authorization", prefix: "Bearer ", extraHeaders: ["Accept": "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28"]),
         .init(name: "Cloudflare", hosts: ["api.cloudflare.com"], header: "Authorization", prefix: "Bearer ", extraHeaders: [:]),

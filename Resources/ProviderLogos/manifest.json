@@ -20,6 +20,15 @@
     "sha256": "1cc599f6ebce2016dc388cf84e54a52c6b13487655c7e243554d654c7bce1882"
   },
   {
+    "provider": "Gemini",
+    "file": "gemini",
+    "hex": "4285F4",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/c385b2b8d1f9e19aa86e628d4e23c91ee1111a47/packages/static-svg/icons/gemini-color.svg",
+    "brandSource": "https://gemini.google.com/",
+    "license": "MIT",
+    "sha256": "8ab0a9bafec11f7e69bcb9fc4ffd8f1bc927d1ddcbbb6ff36dee5ae8b5a9d602"
+  },
+  {
     "provider": "Google",
     "file": "google",
     "hex": "4285F4",

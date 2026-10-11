@@ -8,6 +8,8 @@ struct APITests {
     }
     @Test func onlyFixedProviderOriginIsAllowed() throws {
         #expect(try APIProvider.resolve(provider: "Cloudflare", request: request()).name == "Cloudflare")
+        let gemini = try APIProvider.resolve(provider: "Gemini", request: APIRequest(project: "fixture", environment: .development, variable: "GEMINI_API_KEY", method: "GET", url: "https://generativelanguage.googleapis.com/v1beta/models"))
+        #expect(gemini.header == "x-goog-api-key" && gemini.prefix.isEmpty)
         #expect(throws: (any Error).self) { try APIProvider.resolve(provider: "OpenAI", request: request()) }
         for url in ["http://api.cloudflare.com/", "https://api.cloudflare.com.evil.test/", "https://evil.test/", "https://api.cloudflare.com:444/", "https://user@api.cloudflare.com/", "https://api.cloudflare.com/#fragment", "https://127.0.0.1/", "https://[::1]/", "https://api.cloudflare.com/a/../b", "https://api.cloudflare.com/%2e%2e/b", "https://api.cloudflare.com/a%2fb", "https://api.cloudflare.com/\nheader"] {
             #expect(throws: (any Error).self) { try APIProvider.resolve(provider: "Cloudflare", request: request(url: url)) }

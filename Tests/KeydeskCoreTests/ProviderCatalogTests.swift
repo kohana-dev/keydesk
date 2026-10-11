@@ -9,6 +9,9 @@ struct ProviderCatalogTests {
     }
     @Test func recommendationsMatchNameKoreanAliasAndCategory() {
         #expect(ProviderCatalog.matching("pAdDlE").flatMap(\.providers) == ["Paddle"])
+        #expect(ProviderCatalog.matching("gemi").flatMap(\.providers) == ["Gemini"])
+        #expect(ProviderCatalog.matching("제미나이").flatMap(\.providers) == ["Gemini"])
+        #expect(ProviderName.canonical("Gemini") == "Gemini")
         #expect(ProviderCatalog.matching("레비뉴캣").flatMap(\.providers) == ["RevenueCat"])
         #expect(ProviderCatalog.matching("r2").flatMap(\.providers) == ["Cloudflare"])
         #expect(ProviderCatalog.matching("결제").flatMap(\.providers).contains("Paddle"))
@@ -19,6 +22,8 @@ struct ProviderCatalogTests {
     @Test func importClassifiesClearNamesWithoutGuessingGenericKeys() throws {
         #expect(ProviderCatalog.inferredProvider(for: "EXPO_PUBLIC_REVENUECAT_GOOGLE_API_KEY") == "RevenueCat")
         #expect(ProviderCatalog.inferredProvider(for: "GOOGLE_ADS_DEVELOPER_TOKEN") == "Google Ads")
+        #expect(ProviderCatalog.inferredProvider(for: "GEMINI_API_KEY") == "Gemini")
+        #expect(ProviderCatalog.inferredProvider(for: "GOOGLE_GEMINI_API_KEY") == "Gemini")
         #expect(ProviderCatalog.inferredProvider(for: "APPLE_IAP_PRIVATE_KEY") == "App Store Connect")
         #expect(ProviderCatalog.inferredProvider(for: "API_KEY") == "Other")
         #expect(ProviderCatalog.inferredProvider(for: "TOKEN_ENCRYPTION_KEY") == "Other")

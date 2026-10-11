@@ -15,5 +15,5 @@ class ExportTests(unittest.TestCase):
    self.assertFalse((tree/'.git').exists());self.assertFalse((tree/'artifacts').exists())
    providers={x['provider'] for x in json.loads((tree/'Resources/ProviderLogos/manifest.json').read_text())}
    self.assertNotIn('Postmark',providers);self.assertNotIn('Amplitude',providers)
-   self.assertTrue(report['scan_passed']);self.assertEqual(len(providers),55)
+   self.assertTrue(report['scan_passed']);self.assertEqual(len(providers),56)
 if __name__=='__main__':unittest.main()
