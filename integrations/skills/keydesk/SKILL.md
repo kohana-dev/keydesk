@@ -1,6 +1,6 @@
 ---
 name: keydesk
-description: Store newly created or received API keys and development secrets in the local Keydesk vault, and run tools with existing keys without printing their values. Use when configuring API credentials, receiving provider tokens, migrating an env file, or launching a command that needs a secret.
+description: Store newly created or received API keys and development secrets in the local Keydesk vault, and run tools with existing keys without printing their values. Use when configuring API credentials, receiving provider tokens, storing private key files, migrating an env file, or launching a command that needs a secret.
 ---
 
 Use Keydesk on this Mac to keep credentials out of chat, source code, command arguments and logs. The signed CLI is `~/.local/bin/keydesk`; if it cannot connect, launch `~/Applications/Keydesk.app`.
@@ -42,3 +42,18 @@ The user unlocks the vault and approves the first run. An exact development invo
 Do not print, encode, inspect process environments, expose or send keys just to check they exist. Verify tool success or a boolean presence check. Output masking covers exact raw values, not arbitrary transformations; approved tools can read and transmit the injected secret. `--keep-running` retains a process and its already-injected secrets after vault lock; use it only when that persistent development behavior is intended.
 
 Keydesk MCP is metadata-only. It can list authorized variable/provider names, not secret values or provider API responses. Use `keydesk run` for actual work.
+
+## Store and use an original secret file
+
+For an existing .p8, .pem, service-account JSON, .p12 or .jks file, pass its path to the CLI; do not read, cat, parse or base64 its contents into model/tool output:
+
+```sh
+~/.local/bin/keydesk store-file --project my-app --env dev --name GOOGLE_APPLICATION_CREDENTIALS --from-file /absolute/path/service-account.json
+~/.local/bin/keydesk run --project my-app --env dev --files GOOGLE_APPLICATION_CREDENTIALS -- /absolute/path/to/development-tool
+```
+
+`--files` accepts comma-separated variable names and can be combined with `--only` for string keys. Each selected variable contains a temporary **file path**, not the file contents. Configure the target tool to read that path using its documented file option or environment variable. Only explicit file selections are delivered. Files are limited to 1 MiB each; directories and symbolic links are rejected. Empty files and arbitrary binary bytes are supported. Original filename and bytes, including trailing newlines, are preserved. Preserve the source file unless the user authorized its removal.
+
+The locked `queued` workflow and user approval rules above apply to files too. The temporary directory is mode 700 and files mode 600; normal exit, cancellation and vault lock remove them. With intentionally selected `--keep-running`, files remain until that command ends. A crashed app may leave temporary files until its next launch; deletion does not guarantee physical erasure from SSDs. Same-user malware and an approved tool can read, copy or transmit the files. Exact whole-file output masking is not a sandbox and does not mask transformed or partial contents. Do not inspect or print the temporary file to verify success; verify the target tool's result.
+
+File-bearing vaults use format 2 and require Keydesk 0.6.0 or later. Older apps reject them; never downgrade a file-bearing vault.

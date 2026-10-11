@@ -3,11 +3,15 @@ import Darwin
 import KeydeskCore
 
 enum CommandRunner {
-    static func start(_ request: CLIRequest, secrets: [String: String], channel: CLIChannel, approvedExecutable: ExecutableIdentity? = nil, completion: @escaping @Sendable () -> Void) throws -> RunningCommand {
+    static func start(_ request: CLIRequest, secrets: [String: String], channel: CLIChannel, approvedExecutable: ExecutableIdentity? = nil, files: [String: SecretFile] = [:], completion: @escaping @Sendable () -> Void) throws -> RunningCommand {
         let process = Process()
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         let selected = try request.selectedSecrets(from: secrets)
+        let selectedFiles = try request.selectedFiles(from: files)
+        let temporary = selectedFiles.isEmpty ? nil : try TemporarySecretFiles(files: selectedFiles)
+        let sensitiveBytes = selected.values.map { Data($0.utf8) } + selectedFiles.values.map(\.data)
         var injected = selected
+        injected.merge(temporary?.paths ?? [:]) { _, value in value }
         if let stdinKey = request.stdinKey { injected.removeValue(forKey: stdinKey) }
         var environment = ["PATH": ExecutableIdentity.searchPath, "HOME": home, "USER": NSUserName(), "LOGNAME": NSUserName(), "LANG": "en_US.UTF-8", "TERM": "dumb", "TMPDIR": NSTemporaryDirectory()]
         environment.merge(injected) { _, value in value }
@@ -19,7 +23,7 @@ enum CommandRunner {
         let executable = identity.path
         if request.interactive == true {
             guard request.stdinKey == nil else { throw VaultError.invalidData }
-            return try PTYRunner.start(executable: executable, arguments: Array(request.command.dropFirst()), environment: environment, directory: request.directory, keepRunning: request.keepRunning == true, secrets: Array(selected.values), channel: channel, completion: completion)
+            return try PTYRunner.start(executable: executable, arguments: Array(request.command.dropFirst()), environment: environment, directory: request.directory, keepRunning: request.keepRunning == true, secrets: sensitiveBytes, channel: channel, cleanup: { temporary?.cleanup() }, completion: completion)
         }
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = Array(request.command.dropFirst())
@@ -28,7 +32,7 @@ enum CommandRunner {
         let stdout = Pipe(), stderr = Pipe(), stdin = Pipe()
         process.standardOutput = stdout; process.standardError = stderr; process.standardInput = stdin
         try process.run()
-        let running = RunningCommand(process: process, keepRunning: request.keepRunning == true)
+        let running = RunningCommand(process: process, keepRunning: request.keepRunning == true, cleanup: { temporary?.cleanup() })
         channel.send(CLIEvent(kind: "started"))
         if let variable = request.stdinKey {
             guard let value = selected[variable] else { process.terminate(); throw VaultError.invalidData }
@@ -42,7 +46,7 @@ enum CommandRunner {
             group.enter()
             DispatchQueue.global().async {
                 defer { group.leave() }
-                var redactor = StreamingRedactor(secrets: Array(selected.values))
+                var redactor = StreamingRedactor(bytes: sensitiveBytes)
                 while true {
                     var buffer = [UInt8](repeating: 0, count: 4096)
                     let count = Darwin.read(pipe.fileHandleForReading.fileDescriptor, &buffer, buffer.count)
@@ -72,8 +76,7 @@ enum CommandRunner {
             } catch {}
         }
         DispatchQueue.global().async {
-            process.waitUntilExit(); group.wait()
-            running.didFinish()
+            process.waitUntilExit(); running.didFinish(); group.wait()
             channel.send(CLIEvent(kind: "exit", exitCode: process.terminationStatus))
             channel.finish(); completion()
         }

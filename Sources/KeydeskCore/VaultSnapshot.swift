@@ -26,7 +26,10 @@ public struct VaultSnapshot: Codable, Sendable {
         var seen = Set<String>()
         for credential in credentials {
             guard !credential.name.isEmpty, !credential.versions.isEmpty,
-                  credential.versions.allSatisfy({ $0.value.utf8.count <= 65_536 && !$0.value.contains("\0") }),
+                  credential.versions.allSatisfy({ version in
+                      if let file = version.file { return version.value.isEmpty && (try? file.validated()) != nil }
+                      return version.value.utf8.count <= 65_536 && !version.value.contains("\0")
+                  }),
                   credential.versions.contains(where: { $0.id == credential.currentVersionID }),
                   Set(credential.versions.map(\.id)).count == credential.versions.count else { throw VaultError.invalidData }
         }
@@ -51,10 +54,23 @@ public struct VaultSnapshot: Codable, Sendable {
         guard projects.contains(where: { $0.id == projectID }) else { throw VaultError.invalidData }
         var result = [String: String]()
         for binding in bindings where binding.projectID == projectID && binding.environment == environment {
+            if credentials.first(where: { $0.id == binding.credentialID })?.currentFile != nil { continue }
             guard !Self.blockedVariable(binding.variable),
                   let credential = credentials.first(where: { $0.id == binding.credentialID }),
                   let value = credential.currentValue, !value.contains("\0") else { throw VaultError.unsafeEnvironment }
             result[binding.variable] = value
+        }
+        return result
+    }
+
+    public func files(projectID: UUID, environment: EnvironmentName) throws -> [String: SecretFile] {
+        guard projects.contains(where: { $0.id == projectID }) else { throw VaultError.invalidData }
+        var result = [String: SecretFile]()
+        for binding in bindings where binding.projectID == projectID && binding.environment == environment {
+            if let file = credentials.first(where: { $0.id == binding.credentialID })?.currentFile {
+                guard !Self.blockedVariable(binding.variable) else { throw VaultError.unsafeEnvironment }
+                result[binding.variable] = try file.validated()
+            }
         }
         return result
     }

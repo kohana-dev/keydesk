@@ -6,6 +6,8 @@ struct CredentialSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     @State private var value = ""
+    @State private var fileMode = false
+    @State private var file: SecretFile?
     @State private var provider = "OpenAI"
     @State private var account = ""
     @State private var note = ""
@@ -29,7 +31,9 @@ struct CredentialSheet: View {
             } else {
                 TextField("키 이름", text: $name).textFieldStyle(.roundedBorder)
                 ProviderPicker(provider: $provider)
-                SecretInput(title: "키 값 · 공백도 그대로 보관", value: $value)
+                Toggle("파일 원본 보관", isOn: $fileMode)
+                if fileMode { SecretFileInput(file: $file) }
+                else { SecretInput(title: "키 값 · 공백도 그대로 보관", value: $value) }
                 TextField("발급 계정 (선택)", text: $account).textFieldStyle(.roundedBorder)
                 TextField("메모 (선택)", text: $note).textFieldStyle(.roundedBorder)
             }
@@ -40,12 +44,12 @@ struct CredentialSheet: View {
                 Button("저장") {
                     do {
                         let chosen = model.snapshot?.credentials.first { $0.id == existing }
-                        try model.addCredential(name: linking ? chosen?.name ?? "" : name, value: linking ? "" : value, provider: provider, account: account, note: note, variable: variable, existingID: linking ? existing : nil)
+                        try model.addCredential(name: linking ? chosen?.name ?? "" : name, value: linking ? "" : value, provider: provider, account: account, note: note, variable: variable, existingID: linking ? existing : nil, file: !linking && fileMode ? file : nil)
                         dismiss()
                     } catch { self.error = error.localizedDescription }
-                }.buttonStyle(.borderedProminent).disabled(linking ? existing == nil : name.isEmpty || value.isEmpty)
+                }.buttonStyle(.borderedProminent).disabled(linking ? existing == nil : name.isEmpty || (fileMode ? file == nil : value.isEmpty))
             }
         }.padding(28).frame(width: 520)
-        .onDisappear { value = "" }
+        .onDisappear { value = ""; file = nil }
     }
 }

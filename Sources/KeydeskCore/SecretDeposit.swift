@@ -7,8 +7,9 @@ public struct ServiceRequest: Codable, Sendable {
     public var environment: EnvironmentName?
     public var variable: String?
     public var value: String?
-    public init(kind: String, project: String? = nil, environment: EnvironmentName? = nil, variable: String? = nil, value: String? = nil) {
-        self.kind = kind; self.project = project; self.environment = environment; self.variable = variable; self.value = value
+    public var file: SecretFile?
+    public init(kind: String, project: String? = nil, environment: EnvironmentName? = nil, variable: String? = nil, value: String? = nil, file: SecretFile? = nil) {
+        self.kind = kind; self.project = project; self.environment = environment; self.variable = variable; self.value = value; self.file = file
     }
 }
 
@@ -18,12 +19,13 @@ public struct SecretDeposit: Codable, Sendable {
     public let environment: EnvironmentName
     public let variable: String
     public let value: String
-    public init(id: UUID = UUID(), project: String, environment: EnvironmentName, variable: String, value: String) throws {
-        guard !project.isEmpty, project.count <= 100, !project.contains("\0"), VaultSnapshot.validVariable(variable), !VaultSnapshot.blockedVariable(variable), !value.isEmpty, value.utf8.count <= 32768, !value.contains("\0") else { throw VaultError.invalidData }
-        self.id = id; self.project = project; self.environment = environment; self.variable = variable; self.value = value
+    public let file: SecretFile?
+    public init(id: UUID = UUID(), project: String, environment: EnvironmentName, variable: String, value: String = "", file: SecretFile? = nil) throws {
+        guard !project.isEmpty, project.count <= 100, !project.contains("\0"), VaultSnapshot.validVariable(variable), !VaultSnapshot.blockedVariable(variable), (file != nil ? value.isEmpty : !value.isEmpty), value.utf8.count <= 32768, !value.contains("\0") else { throw VaultError.invalidData }
+        self.id = id; self.project = project; self.environment = environment; self.variable = variable; self.value = value; self.file = try file?.validated()
     }
     public func validated() throws -> Self {
-        try Self(id: id, project: project, environment: environment, variable: variable, value: value)
+        try Self(id: id, project: project, environment: environment, variable: variable, value: value, file: file)
     }
     public func adding(to original: VaultSnapshot) throws -> VaultSnapshot {
         var next = original
@@ -35,7 +37,8 @@ public struct SecretDeposit: Codable, Sendable {
             throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "같은 변수 이름이 이미 있습니다. 기존 키를 자동으로 덮어쓰지 않습니다."])
         }
         if matches.isEmpty { next.projects.append(target) }
-        next.credentials.append(Credential(id: id, name: variable, value: value, provider: ProviderCatalog.inferredProvider(for: variable)))
+        if let file { next.credentials.append(Credential(id: id, name: variable, file: file, provider: ProviderCatalog.inferredProvider(for: variable))) }
+        else { next.credentials.append(Credential(id: id, name: variable, value: value, provider: ProviderCatalog.inferredProvider(for: variable))) }
         next.bindings.append(BindingRecord(projectID: target.id, environment: environment, variable: variable, credentialID: id))
         return try next.validated()
     }
@@ -57,11 +60,12 @@ public struct SealedDeposit: Codable, Sendable {
         let salt = SymmetricKey(size: .bits256).withUnsafeBytes { Data($0) }
         let shared = try ephemeral.sharedSecretFromKeyAgreement(with: recipient)
         let key = shared.hkdfDerivedSymmetricKey(using: SHA256.self, salt: salt, sharedInfo: context + publicKey + ephemeral.publicKey.rawRepresentation, outputByteCount: 32)
-        let encrypted = try AES.GCM.seal(JSONEncoder().encode(deposit), using: key, authenticating: context + publicKey)
-        return Self(version: 1, recipient: publicKey, ephemeral: ephemeral.publicKey.rawRepresentation, salt: salt, ciphertext: try encrypted.combined ?? { throw VaultError.invalidData }())
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.withoutEscapingSlashes]
+        let encrypted = try AES.GCM.seal(encoder.encode(deposit), using: key, authenticating: context + publicKey)
+        return Self(version: deposit.file == nil ? 1 : 2, recipient: publicKey, ephemeral: ephemeral.publicKey.rawRepresentation, salt: salt, ciphertext: try encrypted.combined ?? { throw VaultError.invalidData }())
     }
     public func open(privateKey: Data) throws -> SecretDeposit {
-        guard version == 1, salt.count == 32, ciphertext.count <= 100000 else { throw VaultError.invalidData }
+        guard [1, 2].contains(version), salt.count == 32, ciphertext.count <= 1_500_000 else { throw VaultError.invalidData }
         let recipientKey = try P256.KeyAgreement.PrivateKey(rawRepresentation: privateKey)
         guard recipientKey.publicKey.rawRepresentation == recipient else { throw VaultError.accessDenied }
         let shared = try recipientKey.sharedSecretFromKeyAgreement(with: P256.KeyAgreement.PublicKey(rawRepresentation: ephemeral))

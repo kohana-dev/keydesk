@@ -32,3 +32,9 @@ There is no guaranteed response SLA.
   does not revoke it at its provider. Full memory erasure is not guaranteed.
 - A signing identity change can make old Keychain items inaccessible. Verify a
   recovery plan before switching to a fork or separately signed build.
+
+## Secret files (0.6.0+)
+
+File names and original binary bytes are inside the authenticated encrypted snapshot and encrypted locked deposits. File-bearing snapshots use format 2; old readers fail closed. Restore supports both formats. Original source files are not removed. Limits: 1 MiB per file, 16 MiB serialized snapshot, 16 explicitly selected files per run.
+
+Approved tools receive private temporary file paths (directories 700, files 600). Exit, cancellation and lock remove those files, except explicitly approved keep-running commands retain them until exit. Crash leftovers are removed on the next app launch when the owner PID no longer exists. Cleanup is best effort, and does not guarantee secure erasure on SSDs. Same-user processes are outside the isolation boundary; an approved child can read, copy or transmit secrets. Output redaction covers exact whole-file byte sequences only, not fragments or transformations. Do not use it as a data-loss prevention boundary.

@@ -23,6 +23,7 @@ struct CLIApprovalView: View {
                 }.foregroundStyle(.orange).padding(12).frame(maxWidth: .infinity, alignment: .leading).background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 10))
             }
             if let key = approval.request.stdinKey { Text("표준입력에만 전달: \(key)").font(.caption) }
+            if let files = approval.request.fileVariables { Text("임시 파일 경로로 전달: \(files.joined(separator: ", "))").font(.caption) }
             if let variables = approval.request.variables { Text("선택 변수: \(variables.joined(separator: ", "))").font(.caption) }
             Text("명시한 키만 전달합니다. 실행 코드는 키를 읽거나 외부로 전송할 수 있습니다. 요청의 프로젝트·경로·명령은 호출자가 제공한 정보입니다. 승인 후 실행 파일이 바뀌면 거부합니다. 스크립트와 하위 프로그램까지 검증하지는 않습니다.").font(.callout).foregroundStyle(.secondary)
             Text(approval.request.interactive == true ? "대화형 터미널 · TTY 사용" : "표준입력과 출력 전달").font(.caption)

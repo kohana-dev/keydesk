@@ -3,7 +3,7 @@ import Darwin
 import KeydeskCore
 
 enum PTYRunner {
-    static func start(executable: String, arguments: [String], environment: [String: String], directory: String, keepRunning: Bool, secrets: [String], channel: CLIChannel, completion: @escaping @Sendable () -> Void) throws -> RunningCommand {
+    static func start(executable: String, arguments: [String], environment: [String: String], directory: String, keepRunning: Bool, secrets: [Data], channel: CLIChannel, cleanup: @escaping @Sendable () -> Void = {}, completion: @escaping @Sendable () -> Void) throws -> RunningCommand {
         var master: Int32 = -1, slave: Int32 = -1
         var name = [CChar](repeating: 0, count: 128)
         guard openpty(&master, &slave, &name, nil, nil) == 0 else { throw POSIXError(.EIO) }
@@ -25,13 +25,13 @@ enum PTYRunner {
         } }
         guard result == 0 else { close(master); throw POSIXError(POSIXErrorCode(rawValue: result) ?? .EIO) }
         let childPID = pid
-        let running = RunningCommand(pid: childPID, keepRunning: keepRunning)
+        let running = RunningCommand(pid: childPID, keepRunning: keepRunning, cleanup: cleanup)
         let terminal = master
         let inputFinished = DispatchGroup(); inputFinished.enter()
         channel.send(CLIEvent(kind: "started"))
         DispatchQueue.global().async {
             defer { close(terminal) }
-            var redactor = StreamingRedactor(secrets: secrets)
+            var redactor = StreamingRedactor(bytes: secrets)
             var buffer = [UInt8](repeating: 0, count: 4096)
             while true {
                 let count = Darwin.read(terminal, &buffer, buffer.count)

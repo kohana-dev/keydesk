@@ -7,6 +7,8 @@ struct DepositView: View {
     @State private var project = ""
     @State private var variable = ""
     @State private var value = ""
+    @State private var fileMode = false
+    @State private var file: SecretFile?
     @State private var environment = EnvironmentName.development
     @State private var result: String?
     var body: some View {
@@ -16,17 +18,19 @@ struct DepositView: View {
             TextField("프로젝트 이름", text: $project)
             Picker("환경", selection: $environment) { ForEach(EnvironmentName.allCases, id: \.self) { Text($0.title).tag($0) } }
             TextField("환경변수 이름 (예: API_KEY)", text: $variable)
-            SecretInput(title: "새 키 값", value: $value)
+            Toggle("파일 원본 보관", isOn: $fileMode)
+            if fileMode { SecretFileInput(file: $file) }
+            else { SecretInput(title: "새 키 값", value: $value) }
             if let result { Text(result).font(.callout) }
             HStack {
                 Button("닫기") { dismiss() }
                 Spacer()
                 Button("암호화 접수") {
-                    do { result = try model.deposit(SecretDeposit(project: project, environment: environment, variable: variable, value: value)); value = "" }
+                    do { result = try model.deposit(SecretDeposit(project: project, environment: environment, variable: variable, value: fileMode ? "" : value, file: fileMode ? file : nil)); value = ""; file = nil }
                     catch { result = "접수하지 못했습니다. 금고를 한 번 열어 접수 키를 준비하거나 입력을 확인하세요." }
-                }.buttonStyle(.borderedProminent).disabled(project.isEmpty || variable.isEmpty || value.isEmpty)
+                }.buttonStyle(.borderedProminent).disabled(project.isEmpty || variable.isEmpty || (fileMode ? file == nil : value.isEmpty))
             }
         }.padding(28).frame(width: 560).textFieldStyle(.roundedBorder)
-        .onDisappear { value = "" }
+        .onDisappear { value = ""; file = nil }
     }
 }

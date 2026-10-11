@@ -49,7 +49,7 @@ final class CLIServer: @unchecked Sendable {
                 // Bounded serial request decoding: no unbounded background threads before approval.
                 let channel = CLIChannel(fd: client)
                 do {
-                    guard let data = try SocketTransport.readLine(from: client, maximum: 64 * 1024, deadlineSeconds: 10) else { channel.finish(); continue }
+                    guard let data = try SocketTransport.readLine(from: client, maximum: 2 * 1024 * 1024, deadlineSeconds: 10) else { channel.finish(); continue }
                     timeout = timeval(tv_sec: 0, tv_usec: 0)
                     setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout<timeval>.size))
                     let json = try JSONDecoder().decode(JSONValue.self, from: data)
@@ -58,7 +58,7 @@ final class CLIServer: @unchecked Sendable {
                         guard request.session.count <= 128, request.project.count <= 128, request.tool.count <= 64 else { throw VaultError.invalidData }
                         let bound = BrokerRequest(session: "pid:\(peerPID):\(request.session)", project: request.project, environment: request.environment, tool: request.tool, arguments: request.arguments)
                         broker(bound, channel)
-                    } else if ["store", "verify-recovery", "lock", "delete-project"].contains(json["kind"]?.string ?? "") {
+                    } else if ["store", "store-file", "verify-recovery", "lock", "delete-project"].contains(json["kind"]?.string ?? "") {
                         service(try JSONDecoder().decode(ServiceRequest.self, from: data), channel)
                     } else {
                         let request = try JSONDecoder().decode(CLIRequest.self, from: data)

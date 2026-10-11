@@ -7,6 +7,8 @@ enum KeydeskCommand {
     static let help = """
     keydesk run --project <이름|UUID> --env <dev|staging|prod> [--only <VAR,VAR>] [--stdin-key <VAR>] [--interactive] [--keep-running] -- <명령> [인자...]
     keydesk mcp --project <UUID> --env <dev|staging|prod>
+    keydesk store-file --project <이름> --env <dev|staging|prod> --name <PATH_VAR> --from-file <경로>
+    keydesk run --project <이름|UUID> --env dev --files <PATH_VAR,...> -- <명령> [인자...]
     keydesk store --project <이름> --env <dev|staging|prod> --name <VAR> --stdin
     keydesk store --project <이름> --env <dev|staging|prod> --name <VAR> --from-env-file <경로>
     keydesk lock
@@ -28,7 +30,7 @@ enum KeydeskCommand {
             let args = Array(CommandLine.arguments.dropFirst())
             let result: Int32
             if args.first == "mcp" { result = try MCPServer.run(Array(args.dropFirst())) }
-            else if args.first == "store" || args.first == "delete-project" || args == ["verify-recovery"] || args == ["lock"] { result = try service(args) }
+            else if args.first == "store" || args.first == "store-file" || args.first == "delete-project" || args == ["verify-recovery"] || args == ["lock"] { result = try service(args) }
             else if args == ["install"] { try install(); result = 0 }
             else { result = try run(args, terminal: terminal) }
             terminal.restore(); exit(terminal.terminationExitCode ?? result)
@@ -42,6 +44,25 @@ enum KeydeskCommand {
         if args.first == "delete-project" {
             guard args.count == 4, args[1] == "--project", !args[2].isEmpty, args[3] == "--delete-exclusive-keys" else { throw VaultError.invalidData }
             request.project = args[2]
+        }
+        if args.first == "store-file" {
+            var source: String?, index = 1
+            while index < args.count {
+                guard index + 1 < args.count else { throw VaultError.invalidData }
+                switch args[index] {
+                case "--project": request.project = args[index+1]
+                case "--env": request.environment = EnvironmentName(rawValue: args[index+1])
+                case "--name": request.variable = args[index+1]
+                case "--from-file": source = args[index+1]
+                default: throw VaultError.invalidData
+                }
+                index += 2
+            }
+            guard let source, let project = request.project, let variable = request.variable,
+                  let environment = request.environment else { throw VaultError.invalidData }
+            let file = try SecretFile.read(at: URL(fileURLWithPath: source))
+            _ = try SecretDeposit(project: project, environment: environment, variable: variable, file: file)
+            request.file = file
         }
         if args.first == "store" {
             var index = 1, fromStdin = false, sourceFile: String?
@@ -94,6 +115,7 @@ enum KeydeskCommand {
         if args.isEmpty || args == ["--help"] || args == ["help"] { print(help); return 0 }
         guard args.first == "run", let separator = args.firstIndex(of: "--"), separator + 1 < args.count else { throw VaultError.invalidData }
         var project: String?, environment = EnvironmentName.development, stdinKey: String?, variables: [String]?
+        var fileVariables: [String]?
         var interactive = false, keepRunning = false, index = 1
         while index < separator {
             if args[index] == "--interactive" { interactive = true; index += 1; continue }
@@ -103,18 +125,19 @@ enum KeydeskCommand {
             case "--project": project = args[index + 1]
             case "--env": guard let value = EnvironmentName(rawValue: args[index + 1]) else { throw VaultError.invalidData }; environment = value
             case "--stdin-key": stdinKey = args[index + 1]
+            case "--files": fileVariables = args[index + 1].split(separator: ",").map(String.init)
             case "--only": variables = args[index + 1].split(separator: ",").map(String.init)
             default: throw VaultError.invalidData
             }
             index += 2
         }
         guard let project, !project.isEmpty, !(interactive && stdinKey != nil), !interactive || isatty(STDIN_FILENO) == 1 else { throw VaultError.invalidData }
-        guard variables?.isEmpty == false || stdinKey != nil else {
+        guard variables?.isEmpty == false || stdinKey != nil || fileVariables?.isEmpty == false else {
             throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "--only로 전달할 변수를 지정하거나 --stdin-key를 사용하세요. 전체 키를 자동으로 전달하지 않습니다."])
         }
         let connection = try ClientConnection(path: ProcessInfo.processInfo.environment["KEYDESK_SOCKET_PATH"] ?? SocketTransport.socketPath)
         defer { connection.closeConnection() }
-        try connection.send(CLIRequest(project: project, environment: environment, command: Array(args[(separator + 1)...]), directory: FileManager.default.currentDirectoryPath, stdinKey: stdinKey, variables: variables, interactive: interactive, keepRunning: keepRunning))
+        try connection.send(CLIRequest(project: project, environment: environment, command: Array(args[(separator + 1)...]), directory: FileManager.default.currentDirectoryPath, stdinKey: stdinKey, variables: variables, interactive: interactive, keepRunning: keepRunning, fileVariables: fileVariables))
         var resizing: DispatchSourceSignal?
         var terminationSources: [DispatchSourceSignal] = []
         defer { resizing?.cancel(); terminationSources.forEach { $0.cancel() } }

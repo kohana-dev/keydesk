@@ -99,6 +99,7 @@ final class VaultModel {
                     Task { @MainActor in await self?.receiveService(request, channel: channel) }
                 })
                 cliAvailable = true
+                if !demo { TemporarySecretFiles.cleanupOrphans() }
             } catch { self.error = error.localizedDescription }
         }
         if serve {
@@ -254,9 +255,9 @@ final class VaultModel {
         try mutate { $0.projects.append(project); $0.record("프로젝트 추가") }
         selectedProject = project.id; selectedCredential = nil
     }
-    func addCredential(name: String, value: String, provider: String, account: String, note: String, variable: String, existingID: UUID? = nil) throws {
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty, !value.isEmpty || existingID != nil, value.utf8.count <= 65_536, !value.contains("\0") else { throw VaultError.invalidData }
-        let credential = Credential(name: name, value: value, provider: provider, account: account, note: note)
+    func addCredential(name: String, value: String, provider: String, account: String, note: String, variable: String, existingID: UUID? = nil, file: SecretFile? = nil) throws {
+        guard !name.trimmingCharacters(in: .whitespaces).isEmpty, !value.isEmpty || existingID != nil || file != nil, value.utf8.count <= 65_536, !value.contains("\0") else { throw VaultError.invalidData }
+        let credential = try file.map { Credential(name: name, file: try $0.validated(), provider: provider, account: account, note: note) } ?? Credential(name: name, value: value, provider: provider, account: account, note: note)
         let id = existingID ?? credential.id
         try mutate { next in
             if existingID == nil { next.credentials.append(credential) }
@@ -432,10 +433,11 @@ final class VaultModel {
             guard approval.channel.isConnected, token == generation, let snapshot, self.approval?.id == approval.id else { throw VaultError.locked }
             let matches = snapshot.projects.filter { $0.name == approval.request.project || $0.id.uuidString.lowercased() == approval.request.project.lowercased() }
             guard matches.count == 1 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "프로젝트가 없거나 이름이 중복됩니다. 프로젝트 UUID를 사용하세요."]) }
+            let files = try approval.request.selectedFiles(from: snapshot.files(projectID: matches[0].id, environment: approval.request.environment))
             let secrets = try approval.request.selectedSecrets(from: snapshot.environment(projectID: matches[0].id, environment: approval.request.environment))
             try mutate(invalidateGrants: false) { $0.record("CLI 실행 승인 · \(approval.request.environment.title)") }
             let id = approval.id
-            let process = try CommandRunner.start(approval.request, secrets: secrets, channel: approval.channel, approvedExecutable: approval.executable) { [weak self] in
+            let process = try CommandRunner.start(approval.request, secrets: secrets, channel: approval.channel, approvedExecutable: approval.executable, files: files) { [weak self] in
                 Task { @MainActor in self?.runningProcesses.removeValue(forKey: id) }
             }
             runningProcesses[id] = process

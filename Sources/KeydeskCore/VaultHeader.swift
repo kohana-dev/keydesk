@@ -1,7 +1,7 @@
 import Foundation
 
 public struct VaultHeader: Codable, Equatable, Sendable {
-    public let format: Int
+    public var format: Int
     public let vaultID: UUID
     public var revision: UInt64
     public let keyEpoch: UUID

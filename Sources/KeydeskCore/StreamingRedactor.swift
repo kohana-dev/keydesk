@@ -6,8 +6,11 @@ public struct StreamingRedactor: Sendable {
     private let secrets: [Data]
     private let tailSize: Int
     public init(secrets: [String]) {
-        self.secrets = Array(Set(secrets.filter { !$0.isEmpty })).sorted { $0.utf8.count > $1.utf8.count }.map { Data($0.utf8) }
-        tailSize = self.secrets.map(\.count).max() ?? 0
+        self.init(bytes: secrets.map { Data($0.utf8) })
+    }
+    public init(bytes: [Data]) {
+        secrets = Array(Set(bytes.filter { !$0.isEmpty })).sorted { $0.count > $1.count }
+        tailSize = secrets.map(\.count).max() ?? 0
     }
     public mutating func push(_ chunk: Data, final: Bool = false) -> Data {
         pending.append(chunk)

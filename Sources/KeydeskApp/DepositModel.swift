@@ -23,7 +23,7 @@ extension VaultModel {
         for url in urls {
             do {
                 let bytes = try Data(contentsOf: url)
-                guard bytes.count <= 140000 else { throw VaultError.invalidData }
+                guard bytes.count <= 2_100_000 else { throw VaultError.invalidData }
                 let deposit = try JSONDecoder().decode(SealedDeposit.self, from: bytes).open(privateKey: raw)
                 try mutate { $0 = try deposit.adding(to: $0); $0.record("맡긴 키 금고 편입") }
                 try FileManager.default.removeItem(at: url)
@@ -65,9 +65,9 @@ extension VaultModel {
                 flushBackup()
                 channel.send(CLIEvent(kind: "stdout", data: try JSONEncoder().encode(result.report) + Data([10])))
                 channel.send(CLIEvent(kind: "exit", exitCode: 0))
-            case "store":
-                guard let project = request.project, let environment = request.environment, let variable = request.variable, let value = request.value else { throw VaultError.invalidData }
-                let message = try deposit(SecretDeposit(project: project, environment: environment, variable: variable, value: value))
+            case "store", "store-file":
+                guard (request.kind == "store-file") == (request.file != nil), let project = request.project, let environment = request.environment, let variable = request.variable else { throw VaultError.invalidData }
+                let message = try deposit(SecretDeposit(project: project, environment: environment, variable: variable, value: request.value ?? "", file: request.file))
                 channel.send(CLIEvent(kind: "status", text: message)); channel.send(CLIEvent(kind: "exit", exitCode: 0))
             case "lock":
                 lock()

@@ -10,7 +10,10 @@ public enum VaultCrypto {
         guard key.bitCount == 256 else { throw VaultError.invalidData }
         let checked = try snapshot.validated()
         guard checked.revision == header.revision else { throw VaultError.invalidData }
-        let bytes = try JSONEncoder().encode(checked)
+        var header = header
+        if checked.credentials.contains(where: { $0.versions.contains(where: { $0.file != nil }) }) { header.format = 2 }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.withoutEscapingSlashes]
+        let bytes = try encoder.encode(checked)
         guard bytes.count <= 16 * 1024 * 1024 else { throw VaultError.invalidData }
         let box = try AES.GCM.seal(bytes, using: key, authenticating: headerData(header) + wrappedKey)
         guard let ciphertext = box.combined else { throw VaultError.invalidData }
@@ -18,7 +21,7 @@ public enum VaultCrypto {
     }
     public static func open(_ envelope: VaultEnvelope, key: SymmetricKey) throws -> VaultSnapshot {
         guard key.bitCount == 256 else { throw VaultError.invalidData }
-        guard envelope.header.format == 1, envelope.header.algorithm == "AES-256-GCM" else { throw VaultError.unsupportedFormat }
+        guard [1, 2].contains(envelope.header.format), envelope.header.algorithm == "AES-256-GCM" else { throw VaultError.unsupportedFormat }
         let bytes = try AES.GCM.open(AES.GCM.SealedBox(combined: envelope.ciphertext), using: key, authenticating: headerData(envelope.header) + envelope.recoveryWrappedKey)
         let snapshot = try JSONDecoder().decode(VaultSnapshot.self, from: bytes).validated()
         guard snapshot.revision == envelope.header.revision else { throw VaultError.invalidData }

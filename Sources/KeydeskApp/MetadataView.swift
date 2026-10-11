@@ -24,7 +24,7 @@ struct MetadataView: View {
             Text("키 정보 편집").font(.title2.bold())
             TextField("이름", text: $name).textFieldStyle(.roundedBorder).focused($nameFocused)
             ProviderPicker(provider: $provider)
-            SecretInput(title: "새 키 값 (선택)", value: $value)
+            if credential.currentFile == nil { SecretInput(title: "새 키 값 (선택)", value: $value) }
             Text("비워두면 기존 키 값을 유지합니다. 입력하면 새 버전으로 저장합니다.").font(.caption).foregroundStyle(.secondary)
             TextField("계정", text: $account).textFieldStyle(.roundedBorder)
             TextField("메모", text: $note).textFieldStyle(.roundedBorder)
