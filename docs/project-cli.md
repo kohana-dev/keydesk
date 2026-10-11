@@ -11,6 +11,7 @@ Create `keydesk.project.json` in the repository root. It contains names and type
 From the root or a child directory:
 
 ```sh
+~/.local/bin/keydesk-project imports
 ~/.local/bin/keydesk-project describe
 ~/.local/bin/keydesk-project status
 ~/.local/bin/keydesk-project store-file --env prod --name GOOGLE_APPLICATION_CREDENTIALS --from-file /absolute/service-account.json
@@ -25,3 +26,5 @@ The descriptor records the intended bindings, not proof they currently exist in 
 The existing MCP endpoint remains metadata-only and requires its scoped metadata grant. A public HTTP service or get-secret MCP endpoint is unnecessary for local development. Use these CLI commands for storage and process execution, and reserve UI interaction for user authentication/approval and UI-specific operations.
 
 Migration keeps originals until byte integrity and backup are verified. Do not change Google service-account permissions, Apple key IDs, server secrets or provider credentials as part of a local migration. If a consumer still hardcodes a source path, add support for the injected path before removing that source.
+
+`keydesk-project imports` filters local `.config/keydesk/imported-files.json` receipts to project, environment, variable, kind and state only. This optional migration inventory is not a live vault listing. Do not record secret values in it; a deleted or renamed binding can leave a stale receipt.

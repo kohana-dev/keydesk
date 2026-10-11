@@ -33,6 +33,7 @@ def load_config(start):
                 for name, kind in items.items():
                     if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]{0,127}', name) or kind not in {'file', 'value'}:
                         raise ValueError('Invalid binding')
+            config['bindings'] = bindings
             return root, config
     raise ValueError('No keydesk.project.json found in this directory or its parents')
 
@@ -63,6 +64,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='action', required=True)
     sub.add_parser('describe', help='Print configured project and variable names, never values')
+    sub.add_parser('imports', help='List locally recorded file migration receipts, not vault contents')
     sub.add_parser('status', help='Query vault lock, deposit and backup status')
     run = sub.add_parser('run', help='Use the signed CLI; native approval still applies')
     run.add_argument('--env', required=True, choices=sorted(ENVIRONMENTS))
@@ -76,6 +78,16 @@ def main():
     args = parser.parse_args()
     cli = Path.home() / '.local/bin/keydesk'
     try:
+        if args.action == 'imports':
+            registry = Path.home() / '.config/keydesk/imported-files.json'
+            if registry.is_symlink() or (registry.exists() and registry.stat().st_size > 65536):
+                raise ValueError('Invalid receipt registry')
+            rows = json.loads(registry.read_text()) if registry.exists() else []
+            if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                raise ValueError('Invalid receipt registry')
+            allowed = {'project', 'environment', 'variable', 'kind', 'state'}
+            print(json.dumps([{k: v for k, v in row.items() if k in allowed and isinstance(v, str)} for row in rows], ensure_ascii=False, indent=2))
+            return 0
         if args.action == 'status':
             invocation = ['status']
         else:
