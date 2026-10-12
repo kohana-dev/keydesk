@@ -20,7 +20,7 @@ def apple_system_links(output):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--app', type=pathlib.Path, default=ROOT / 'dist/Keydesk.app')
+    parser.add_argument('--app', type=pathlib.Path, default=ROOT / 'dist/Cellar.app')
     parser.add_argument('--require-notarized', action='store_true')
     parser.add_argument('--report', type=pathlib.Path, default=ROOT / 'artifacts/release-preflight.json')
     options = parser.parse_args()
@@ -36,6 +36,7 @@ def main():
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
         bundle_id = __import__('os').environ.get('KEYDESK_BUNDLE_ID', 'com.keydesk.local')
         check('bundle_id', info.get('CFBundleIdentifier') == bundle_id)
+        check('cellar_app_names', app.name == 'Cellar.app' and info.get('CFBundleName') == 'Cellar' and info.get('CFBundleDisplayName') == 'Cellar' and info.get('CFBundleExecutable') == 'Cellar')
         icon = app / 'Contents/Resources/Cellar.icns'
         check('cellar_icon_present', info.get('CFBundleIconFile') == 'Cellar.icns' and icon.is_file() and icon.read_bytes()[:4] == b'icns')
         executable = app / 'Contents/MacOS' / info['CFBundleExecutable']

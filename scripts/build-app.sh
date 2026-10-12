@@ -14,13 +14,13 @@ build_dir=$(swift build -c release --show-bin-path)
 mkdir -p "$PWD/dist/bin"
 stage_root=$(mktemp -d "$PWD/dist/.keydesk-stage.XXXXXX")
 trap 'rm -rf "$stage_root"' EXIT
-app_dir="$stage_root/Keydesk.app"
-final_app="$PWD/dist/Keydesk.app"
+app_dir="$stage_root/Cellar.app"
+final_app="$PWD/dist/Cellar.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Helpers" "$app_dir/Contents/Resources"
 cp -R Resources/ProviderLogos "$app_dir/Contents/Resources/ProviderLogos"
 cp Resources/AppIcon/Cellar.icns "$app_dir/Contents/Resources/Cellar.icns"
 cp LICENSE THIRD_PARTY_NOTICES.md "$app_dir/Contents/Resources/"
-cp "$build_dir/KeydeskDesktop" "$app_dir/Contents/MacOS/Keydesk"
+cp "$build_dir/KeydeskDesktop" "$app_dir/Contents/MacOS/Cellar"
 cp "$build_dir/keydesk" "$app_dir/Contents/Helpers/keydesk"
 cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
@@ -30,10 +30,10 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <key>CFBundleName</key><string>Cellar</string>
 <key>CFBundleDisplayName</key><string>Cellar</string>
 <key>CFBundleIconFile</key><string>Cellar.icns</string>
-<key>CFBundleExecutable</key><string>Keydesk</string>
+<key>CFBundleExecutable</key><string>Cellar</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.7.4</string>
-<key>CFBundleVersion</key><string>25</string>
+<key>CFBundleShortVersionString</key><string>0.7.5</string>
+<key>CFBundleVersion</key><string>26</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSFaceIDUsageDescription</key><string>Cellar 금고를 열기 위해 인증합니다.</string>

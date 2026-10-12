@@ -8,7 +8,7 @@ Accept any Apple toolchain license yourself. No external Swift packages.
 ```sh
 swift test
 KEYDESK_SIGNING_MODE=adhoc ./scripts/build-app.sh
-open dist/Keydesk.app --args --demo
+open dist/Cellar.app --args --demo
 ```
 
 Ad-hoc/demo builds cannot create a real protected vault. This is intentional.

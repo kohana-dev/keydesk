@@ -28,3 +28,7 @@ Storage and original files continue through `keydesk store`, `store-file` and `r
 The previous `install-mcp.py` and `keydesk-connect` remain available for explicitly project-pinned native MCP setups. Prefer the single router for normal multi-project development.
 
 References: [Codex MCP configuration](https://developers.openai.com/codex/mcp), [Claude MCP user scope](https://code.claude.com/docs/en/mcp#user-scope).
+
+## Upgrade from Keydesk.app to Cellar.app
+
+Version 0.7.5 names the app bundle `Cellar.app` and its executable `Cellar`. The `keydesk` helper, MCP server names, vault data and Keychain identity stay unchanged. Quit the old app, install Cellar.app in `~/Applications`, then run `python3 scripts/migrate-cellar-paths.py` and `python3 scripts/install-ai-skills.py --update`. The migration backs up user client settings and only replaces exact legacy helper paths; global repository-aware MCP settings remain intact. For a project-local MCP config, add `--config /path/to/.mcp.json`. Reload existing AI sessions if they cached a directly pinned legacy app path.

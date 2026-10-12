@@ -3,7 +3,7 @@ name: keydesk
 description: Use stored API keys through Keydesk MCP without reading their values, store new credentials and original key files, and run SDK/build tools with selected secrets. Use for authenticated provider API requests, credential setup, env migration and secret-dependent development commands.
 ---
 
-Use Cellar (formerly Keydesk) on this Mac to keep credentials out of chat, source code, command arguments and logs. The signed CLI is `~/.local/bin/keydesk`; if it cannot connect, launch `~/Applications/Keydesk.app`.
+Use Cellar (formerly Keydesk) on this Mac to keep credentials out of chat, source code, command arguments and logs. The app bundle and executable are `Cellar.app` and `Cellar`. Existing `keydesk` CLI and MCP names are intentionally retained. The signed CLI is `~/.local/bin/keydesk`; if it cannot connect, launch `~/Applications/Cellar.app`.
 
 ## Choose the connection and transport
 

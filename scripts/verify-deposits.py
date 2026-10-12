@@ -2,8 +2,8 @@
 """Exercise the real signed app/CLI with only disposable fixture keys and an isolated socket."""
 import json, os, pathlib, subprocess, tempfile, time, datetime
 root = pathlib.Path(__file__).resolve().parent.parent
-app = root / 'dist/Keydesk.app/Contents/MacOS/Keydesk'
-cli = root / 'dist/Keydesk.app/Contents/Helpers/keydesk'
+app = root / 'dist/Cellar.app/Contents/MacOS/Cellar'
+cli = root / 'dist/Cellar.app/Contents/Helpers/keydesk'
 with tempfile.TemporaryDirectory(prefix='keydesk-deposit-qa-') as folder:
     socket_path = pathlib.Path(folder)/'cli.sock'
     process = subprocess.Popen([str(app), '--demo', '--demo-socket', str(socket_path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

@@ -11,7 +11,7 @@ def install(project, environment, name, label, clients, home):
     project=str(uuid.UUID(project)).upper()
     if environment not in {'dev','staging','prod'} or not re.fullmatch(r'keydesk-[a-z0-9-]{1,60}',name):
         raise ValueError('Use an explicit environment and keydesk-prefixed server name')
-    helper=home/'Applications/Keydesk.app/Contents/Helpers/keydesk'
+    helper=home/'Applications/Cellar.app/Contents/Helpers/keydesk'
     if not helper.is_file():raise ValueError('Install the signed Keydesk app first')
     server={'command':str(helper),'args':['mcp','--project',project,'--env',environment]}
     codex_path=home/'.codex/config.toml';claude_path=home/'.claude.json'

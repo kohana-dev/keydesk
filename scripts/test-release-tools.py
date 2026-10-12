@@ -73,8 +73,8 @@ class ReleaseToolsTests(unittest.TestCase):
 
     def test_tampered_helper_rejected_before_execution(self):
         with tempfile.TemporaryDirectory(prefix='keydesk-release-gate-test-') as temporary:
-            app = pathlib.Path(temporary) / 'Keydesk.app'
-            shutil.copytree(ROOT / 'dist/Keydesk.app', app)
+            app = pathlib.Path(temporary) / 'Cellar.app'
+            shutil.copytree(ROOT / 'dist/Cellar.app', app)
             helper = app / 'Contents/Helpers/keydesk'
             # Change a signed code page, not unsigned padding after the signature blob.
             data = bytearray(helper.read_bytes()); data[16_384] ^= 1; helper.write_bytes(data)
