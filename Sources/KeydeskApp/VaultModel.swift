@@ -27,6 +27,7 @@ final class VaultModel {
     var selectedCredential: UUID?
     var search = ""
     var favoritesOnly = false
+    var showQuickAdd = false
     var notice: String?
     var error: String?
     var approval: CLIApproval? { didSet { onApprovalChange?() } }
@@ -144,6 +145,21 @@ final class VaultModel {
             && (search.isEmpty || "\(credential.name) \(credential.provider) \(credential.account)".localizedCaseInsensitiveContains(search))
         }.sorted { $0.updatedAt > $1.updatedAt }
     }
+    var hasPendingApproval: Bool { approval != nil || brokerApproval != nil || apiApproval != nil }
+    var menuBarBackupStatus: String {
+        guard snapshot != nil else { return "백업 상태는 금고를 연 뒤 확인합니다" }
+        if isDemo { return "데모 · 가상 키만 사용" }
+        if !recoveryKeySaved { return "복구 키 직접 보관 필요" }
+        if backupFailure != nil { return "백업 실패" }
+        if backupDirectory == nil { return "백업 폴더 없음" }
+        if hasUnbackedChanges { return "백업 대기 중" }
+        switch cloudUpload {
+        case .uploaded: return "iCloud까지 백업됨"
+        case .pending: return "iCloud 업로드 대기 중"
+        case .failed: return "iCloud 업로드 안 됨"
+        case .notCloud: return "모든 변경 백업됨"
+        }
+    }
     var detail: Credential? { snapshot?.credentials.first { $0.id == selectedCredential } }
     func lockIfIdle(now: Date = Date()) {
         if autoLockMinutes > 0, snapshot != nil, now.timeIntervalSince(lastActivity) >= Double(autoLockMinutes * 60) { lock() }
@@ -161,6 +177,7 @@ final class VaultModel {
         for process in runningProcesses.values where process.isRunning && !process.keepRunning { process.terminate() }
         runningProcesses = runningProcesses.filter { $0.value.keepRunning && $0.value.isRunning }
         runningInvocations = runningInvocations.filter { runningProcesses[$0.key] != nil }
+        showQuickAdd = false
         snapshot = nil; key = nil; envelope = nil; selectedCredential = nil; selectedProject = nil
         backedUpRevision = nil; lastBackupAt = nil; lastBackupFile = nil; cloudUpload = .notCloud
         search = ""; notice = nil; error = nil; busy = false

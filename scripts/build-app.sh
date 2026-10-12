@@ -32,8 +32,8 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <key>CFBundleIconFile</key><string>Cellar.icns</string>
 <key>CFBundleExecutable</key><string>Keydesk</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.7.3</string>
-<key>CFBundleVersion</key><string>24</string>
+<key>CFBundleShortVersionString</key><string>0.7.4</string>
+<key>CFBundleVersion</key><string>25</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSFaceIDUsageDescription</key><string>Cellar 금고를 열기 위해 인증합니다.</string>

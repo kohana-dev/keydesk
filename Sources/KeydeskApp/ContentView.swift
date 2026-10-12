@@ -7,6 +7,10 @@ struct ContentView: View {
             if model.snapshot == nil { LockedView(model: model) }
             else { WorkspaceView(model: model) }
         }
+        .sheet(isPresented: $model.showQuickAdd) {
+            if model.snapshot == nil { DepositView(model: model) }
+            else { CredentialSheet(model: model) }
+        }
         .tint(Theme.accent)
         .preferredColorScheme(.light)
         .alert("작업을 완료하지 못했습니다", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {

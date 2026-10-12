@@ -17,3 +17,9 @@ Normalize the selected local image to a PNG thumbnail up to 256 pixels (fit, ret
 ## Verification 0.7.3
 
 Tests cover legacy decoding, image normalization, corrupt/oversized image rejection and persistence/removal through encrypted vault lock/unlock. A separate fake-key demo verified native file selection, preview, save, all three UI placements, removal preview and cancellation. No production credentials were revealed or changed.
+
+## Menu bar access (0.7.4)
+
+Reference: 1Password for Mac, https://support.1password.com/getting-started-mac/ — always-available menu-bar entry for quick access to the main app. Uses Apple's native MenuBarExtra menu: https://developer.apple.com/documentation/swiftui/menubarextra.
+
+Cellar uses a small monochrome template rendition of its ribbon wine opener. macOS renders the appropriate foreground on light/dark menu bars. Menu actions: open the main window, authenticate/unlock, lock, add or deposit a new key, show a pending approval, quit. Closing the main window leaves the app and menu item running; quitting exits both. Unlock still requires OS authentication; a pending request opens the existing approval UI, without accepting it. The menu never displays secret values or project names; when locked, it reports backup status as unavailable.

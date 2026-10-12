@@ -30,5 +30,11 @@ struct KeydeskApp: App {
                 Button("금고 잠금", systemImage: "lock") { model.lock() }.keyboardShortcut("l", modifiers: [.command, .shift])
             }
         }
+        MenuBarExtra {
+            MenuBarView(model: model)
+        } label: {
+            Image(nsImage: MenuBarIcon.image).renderingMode(.template)
+                .accessibilityLabel("Cellar")
+        }.menuBarExtraStyle(.menu)
     }
 }
