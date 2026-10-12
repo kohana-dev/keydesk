@@ -4,6 +4,7 @@ import KeydeskCore
 struct WorkspaceView: View {
     @Bindable var model: VaultModel
     @State private var projectSheet = false
+    @State private var editingProject: Project?
     @State private var addSheet = false
     @State private var importSheet = false
     @State private var recoverySheet = false
@@ -26,6 +27,7 @@ struct WorkspaceView: View {
         }
         .background(Theme.canvas)
         .sheet(isPresented: $projectSheet) { ProjectSheet(model: model) }
+        .sheet(item: $editingProject) { ProjectSheet(model: model, project: $0) }
         .sheet(isPresented: $addSheet) { CredentialSheet(model: model) }
         .sheet(isPresented: $importSheet) { ImportView(model: model) }
         .sheet(isPresented: $recoverySheet) { RecoveryView(model: model) }
@@ -37,9 +39,9 @@ struct WorkspaceView: View {
         .onChange(of: model.environment) { model.selectedCredential = nil; model.hideValue() }
     }
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 10) {
-                CellarMark(size: 44)
+                CellarMark(size: 38)
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Cellar").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.ink)
                     Text("개발 키 보관함").font(.caption).foregroundStyle(.secondary)
@@ -53,7 +55,17 @@ struct WorkspaceView: View {
             ScrollView {
             VStack(spacing: 4) {
                 ForEach(model.snapshot?.projects ?? []) { project in
-                    nav(project.name, symbol: "folder", color: Theme.projectColors[abs(project.colorIndex % Theme.projectColors.count)], selected: model.selectedProject == project.id) { model.selectedProject = project.id; model.favoritesOnly = false }
+                    Button { model.selectedProject = project.id; model.favoritesOnly = false } label: {
+                        HStack(spacing: 10) {
+                            ProjectAvatar(project: project)
+                            Text(project.name).font(.system(size: 13, weight: model.selectedProject == project.id ? .semibold : .regular)).lineLimit(1)
+                            Spacer()
+                        }.padding(.horizontal, 9).padding(.vertical, 7)
+                            .contentShape(Rectangle())
+                            .background(model.selectedProject == project.id ? Theme.selection : Color.clear, in: RoundedRectangle(cornerRadius: 9))
+                    }.buttonStyle(.plain).contextMenu {
+                        Button("프로젝트 편집…", systemImage: "pencil") { editingProject = project }
+                    }
                 }
             }
             }.scrollIndicators(.hidden)
@@ -103,7 +115,17 @@ struct WorkspaceView: View {
     }
     private var keyList: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack { Text(model.selectedProject.flatMap { id in model.snapshot?.projects.first { $0.id == id }?.name } ?? (model.favoritesOnly ? "즐겨찾기" : "모든 키")).font(.title2.bold()); Spacer() }
+            HStack(spacing: 10) {
+                if let project = model.snapshot?.projects.first(where: { $0.id == model.selectedProject }) {
+                    ProjectAvatar(project: project, size: 32)
+                    Text(project.name).font(.system(size: 21, weight: .semibold)).lineLimit(1)
+                    Spacer()
+                    Button("프로젝트 편집", systemImage: "ellipsis") { editingProject = project }.labelStyle(.iconOnly).buttonStyle(.plain).help("이름 및 이미지 변경")
+                } else {
+                    Text(model.favoritesOnly ? "즐겨찾기" : "모든 키").font(.system(size: 21, weight: .semibold))
+                    Spacer()
+                }
+            }
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                 TextField("이름, 서비스, 계정 검색", text: $model.search).textFieldStyle(.plain)
@@ -131,7 +153,7 @@ struct WorkspaceView: View {
                                 VStack(alignment: .leading, spacing: 5) { Text(credential.name).font(.system(size: 13, weight: .semibold)).lineLimit(1); Text(credential.provider + (credential.currentFile == nil ? " · API 키" : " · 파일")).font(.caption).foregroundStyle(.secondary) }
                                 Spacer()
                                 if credential.favorite { Image(systemName: "star.fill").foregroundStyle(.orange).font(.caption) }
-                            }.padding(.horizontal, 12).padding(.vertical, 13).contentShape(Rectangle())
+                            }.padding(.horizontal, 12).padding(.vertical, 11).contentShape(Rectangle())
                                 .background(model.selectedCredential == credential.id ? Theme.selection : Theme.surface, in: RoundedRectangle(cornerRadius: 12))
                                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(model.selectedCredential == credential.id ? Theme.accent.opacity(0.25) : Theme.border.opacity(0.65), lineWidth: 0.7))
                         }.buttonStyle(.plain)
@@ -140,7 +162,7 @@ struct WorkspaceView: View {
                 }
             }
             Text(model.isDemo ? "데모 변경은 임시 금고에만 저장됩니다." : "개발 도구에는 keydesk run으로 선택한 키만 전달합니다.").font(.caption).foregroundStyle(.secondary)
-        }.padding(20).background(Theme.canvas)
+        }.padding(20).background(Theme.surface)
     }
     private func saveBackup() {
         let panel = NSSavePanel(); panel.nameFieldStringValue = "Cellar-backup-\(Date().formatted(.iso8601.year().month().day())).keydesk"

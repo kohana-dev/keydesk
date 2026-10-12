@@ -258,12 +258,23 @@ final class VaultModel {
         if invalidateGrants { revokeAllAPI(); developmentApprovals.clear(); rejectBroker(); revokeAllGrants(); rejectCLI() }
         scheduleBackup()
     }
-    func addProject(_ name: String) throws {
+    func addProject(_ name: String, iconPNG: Data? = nil) throws {
         let cleaned = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !cleaned.isEmpty, cleaned.count <= 100 else { throw VaultError.invalidData }
-        let project = Project(name: cleaned, colorIndex: snapshot?.projects.count ?? 0)
+        guard iconPNG.map(ProjectImage.valid) ?? true else { throw VaultError.invalidData }
+        let project = Project(name: cleaned, colorIndex: snapshot?.projects.count ?? 0, iconPNG: iconPNG)
         try mutate { $0.projects.append(project); $0.record("프로젝트 추가") }
         selectedProject = project.id; selectedCredential = nil
+    }
+    func updateProject(_ id: UUID, name: String, iconPNG: Data?) throws {
+        let cleaned = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, cleaned.count <= 100, iconPNG.map(ProjectImage.valid) ?? true else { throw VaultError.invalidData }
+        try mutate(invalidateGrants: snapshot?.projects.first(where: { $0.id == id })?.name != cleaned) { next in
+            guard let index = next.projects.firstIndex(where: { $0.id == id }) else { throw VaultError.invalidData }
+            next.projects[index].name = cleaned
+            next.projects[index].iconPNG = iconPNG
+            next.record("프로젝트 정보 수정")
+        }
     }
     func addCredential(name: String, value: String, provider: String, account: String, note: String, variable: String, existingID: UUID? = nil, file: SecretFile? = nil) throws {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty, !value.isEmpty || existingID != nil || file != nil, value.utf8.count <= 65_536, !value.contains("\0") else { throw VaultError.invalidData }

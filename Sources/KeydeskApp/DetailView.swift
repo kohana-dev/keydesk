@@ -57,7 +57,7 @@ struct DetailView: View {
                         if bindings.isEmpty { Text("연결된 프로젝트가 없습니다.").foregroundStyle(.secondary) }
                         ForEach(bindings) { binding in
                             VStack(alignment: .leading, spacing: 9) {
-                                HStack { Image(systemName: "folder").foregroundStyle(.secondary); Text(model.snapshot?.projects.first { $0.id == binding.projectID }?.name ?? ""); Spacer(); Text(binding.environment.title).font(.caption).foregroundStyle(binding.environment == .production ? .orange : .secondary) }
+                                HStack { if let project = model.snapshot?.projects.first(where: { $0.id == binding.projectID }) { ProjectAvatar(project: project, size: 24); Text(project.name) }; Spacer(); Text(binding.environment.title).font(.caption).foregroundStyle(binding.environment == .production ? .orange : .secondary) }
                                 HStack { Text(binding.variable).font(.system(.caption, design: .monospaced)); Spacer(); Button("변수명 복사", systemImage: "doc.on.doc") { model.copyText(binding.variable) }.labelStyle(.iconOnly) }
                                 HStack {
                                     Button("참조 복사") { model.copyText("keydesk://\(binding.projectID.uuidString)/\(binding.environment.rawValue)/\(binding.variable)") }

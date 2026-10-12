@@ -33,7 +33,7 @@ public struct VaultSnapshot: Codable, Sendable {
                   credential.versions.contains(where: { $0.id == credential.currentVersionID }),
                   Set(credential.versions.map(\.id)).count == credential.versions.count else { throw VaultError.invalidData }
         }
-        guard projects.allSatisfy({ !$0.name.isEmpty && $0.name.count <= 100 }) else { throw VaultError.invalidData }
+        guard projects.allSatisfy({ !$0.name.isEmpty && $0.name.count <= 100 && ($0.iconPNG?.count ?? 0) <= 512 * 1024 }) else { throw VaultError.invalidData }
         if let depositPrivateKey { _ = try P256.KeyAgreement.PrivateKey(rawRepresentation: depositPrivateKey) }
         if let recoveryCode { _ = try RecoveryCode.decode(recoveryCode) }
         for binding in bindings {
