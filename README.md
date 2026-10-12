@@ -1,48 +1,63 @@
 # Cellar
 
-Cellar is the new app name for Keydesk. The `keydesk` CLI, MCP server name, vault storage paths and signing identity stay compatible with existing installations. The app bundle and executable are named `Cellar.app` and `Cellar`. Existing `keydesk` CLI/MCP names remain compatible.
+A local macOS vault for developers and their AI tools. Keep API keys and original key files organized by project, and let Codex, Claude and CLI tools use selected credentials through an approved local broker.
 
-A local macOS secret vault for individual developers. Store API keys by project
-and dev/staging/prod environment; let approved tools use them through a signed
-CLI without putting values into AI chat. SwiftUI, CryptoKit and Security;
-no external Swift package dependencies. Current source version: 0.7.5 beta.
+개인 개발자를 위한 macOS 로컬 키 금고입니다. API 키와 키 파일을 암호화해 보관하고, Codex·Claude가 키 값을 채팅에 노출하지 않고 사용할 수 있습니다.
 
-개인 개발자를 위한 macOS 로컬 API 키 금고입니다. 실제 개인 사용과
-Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며,
-다른 Mac 복원과 독립 보안 감사는 아직 완료하지 않았습니다.
+**[Download Cellar 0.7.5 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.5/Cellar-0.7.5-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
-## Features
+Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
-- AES-256-GCM encrypted vault and backups, OS authentication, automatic lock.
-- iCloud Drive backup and iCloud Keychain recovery key when available;
-  same-Mac isolated recovery verification with `keydesk verify-recovery`.
-- Project environments, search, favorites, notes, versioned key replacement.
-- Clipboard copy with 30-second cleanup; reveal expires after 15 seconds.
-- Locked encrypted deposit, merged/backed up after the next unlock.
-- Automatic service classification from clear variable names, brand logos,
-  categorized inline service recommendations; ambiguous API_KEY stays Other.
-- `keydesk run`, stdin tokens and interactive CLI support.
-- Codex and Claude companion skill; MCP metadata and approved API requests.
-- Local HTTPS API broker with exact request grants; unified approval status and revocation.
+![Cellar project vault with masked demo credentials](docs/images/cellar-vault.png)
 
-## Install / build
+*Actual Cellar 0.7.5 UI. Screenshots use an isolated demo vault with fictional projects and credentials; no personal vault data is shown. The current UI is in Korean.*
 
-Download the signed, notarized [Cellar 0.7.5 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.7.5/Cellar-0.7.5-macOS-arm64.zip).
-Requires macOS 14 or later on an Apple Silicon Mac. Intel builds are not provided.
-Unzip, move Cellar.app to Applications (or ~/Applications), and open it normally.
-No Apple Developer account is needed. Authenticate through macOS when prompted;
-then enable the bundled CLI in Backup / CLI settings. iCloud Drive and iCloud
-Keychain must be enabled for automatic cloud backup and recovery. If not available,
-choose a backup location and keep your recovery key separately. Check the upload
-status after saving. Verify SHA256SUMS.txt from the release before installing.
-Do not use a demo build as a real vault or bypass Gatekeeper warnings.
+## What you can do
 
-다운로드한 ZIP을 풀고 Cellar.app을 응용 프로그램 폴더로 옮겨 실행하세요.
-최초 실행 안내에 따라 OS 인증·백업 상태를 확인하고, 설정에서 CLI를 연결합니다.
-Apple Silicon Mac / macOS 14 이상을 지원하는 베타 버전입니다.
+- Organize credentials by project and Development / Staging / Production environment. Add your own project images.
+- Find services with inline search recommendations and recognizable provider logos.
+- Store string keys and original `.p8`, `.pem`, service-account JSON, `.p12` and `.jks` files. Choose a file or drag it into the registration form.
+- Deposit a new key or file while locked; it is merged into the vault and backed up after unlocking.
+- Use the macOS menu bar to reopen Cellar, lock/unlock, add a key or view pending approvals.
+- Copy values with 30-second clipboard cleanup; revealed values hide after 15 seconds.
+- Back up the encrypted vault to iCloud Drive and store its recovery key in iCloud Keychain when available. View backup and upload status in the app.
+- Use the signed CLI for SDKs, builds and original files, or MCP for supported provider API requests. View and revoke remembered approvals in the app.
 
-For source build requirements, signing and packaging see
-[building](docs/open-source-building.md) and [readiness](docs/open-source-readiness.md).
+![Cellar inline Gemini service search and registration](docs/images/cellar-service-search.png)
+
+## Get started
+
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.5), and verify the checksum.
+2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
+3. Open Cellar normally. Follow macOS authentication and check your encrypted backup / iCloud upload status.
+4. In **백업·CLI 설정**, connect the bundled CLI. Add a project and register a key or original file.
+5. For Codex and Claude, follow the [AI connection steps](docs/installation.md#connect-codex-and-claude). One global MCP connection routes requests using each repository's names-only project manifest.
+
+The app bundle and executable are **Cellar.app** and **Cellar**. The compatible CLI, MCP server and skill remain named **`keydesk`**. Existing vault paths and Keychain identity are unchanged. Upgrading from `Keydesk.app`? See the [migration steps](docs/installation.md#upgrade-from-keydeskapp).
+
+## Use credentials without putting them in chat
+
+```sh
+# Let the CLI import a key directly; do not read the env file into AI output.
+keydesk store --project my-app --env dev --name OPENAI_API_KEY --from-env-file /absolute/path/.env
+
+# Give a development tool only the selected variable.
+keydesk run --project my-app --env dev --only OPENAI_API_KEY -- npm run dev
+
+# Store an original file, then pass a private temporary file path to its tool.
+keydesk store-file --project my-app --env dev --name GOOGLE_APPLICATION_CREDENTIALS --from-file /absolute/path/service-account.json
+keydesk run --project my-app --env dev --files GOOGLE_APPLICATION_CREDENTIALS -- /absolute/path/to/tool
+```
+
+For direct API calls, the local broker injects authentication internally. MCP exposes `project_context` and `request_http` through the global router; there is no credential-reading tool. Supported provider requests include Gemini, OpenAI, Anthropic, Cloudflare, Paddle and RevenueCat. See [API broker](docs/local-api-broker.md), [MCP setup](docs/mcp-setup.md) and [project CLI](docs/project-cli.md).
+
+Initial use requires human approval. Exact development commands can be remembered for 30 minutes. Production reuse is optional, lasts five minutes and allows ten additional starts/requests. Requests must match exactly; lock, key changes and quitting revoke remembered approvals. API requests in dev/staging have a separate 30-minute / 100-repeat limit.
+
+`stored` confirms a vault save; verify backup upload separately. `queued` means encrypted on this Mac only until unlock, merge and successful backup. Source env/key files are preserved. Original files are limited to 1 MiB each; selected temporary files are cleaned up on exit, cancellation or vault lock. Intentional `--keep-running` retains injected credentials/files until the process ends.
+
+## Build and security
+
+SwiftUI, CryptoKit and Security; no external Swift package dependencies.
 
 ```sh
 swift test
@@ -50,62 +65,12 @@ KEYDESK_SIGNING_MODE=adhoc ./scripts/build-app.sh
 open dist/Cellar.app --args --demo
 ```
 
-## CLI and AI workflows
+Ad-hoc builds are for demos, not real protected vaults. See [source builds and signing](docs/open-source-building.md).
 
-In the app, connect the bundled CLI from Backup / CLI settings. Use only the
-variables required by a command:
+Cellar is a beta, not an independently audited credential manager. Same-Mac encrypted backup recovery has been verified; restore on a separate Mac has not. Keep an independent encrypted backup and recovery key. Approved SDK/build tools receive raw credentials and can read or transmit them; output masking is not a sandbox. Deleting a local key does not revoke its provider credential or remove old backups. Read [SECURITY.md](SECURITY.md) and [verification limits](docs/open-source-readiness.md).
 
-```sh
-keydesk store --project my-app --env dev --name OPENAI_API_KEY --from-env-file /absolute/path/.env
-keydesk run --project my-app --env dev --only OPENAI_API_KEY -- npm run dev
-keydesk request --project my-app --env dev --key CLOUDFLARE_API_TOKEN --method GET --url https://api.cloudflare.com/client/v4/user/tokens/verify
-keydesk run --project my-app --env dev --stdin-key GITHUB_TOKEN -- gh auth login --with-token
-keydesk run --project my-app --env dev --only API_KEY --interactive -- tool-login
-```
+## Contributing and license
 
-Do not pass values as arguments or print env files. `stored` means saved in the
-vault; check upload status separately. `queued` means encrypted on this Mac
-only until the next unlock and successful backup. Duplicates are not overwritten.
-Install the companion skill with `python3 scripts/install-ai-skills.py`.
-Explicit invocation: Codex `$keydesk`, Claude `/keydesk`. Automatic skill
-selection depends on the model. MCP provides authorized names and `request_http`; no key-reading tool.
-See [local API broker](docs/local-api-broker.md) for supported providers, grants and limits.
+[Contributing](CONTRIBUTING.md) · [Security reports](SECURITY.md) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-First execution requires user approval. An exact safe development invocation
-can be remembered for 30 minutes. Locking, editing keys and quitting clear it.
-Production defaults to approval each time, with optional five-minute exact-command reuse. Risk-warning commands always require approval. Default auto-lock
-is 30 minutes; screen lock and sleep also trigger locking. Approved tools can
-read and transmit injected keys. Output masking covers exact values only.
-`--keep-running` intentionally allows an approved process to retain its keys
-past vault lock; use only when needed.
-
-## Recovery and security
-
-Keep an independent encrypted backup and recovery key in addition to iCloud.
-Other-Mac iCloud restore is not physically verified. Deleting a key does not
-revoke provider credentials or remove old backups. Changing signing identity
-may require recovery. Read [SECURITY.md](SECURITY.md) before storing critical keys.
-Do not submit actual keys or backups in issues. See
-[CONTRIBUTING.md](CONTRIBUTING.md) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-
-## License
-
-Cellar code: [MIT](LICENSE). Third-party artwork keeps its own licenses and
-trademarks; unreviewed website icons are omitted from public source exports.
-
-### Original secret files
-
-Choose **파일 원본 보관** in the app, then select or drop a file. Cellar encrypts its original filename and bytes without text conversion. Locked deposits also accept files.
-
-```sh
-keydesk store-file --project my-app --env dev --name GOOGLE_APPLICATION_CREDENTIALS --from-file /absolute/path/service-account.json
-keydesk run --project my-app --env dev --files GOOGLE_APPLICATION_CREDENTIALS -- /absolute/path/to/tool
-```
-
-Selected variables hold private temporary file paths. Files are removed on command exit, cancellation and vault lock; intentional `--keep-running` preserves them until exit. Files are limited to 1 MiB each (the encrypted snapshot limit remains 16 MiB). Only regular files are accepted. Source files are preserved. File-bearing vaults require 0.6.0+, use format 2, and cannot be opened by earlier versions. This also applies to their backups.
-
-AI companion skills instruct Codex and Claude to pass source paths directly to the CLI without reading their contents. Update installed skills with `python3 scripts/install-ai-skills.py --update`; previous skills are backed up.
-
-For CLI-first AI development, use the [project CLI adapter and readiness status](docs/project-cli.md). Project manifests contain variable names and types only; execution still uses the signed CLI and native approval.
-
-Production command reuse is optional: initial user approval and OS authentication can authorize the exact invocation for five minutes and ten additional starts. Expiry is fixed; lock, credential mutation and app exit revoke it. This reduces confirmation opportunities and is not a sandbox or an attestation of every loaded dependency. Commands with risk warnings and persistent/interactive production requests cannot be remembered.
+Cellar code is [MIT licensed](LICENSE). Provider artwork retains its own licenses and trademarks. Never include actual credentials, private key files or vault backups in issues or pull requests.

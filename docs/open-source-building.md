@@ -1,4 +1,6 @@
-# Build and distribute
+# Build and distribute Cellar
+
+To install the official app without building, see [Installation guide](installation.md).
 
 ## Requirements and demo
 
@@ -46,8 +48,8 @@ python3 scripts/export-public-source.py
 ```
 
 Output: `dist/public-source/Keydesk-source` and `dist/public-source/Keydesk-source.zip`.
-This uses an explicit allowlist, no Git history, personal docs, screenshots,
-logs, built apps, signing materials or real vault data. Source hashes are
+This uses an explicit allowlist, no Git history, personal docs, private screenshots,
+logs, built apps, signing materials or real vault data. The explicitly allowlisted documentation screenshots use an isolated demo vault with fictional data. Source hashes are
 recorded beside the archive. Do not publish the working folder directly.
 The content scanner is defense in depth, not a guarantee of absence of secrets.
 Before pushing a fresh public repository, inspect the exported file list,
