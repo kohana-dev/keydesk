@@ -21,7 +21,14 @@ struct MetadataView: View {
     }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("키 정보 편집").font(.title2.bold())
+            HStack(spacing: 12) {
+                ProviderIcon(provider: provider)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("키 정보 편집").font(.title2.weight(.semibold)).foregroundStyle(Theme.ink)
+                    Text("이름, 서비스와 보관 정보를 수정하세요.").font(.callout).foregroundStyle(.secondary)
+                }
+            }
+            Divider()
             TextField("이름", text: $name).textFieldStyle(.roundedBorder).focused($nameFocused)
             ProviderPicker(provider: $provider)
             if credential.currentFile == nil { SecretInput(title: "새 키 값 (선택)", value: $value) }
@@ -43,7 +50,7 @@ struct MetadataView: View {
                     }; dismiss()
                 } catch { self.error = error.localizedDescription }
             }.buttonStyle(.borderedProminent).disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) }
-        }.padding(28).frame(width: 500)
+        }.padding(28).frame(width: 540).controlSize(.large).background(Theme.surface)
         .task { nameFocused = true }
         .onDisappear { value = "" }
     }

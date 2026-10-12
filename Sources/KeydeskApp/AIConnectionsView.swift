@@ -10,7 +10,14 @@ struct AIConnectionsView: View {
     private var command: String { "\(quoted(model.cliURL.path)) mcp --project \(project?.uuidString ?? "") --env \(environment.rawValue)" }
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Label("AI 연결 · 승인 상태", systemImage: "sparkles").font(.title2.bold())
+            HStack(spacing: 12) {
+                Image(systemName: "terminal").font(.system(size: 22, weight: .medium)).foregroundStyle(Theme.violet)
+                    .frame(width: 48, height: 48).background(Theme.violet.opacity(0.08), in: RoundedRectangle(cornerRadius: 12))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("AI 연결 · 승인 상태").font(.title2.weight(.semibold)).foregroundStyle(Theme.ink)
+                    Text("개발 도구 연결과 사용 허가를 관리하세요.").font(.callout).foregroundStyle(.secondary)
+                }
+            }
             Text("CLI 명령은 선택한 키·파일을 실행 프로그램에 전달하고, API 요청은 앱이 인증값을 넣어 호출합니다. 최초 승인이 필요하며 동일한 요청은 제한된 허가를 재사용할 수 있습니다. MCP 키 이름 조회 허가는 별도입니다.").font(.caption).foregroundStyle(.secondary)
             HStack {
                 Picker("프로젝트", selection: $project) { ForEach(model.snapshot?.projects ?? []) { Text($0.name).tag(Optional($0.id)) } }
@@ -21,10 +28,10 @@ struct AIConnectionsView: View {
                 Button("Claude Code 연결 명령 복사") { model.copyText("claude mcp add --scope project keydesk -- \(command)") }.disabled(project == nil)
                 Button("설정 JSON 저장") { export() }.disabled(project == nil)
             }
-            ApprovalStatusView(model: model).frame(height: 380)
+            ApprovalStatusView(model: model).frame(height: 380).cellarCard()
             Text("철회는 새 실행을 막습니다. 이미 실행 중인 작업은 종료·취소를 따로 요청하세요. 외부 API에 이미 반영된 작업은 취소되지 않을 수 있습니다.").font(.caption).foregroundStyle(.secondary)
             HStack { Button("모든 반복·조회 허가 철회", role: .destructive) { model.revokeAllPermissions() }; Spacer(); Button("닫기") { dismiss() }.keyboardShortcut(.cancelAction) }
-        }.padding(28).frame(width: 780)
+        }.padding(28).frame(width: 780).background(Theme.canvas)
         .onAppear { project = model.selectedProject ?? model.snapshot?.projects.first?.id; environment = model.environment }
     }
     private func export() {

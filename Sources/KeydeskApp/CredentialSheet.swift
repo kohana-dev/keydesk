@@ -17,7 +17,14 @@ struct CredentialSheet: View {
     @State private var error: String?
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Text("키 등록 또는 연결").font(.title2.bold())
+            HStack(spacing: 12) {
+                CellarMark(size: 48)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("키 등록 또는 연결").font(.title2.weight(.semibold)).foregroundStyle(Theme.ink)
+                    Text("서비스와 프로젝트에 맞게 보관하세요.").font(.callout).foregroundStyle(.secondary)
+                }
+            }
+            Divider()
             if model.selectedProject != nil {
                 Toggle("이미 보관된 키 연결", isOn: $linking)
                 Text(model.environment.title).font(.caption).foregroundStyle(.secondary)
@@ -49,7 +56,7 @@ struct CredentialSheet: View {
                     } catch { self.error = error.localizedDescription }
                 }.buttonStyle(.borderedProminent).disabled(linking ? existing == nil : name.isEmpty || (fileMode ? file == nil : value.isEmpty))
             }
-        }.padding(28).frame(width: 520)
+        }.padding(28).frame(width: 540).controlSize(.large).background(Theme.surface)
         .onDisappear { value = ""; file = nil }
     }
 }
