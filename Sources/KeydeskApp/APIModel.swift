@@ -23,7 +23,7 @@ extension VaultModel {
                 startAPI(pending, reused: true)
                 return
             }
-            channel.send(CLIEvent(kind: "status", text: "새 요청, 요청 내용 변경, 만료 또는 횟수 소진: Keydesk에서 API 사용을 승인해 주세요."))
+            channel.send(CLIEvent(kind: "status", text: "새 요청, 요청 내용 변경, 만료 또는 횟수 소진: Cellar에서 API 사용을 승인해 주세요."))
             apiApproval = pending
             Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .seconds(60))

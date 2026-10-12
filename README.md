@@ -1,9 +1,11 @@
-# Keydesk
+# Cellar
+
+Cellar is the new app name for Keydesk. The `keydesk` CLI, MCP server name, vault storage paths and signing identity stay compatible with existing installations. The app is displayed as Cellar; the bundle folder remains `Keydesk.app` for compatibility.
 
 A local macOS secret vault for individual developers. Store API keys by project
 and dev/staging/prod environment; let approved tools use them through a signed
 CLI without putting values into AI chat. SwiftUI, CryptoKit and Security;
-no external Swift package dependencies. Current source version: 0.7.0 beta.
+no external Swift package dependencies. Current source version: 0.7.1 beta.
 
 개인 개발자를 위한 macOS 로컬 API 키 금고입니다. 실제 개인 사용과
 Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며,
@@ -25,7 +27,7 @@ Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며
 
 ## Install / build
 
-Download the signed, notarized [Keydesk 0.7.0 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.7.0/Keydesk-0.7.0-macOS-arm64.zip).
+Download the signed, notarized [Cellar 0.7.1 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.7.1/Cellar-0.7.1-macOS-arm64.zip).
 Requires macOS 14 or later on an Apple Silicon Mac. Intel builds are not provided.
 Unzip, move Keydesk.app to Applications (or ~/Applications), and open it normally.
 No Apple Developer account is needed. Authenticate through macOS when prompted;
@@ -88,12 +90,12 @@ Do not submit actual keys or backups in issues. See
 
 ## License
 
-Keydesk code: [MIT](LICENSE). Third-party artwork keeps its own licenses and
+Cellar code: [MIT](LICENSE). Third-party artwork keeps its own licenses and
 trademarks; unreviewed website icons are omitted from public source exports.
 
 ### Original secret files
 
-Choose **파일 원본 보관** in the app, then select or drop a file. Keydesk encrypts its original filename and bytes without text conversion. Locked deposits also accept files.
+Choose **파일 원본 보관** in the app, then select or drop a file. Cellar encrypts its original filename and bytes without text conversion. Locked deposits also accept files.
 
 ```sh
 keydesk store-file --project my-app --env dev --name GOOGLE_APPLICATION_CREDENTIALS --from-file /absolute/path/service-account.json

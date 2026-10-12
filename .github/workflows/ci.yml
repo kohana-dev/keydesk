@@ -14,7 +14,10 @@ jobs:
       - name: Unit and isolated app tests
         run: swift test
       - name: Project CLI selection and configuration boundaries
-        run: python3 scripts/test-project-cli.py
+        run: |
+          python3 scripts/test-project-cli.py
+          python3 scripts/test-mcp-setup.py
+          python3 scripts/test-auto-mcp.py
       - name: Public export and privacy boundaries
         run: python3 scripts/test-public-source.py
       - name: Demo build without signing credentials

@@ -20,3 +20,19 @@ if command.exists() and command.read_bytes()!=adapter.read_bytes():
  shutil.copyfile(command,command.with_name('keydesk-project.backup-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')))
 command.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(adapter,command);command.chmod(0o755)
 print('Project CLI adapter installed; native Keydesk approval remains required.')
+
+connector=adapter.with_name('install-mcp.py')
+target=pathlib.Path.home()/'.local/bin/keydesk-connect'
+if target.exists() and target.read_bytes()!=connector.read_bytes():
+ if not a.update:raise SystemExit('Conflicting keydesk-connect preserved; use --update')
+ shutil.copyfile(target,target.with_name('keydesk-connect.backup-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')))
+shutil.copyfile(connector,target);target.chmod(0o755)
+print('Explicit-project MCP installer installed; no global approval bypass.')
+
+router=adapter.with_name('keydesk-mcp.py')
+target=pathlib.Path.home()/'.local/bin/keydesk-mcp'
+if target.exists() and target.read_bytes()!=router.read_bytes():
+ if not a.update:raise SystemExit('Conflicting keydesk-mcp preserved; use --update')
+ shutil.copyfile(target,target.with_name('keydesk-mcp.backup-'+datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')))
+shutil.copyfile(router,target);target.chmod(0o755)
+print('Repository-aware MCP adapter installed; project selection remains explicit per request.')

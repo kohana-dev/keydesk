@@ -19,7 +19,7 @@ final class CLIServer: @unchecked Sendable {
                 ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(probe, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
             }
             close(probe)
-            guard result != 0 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "다른 Keydesk 앱이 실행 중입니다."]) }
+            guard result != 0 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "다른 Cellar 앱이 실행 중입니다."]) }
             try FileManager.default.removeItem(atPath: path)
         }
         listener = socket(AF_UNIX, SOCK_STREAM, 0)

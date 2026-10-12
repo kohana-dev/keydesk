@@ -18,6 +18,7 @@ app_dir="$stage_root/Keydesk.app"
 final_app="$PWD/dist/Keydesk.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Helpers" "$app_dir/Contents/Resources"
 cp -R Resources/ProviderLogos "$app_dir/Contents/Resources/ProviderLogos"
+cp Resources/AppIcon/Cellar.icns "$app_dir/Contents/Resources/Cellar.icns"
 cp LICENSE THIRD_PARTY_NOTICES.md "$app_dir/Contents/Resources/"
 cp "$build_dir/KeydeskDesktop" "$app_dir/Contents/MacOS/Keydesk"
 cp "$build_dir/keydesk" "$app_dir/Contents/Helpers/keydesk"
@@ -26,14 +27,16 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleIdentifier</key><string>com.keydesk.local</string>
-<key>CFBundleName</key><string>Keydesk</string>
+<key>CFBundleName</key><string>Cellar</string>
+<key>CFBundleDisplayName</key><string>Cellar</string>
+<key>CFBundleIconFile</key><string>Cellar.icns</string>
 <key>CFBundleExecutable</key><string>Keydesk</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.7.0</string>
-<key>CFBundleVersion</key><string>21</string>
+<key>CFBundleShortVersionString</key><string>0.7.1</string>
+<key>CFBundleVersion</key><string>22</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
-<key>NSFaceIDUsageDescription</key><string>Keydesk 금고를 열기 위해 인증합니다.</string>
+<key>NSFaceIDUsageDescription</key><string>Cellar 금고를 열기 위해 인증합니다.</string>
 </dict></plist>
 PLIST
 python3 - "$app_dir/Contents/Info.plist" "$bundle_id" <<'PYPLIST'

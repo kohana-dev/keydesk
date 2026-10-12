@@ -40,7 +40,7 @@ struct WorkspaceView: View {
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 10) {
                 Image(systemName: "key.horizontal.fill").foregroundStyle(Theme.ink).font(.system(size: 19, weight: .semibold))
-                Text("Keydesk").font(.system(size: 19, weight: .semibold))
+                Text("Cellar").font(.system(size: 19, weight: .semibold))
             }.padding(.top, 14)
             VStack(spacing: 6) {
                 nav("모든 키", symbol: "square.grid.2x2", color: Theme.ink, selected: model.selectedProject == nil && !model.favoritesOnly) { model.selectedProject = nil; model.favoritesOnly = false }
@@ -136,7 +136,7 @@ struct WorkspaceView: View {
         }.padding(18)
     }
     private func saveBackup() {
-        let panel = NSSavePanel(); panel.nameFieldStringValue = "Keydesk-backup-\(Date().formatted(.iso8601.year().month().day())).keydesk"
+        let panel = NSSavePanel(); panel.nameFieldStringValue = "Cellar-backup-\(Date().formatted(.iso8601.year().month().day())).keydesk"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do { try model.backup(to: url) } catch { model.error = error.localizedDescription }
     }

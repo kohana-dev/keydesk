@@ -31,7 +31,7 @@ struct LockedView: View {
     @ViewBuilder private var firstRunContent: some View {
         switch model.firstRun {
         case .waitingForBackup:
-            message("이전 금고의 백업을 기다리는 중", "iCloud 키체인에 이전 Keydesk 금고의 복구 키가 있습니다. iCloud Drive의 Keydesk 폴더가 이 Mac에 내려오면 그 금고를 복원합니다.")
+            message("이전 금고의 백업을 기다리는 중", "iCloud 키체인에 이전 금고의 복구 키가 있습니다. iCloud Drive의 Keydesk 폴더가 이 Mac에 내려오면 그 금고를 복원합니다.")
             retryButtons(primary: "다시 확인")
         case .needsRecoveryCode(let url):
             message("iCloud 백업을 찾았습니다", "이 백업의 복구 키가 아직 이 Mac의 iCloud 키체인에 없습니다. 잠시 후 다시 확인하거나, 따로 보관한 복구 키를 입력하세요.")

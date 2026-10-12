@@ -36,6 +36,8 @@ def main():
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
         bundle_id = __import__('os').environ.get('KEYDESK_BUNDLE_ID', 'com.keydesk.local')
         check('bundle_id', info.get('CFBundleIdentifier') == bundle_id)
+        icon = app / 'Contents/Resources/Cellar.icns'
+        check('cellar_icon_present', info.get('CFBundleIconFile') == 'Cellar.icns' and icon.is_file() and icon.read_bytes()[:4] == b'icns')
         executable = app / 'Contents/MacOS' / info['CFBundleExecutable']
         helper = app / 'Contents/Helpers/keydesk'
         # Fail closed if a future release adds unaudited packages or linked libraries.

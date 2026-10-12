@@ -13,7 +13,7 @@ struct ApprovalPanelTests {
         let controller = ApprovalPanelController()
         controller.attach(model)
         model.approval = try CLIApproval(request: CLIRequest(project: "Studio Notes", environment: .development, command: ["/usr/bin/true"], directory: "/tmp", stdinKey: nil, variables: ["OPENAI_API_KEY"]), channel: channel)
-        let window = try #require(NSApp.windows.first { $0.title == "Keydesk · 실행 승인" })
+        let window = try #require(NSApp.windows.first { $0.title == "Cellar · 실행 승인" })
         #expect(window.isVisible)
         #expect(window.frame.width >= 600)
         #expect(window.frame.height >= 300)
@@ -29,7 +29,7 @@ struct ApprovalPanelTests {
         let (channel, client) = try RunnerTests().sockets()
         defer { model.shutdown(); channel.finish(); close(client); try? FileManager.default.removeItem(at: directory) }
         model.approval = try CLIApproval(request: CLIRequest(project: "Studio Notes", environment: .development, command: ["/usr/bin/true"], directory: "/tmp", stdinKey: nil, variables: ["OPENAI_API_KEY"]), channel: channel)
-        let window = try #require(NSApp.windows.first { $0.title == "Keydesk · 실행 승인" && $0.isVisible })
+        let window = try #require(NSApp.windows.first { $0.title == "Cellar · 실행 승인" && $0.isVisible })
         #expect(window.frame.width >= 600 && window.frame.height >= 300)
         model.rejectCLI()
         #expect(!window.isVisible)

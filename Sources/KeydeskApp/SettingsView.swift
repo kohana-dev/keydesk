@@ -41,7 +41,7 @@ struct SettingsView: View {
                     } else {
                         Label("iCloud 키체인에 저장하지 못했습니다. 복구 키를 직접 보관하세요.", systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.callout)
                     }
-                    Text("같은 Apple 계정으로 로그인한 다른 Mac에서 Keydesk를 열면 iCloud Drive 백업과 이 키로 자동 복원합니다.").font(.caption).foregroundStyle(.secondary)
+                    Text("같은 Apple 계정으로 로그인한 다른 Mac에서 Cellar를 열면 iCloud Drive 백업과 이 키로 자동 복원합니다.").font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Button("복구 키 보기", systemImage: "key") { showingRecovery = true }
                         Button("복구 키 / 데이터 키 교체", systemImage: "arrow.triangle.2.circlepath") { rotating = true }

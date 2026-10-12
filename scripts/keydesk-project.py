@@ -65,6 +65,7 @@ def main():
     sub = parser.add_subparsers(dest='action', required=True)
     sub.add_parser('describe', help='Print configured project and variable names, never values')
     sub.add_parser('imports', help='List locally recorded file migration receipts, not vault contents')
+    sub.add_parser('connections', help='List configured MCP targets and known binding names, never values')
     sub.add_parser('status', help='Query vault lock, deposit and backup status')
     run = sub.add_parser('run', help='Use the signed CLI; native approval still applies')
     run.add_argument('--env', required=True, choices=sorted(ENVIRONMENTS))
@@ -84,6 +85,16 @@ def main():
     args = parser.parse_args()
     cli = Path.home() / '.local/bin/keydesk'
     try:
+        if args.action == 'connections':
+            registry = Path.home() / '.config/keydesk/mcp-connections.json'
+            if registry.is_symlink() or (registry.exists() and registry.stat().st_size > 65536):
+                raise ValueError('Invalid MCP registry')
+            rows = json.loads(registry.read_text()) if registry.exists() else []
+            allowed = {'server', 'project', 'projectId', 'environment', 'clients', 'knownBindings'}
+            if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+                raise ValueError('Invalid MCP registry')
+            print(json.dumps([{k: v for k, v in row.items() if k in allowed} for row in rows], ensure_ascii=False, indent=2))
+            return 0
         if args.action == 'imports':
             registry = Path.home() / '.config/keydesk/imported-files.json'
             if registry.is_symlink() or (registry.exists() and registry.stat().st_size > 65536):

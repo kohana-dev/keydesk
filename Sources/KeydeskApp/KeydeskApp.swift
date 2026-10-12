@@ -16,7 +16,7 @@ struct KeydeskApp: App {
         _model = State(initialValue: VaultModel(demo: demo, demoSocket: demo ? socket : nil))
     }
     var body: some Scene {
-        Window("Keydesk", id: "main") {
+        Window("Cellar", id: "main") {
             ContentView(model: model)
                 .frame(minWidth: 1000, minHeight: 680)
                 .onAppear { delegate.model = model; NSApp.activate() }

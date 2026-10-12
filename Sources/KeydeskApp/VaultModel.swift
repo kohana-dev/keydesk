@@ -182,7 +182,7 @@ final class VaultModel {
         let token = generation
         do {
             if isDemo { loadDemo(); try prepareDeposits(); return }
-            let context = try await keys.authenticate(reason: "Keydesk 금고를 열기 위해 인증합니다.")
+            let context = try await keys.authenticate(reason: "Cellar 금고를 열기 위해 인증합니다.")
             guard token == generation else { return }
             let envelope = try store.read()
             let key = try keys.loadDeviceKey(envelope: envelope, context: context)
@@ -362,7 +362,7 @@ final class VaultModel {
         let imported = try VaultFileStore.read(at: url)
         let recovered = try VaultCrypto.recover(imported, code: code)
         var snapshot = try VaultCrypto.open(imported, key: recovered)
-        _ = try await keys.authenticate(reason: "iCloud 백업에서 Keydesk 금고를 복원하기 위해 인증합니다.")
+        _ = try await keys.authenticate(reason: "iCloud 백업에서 Cellar 금고를 복원하기 위해 인증합니다.")
         guard token == generation, !exists else { throw VaultError.locked }
         // A fresh local vault identity avoids altering existing Keychain entries.
         var header = VaultHeader(); header.revision = snapshot.revision + 1
@@ -413,7 +413,7 @@ final class VaultModel {
             request.channel.send(CLIEvent(kind: "error", text: "금고가 잠겨 있거나 다른 승인을 처리 중입니다.")); request.channel.finish(); return
         }
         reusingDevelopmentApproval = developmentApprovals.allows(request.request, executable: request.executable)
-        request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? "기억한 명령 승인으로 실행합니다." : developmentApprovals.approvalReason(request.request, executable: request.executable) + " Keydesk에서 실행을 승인해 주세요."))
+        request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? "기억한 명령 승인으로 실행합니다." : developmentApprovals.approvalReason(request.request, executable: request.executable) + " Cellar에서 실행을 승인해 주세요."))
         approval = request
         if reusingDevelopmentApproval {
             Task { @MainActor [weak self] in await self?.acceptCLI() }

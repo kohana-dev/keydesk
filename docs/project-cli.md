@@ -1,4 +1,4 @@
-# AI development through the CLI
+# AI development through MCP and the CLI
 
 Install the signed app and bundled CLI, then run `python3 scripts/install-ai-skills.py --update` to install the Codex/Claude skills and `~/.local/bin/keydesk-project` adapter. This adapter uses Python 3 and invokes the signed CLI; it never reads secret files itself. Native unlock and execution approval remain in Keydesk.
 
@@ -23,7 +23,7 @@ The descriptor records the intended bindings, not proof they currently exist in 
 
 `keydesk status` (0.6.1+) returns `locked`, `busy`, `pendingDeposits`, `backup` and `cloudUpload`. Locked status reports backup/upload as `unknown_locked`; it does not unlock or expose project, key or filename metadata. A successful store may still be queued; merge after unlock and check backup status before removing an original.
 
-The existing MCP endpoint remains metadata-only and requires its scoped metadata grant. A public HTTP service or get-secret MCP endpoint is unnecessary for local development. Use these CLI commands for storage and process execution, and reserve UI interaction for user authentication/approval and UI-specific operations.
+Keydesk 0.7.0 MCP exposes `request_http` through the local API broker without delivering the selected authentication value to the AI client. Prefer MCP for supported direct APIs, and use CLI for storage, SDKs, builds and files. Metadata listing still requires its separate grant. See [MCP setup](mcp-setup.md).
 
 Migration keeps originals until byte integrity and backup are verified. Do not change Google service-account permissions, Apple key IDs, server secrets or provider credentials as part of a local migration. If a consumer still hardcodes a source path, add support for the injected path before removing that source.
 
