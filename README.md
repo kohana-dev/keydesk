@@ -5,7 +5,7 @@ Cellar is the new app name for Keydesk. The `keydesk` CLI, MCP server name, vaul
 A local macOS secret vault for individual developers. Store API keys by project
 and dev/staging/prod environment; let approved tools use them through a signed
 CLI without putting values into AI chat. SwiftUI, CryptoKit and Security;
-no external Swift package dependencies. Current source version: 0.7.2 beta.
+no external Swift package dependencies. Current source version: 0.7.3 beta.
 
 개인 개발자를 위한 macOS 로컬 API 키 금고입니다. 실제 개인 사용과
 Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며,
@@ -27,7 +27,7 @@ Codex·Claude 별도 세션은 검증했습니다. 공개 배포는 베타이며
 
 ## Install / build
 
-Download the signed, notarized [Cellar 0.7.2 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.7.2/Cellar-0.7.2-macOS-arm64.zip).
+Download the signed, notarized [Cellar 0.7.3 beta for Apple Silicon](https://github.com/kohana-dev/keydesk/releases/download/v0.7.3/Cellar-0.7.3-macOS-arm64.zip).
 Requires macOS 14 or later on an Apple Silicon Mac. Intel builds are not provided.
 Unzip, move Keydesk.app to Applications (or ~/Applications), and open it normally.
 No Apple Developer account is needed. Authenticate through macOS when prompted;
