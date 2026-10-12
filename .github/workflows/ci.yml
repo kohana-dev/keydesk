@@ -17,6 +17,7 @@ jobs:
         run: |
           python3 scripts/test-project-cli.py
           python3 scripts/test-mcp-setup.py
+          python3 scripts/test-installers.py
           python3 scripts/test-auto-mcp.py
           python3 scripts/test-cellar-migration.py
       - name: Public export and privacy boundaries

@@ -7,7 +7,7 @@ The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` 
 - Apple Silicon Mac with macOS 14 or later. The current release does not include Intel binaries.
 - No Apple Developer membership is required to install the official signed, notarized app.
 - For automatic cloud backup/recovery: the same Apple account, iCloud Drive and iCloud Keychain enabled. Check upload status; choosing an iCloud folder alone does not prove the file has uploaded.
-- For the two-client AI setup recipe below: Git, Python 3.11+, Codex CLI and Claude Code installed. Sign in to each AI client before asking it to work. The app itself does not require Git or Python.
+- For AI setup: Git, Python 3.11+, the selected AI CLI(s) installed (both for the default recipe). Sign in to each selected AI client before asking it to work. The app itself does not require Git or Python.
 - Official setup references: [Python for macOS](https://www.python.org/downloads/macos/), [Git for macOS](https://git-scm.com/downloads/mac), [Codex CLI](https://developers.openai.com/codex/cli/) and [Claude Code setup](https://code.claude.com/docs/en/setup).
 
 ## Download and install
@@ -46,7 +46,7 @@ codex --version
 claude --version
 ```
 
-If a command is missing, install it from the official references above, then reopen Terminal. A system Python older than 3.11 cannot run these scripts. Both AI clients are required by the default recipe below.
+If a command is missing, install it from the official references above, then reopen Terminal. A system Python older than 3.11 cannot run these scripts. Both AI clients are required by the default recipe below; single-client commands are shown after it. Close other client sessions while changing their configuration.
 
 Clone the source repository to obtain the maintained setup scripts; you do not need to build the app:
 
@@ -56,6 +56,20 @@ cd keydesk
 python3 scripts/install-ai-skills.py
 python3 scripts/install-auto-mcp.py
 ```
+
+For only one client, use the same selection for both commands:
+
+```sh
+python3 scripts/install-ai-skills.py --client codex
+python3 scripts/install-auto-mcp.py --client codex
+# For Claude only, replace codex with claude.
+```
+
+Before writing, the installers check all selected targets, conflicting definitions, configuration syntax/structure and required source files. MCP setup also checks the installed Cellar helper, CLI link and selected client executables (`--version`). This does not authenticate an AI account or verify a provider key. A missing or unresponsive client stops setup before configuration writes.
+
+On a handled installation error or keyboard interrupt, each script restores the files it changed (including prior permissions) and removes newly created target files. Existing replaced files also have private `.cellar-backup-<timestamp>` copies. The two commands are separate transactions: if MCP setup fails, successfully installed skills remain and can be reused. Correct the reported prerequisite and rerun; successful reruns are idempotent. Never delete an existing conflicting client configuration to get past an error.
+
+Atomic writes protect individual files, but power loss or forcibly killing the installer can interrupt a multi-file setup. If rollback itself reports failure, restore the affected configuration from its backup before retrying. Do not run multiple installers or edit client configuration concurrently.
 
 The scripts install the `keydesk` companion skill and one global repository-aware MCP connection for both clients. They preserve unrelated client settings and stop on conflicting existing definitions. Restart/reload existing client sessions once to load the new connection. Explicit skill invocation remains Codex `$keydesk` and Claude `/keydesk`.
 
