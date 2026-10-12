@@ -7,7 +7,8 @@ The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` 
 - Apple Silicon Mac with macOS 14 or later. The current release does not include Intel binaries.
 - No Apple Developer membership is required to install the official signed, notarized app.
 - For automatic cloud backup/recovery: the same Apple account, iCloud Drive and iCloud Keychain enabled. Check upload status; choosing an iCloud folder alone does not prove the file has uploaded.
-- For the optional AI setup scripts: Python 3.11+ and the Codex / Claude Code clients you intend to use. The app itself does not require Python.
+- For the two-client AI setup recipe below: Git, Python 3.11+, Codex CLI and Claude Code installed. Sign in to each AI client before asking it to work. The app itself does not require Git or Python.
+- Official setup references: [Python for macOS](https://www.python.org/downloads/macos/), [Git for macOS](https://git-scm.com/downloads/mac), [Codex CLI](https://developers.openai.com/codex/cli/) and [Claude Code setup](https://code.claude.com/docs/en/setup).
 
 ## Download and install
 
@@ -36,7 +37,18 @@ Cellar creates the initial vault through its first-run flow. After unlocking, cr
 
 ## Connect Codex and Claude
 
-Install the official app first and connect its CLI. Clone the source repository to obtain the maintained setup scripts; you do not need to build the app:
+Install the official app first and connect its CLI. Before running the two-client recipe, confirm the prerequisites in Terminal:
+
+```sh
+python3 --version   # must be 3.11 or newer
+git --version
+codex --version
+claude --version
+```
+
+If a command is missing, install it from the official references above, then reopen Terminal. A system Python older than 3.11 cannot run these scripts. Both AI clients are required by the default recipe below.
+
+Clone the source repository to obtain the maintained setup scripts; you do not need to build the app:
 
 ```sh
 git clone https://github.com/kohana-dev/keydesk.git
@@ -46,6 +58,15 @@ python3 scripts/install-auto-mcp.py
 ```
 
 The scripts install the `keydesk` companion skill and one global repository-aware MCP connection for both clients. They preserve unrelated client settings and stop on conflicting existing definitions. Restart/reload existing client sessions once to load the new connection. Explicit skill invocation remains Codex `$keydesk` and Claude `/keydesk`.
+
+Confirm the connection before creating a project mapping:
+
+```sh
+codex mcp list
+claude mcp list
+```
+
+Codex should list `keydesk` as enabled; Claude should show `keydesk` as Connected. An Unsupported OAuth auth column in Codex is expected for this local stdio server: Cellar handles vault authentication and human approval separately.
 
 No MCP registration is required for each project. In the repository you are developing, use a names-only `keydesk.project.json` that matches a project and variables already stored in Cellar:
 
@@ -62,9 +83,30 @@ No MCP registration is required for each project. In the repository you are deve
 }
 ```
 
+Create this file in the root of your actual development repository, replacing `my-app` and the example variables with the exact project and variable names you registered in Cellar. `dev`, `staging` and `prod` are environment identifiers; `Development` is the UI label for `dev`.
+
 This file contains names and types only. It does not create, copy or expose keys. The AI should call `project_context` with its repository's absolute path, then `request_http` with the intended environment and existing value binding. Original files, SDKs and build tools use `keydesk run --files/--only`; they are not exposed as MCP file-reading tools. See [MCP setup](mcp-setup.md), [local API broker](local-api-broker.md) and [project CLI](project-cli.md).
 
 Approve the first use in Cellar yourself. If you choose exact-request reuse, identical production requests can share the grant across Codex and Claude for five minutes and ten additional requests. The app never gives the authentication value to the MCP caller. Approved CLI/SDK processes do receive their selected credentials and require trusted tools.
+
+### First AI connection check
+
+Start a new Codex or Claude session in that development repository and ask:
+
+> Use the keydesk MCP project_context tool for this repository. Confirm the project, environment and variable names only. Do not read any credential values or call a provider API yet.
+
+The response should match your manifest. If it reports `unconfigured`, fix the manifest instead of registering another MCP server. Then request your intended supported API operation and approve it in Cellar; success is an actual provider response, not merely a listed MCP server.
+
+### If `keydesk` is not found in Terminal
+
+The CLI link is `~/.local/bin/keydesk`. The full-path status command above works even if this folder is not in your shell PATH. For commands using bare `keydesk`, add it for the current Terminal session:
+
+```sh
+export PATH="$HOME/.local/bin:$PATH"
+keydesk status
+```
+
+To keep it for future zsh sessions, add that same export line to your existing `~/.zshrc`; preserve its other contents. The AI adapters use the full helper path and do not need this PATH change.
 
 ## Upgrade from Keydesk.app
 
