@@ -25,6 +25,9 @@ struct KeydeskApp: App {
         .defaultSize(width: 1280, height: 800)
         .commands {
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(after: .appInfo) {
+                SettingsLink { Text(L10n.tr("업데이트와 버그 제보…", "Updates and bug reports…")) }
+            }
             CommandMenu(L10n.tr("금고", "Vault")) {
                 Button(L10n.tr("대기 중인 실행 승인 보기", "Show pending approval")) { model.showPendingApproval() }
                     .disabled(model.approval == nil && model.brokerApproval == nil && model.apiApproval == nil)

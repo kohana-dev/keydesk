@@ -4,7 +4,7 @@ A local macOS vault for developers and their AI tools. Keep API keys and origina
 
 개인 개발자를 위한 macOS 로컬 키 금고입니다. API 키와 키 파일을 암호화해 보관하고, Codex·Claude가 키 값을 채팅에 노출하지 않고 사용할 수 있습니다.
 
-**[Download Cellar 0.7.7 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.7/Cellar-0.7.7-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
+**[Download Cellar 0.7.8 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.8/Cellar-0.7.8-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
 Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
@@ -13,6 +13,9 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 *Actual English interface. Screenshots use an isolated demo vault with fictional projects and credentials; no personal vault data is shown.*
 
 ## What you can do
+
+- Check the latest official release from Settings, only when you choose to. Updates are downloaded and installed manually.
+- Write a bug report, review the exact contents, then open a GitHub draft. App/OS details are optional; vaults, credentials, logs, and screenshots are not collected. You submit the public report yourself on GitHub.
 
 - Choose English, 한국어, or the system language in **Cellar → Settings → App language**. The app applies changes immediately and remembers the choice; existing key names and project data stay unchanged.
 - Organize credentials by project and Development / Staging / Production environment. Add your own project images.
@@ -28,7 +31,7 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 
 ## Get started
 
-1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.7), and verify the checksum.
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.8), and verify the checksum.
 2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
 3. Open Cellar normally. Follow macOS authentication and check your encrypted backup / iCloud upload status.
 4. In **Backup & CLI / 백업·CLI 설정**, connect the bundled CLI. Add a project and register a key or original file.

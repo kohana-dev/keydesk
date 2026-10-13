@@ -6,18 +6,24 @@ struct LanguagePreferencesView: View {
 
     var body: some View {
         let _ = interfaceLanguage
-        Form {
-            Picker(L10n.tr("앱 언어", "App language"), selection: $interfaceLanguage) {
-                Text(L10n.tr("시스템 설정 따르기", "Follow system settings")).tag(AppLanguage.system.rawValue)
-                Text("한국어").tag(AppLanguage.korean.rawValue)
-                Text("English").tag(AppLanguage.english.rawValue)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                GroupBox(L10n.tr("앱 언어", "App language")) {
+                    VStack(alignment: .leading, spacing: 10) {
+                        Picker(L10n.tr("앱 언어", "App language"), selection: $interfaceLanguage) {
+                            Text(L10n.tr("시스템 설정 따르기", "Follow system settings")).tag(AppLanguage.system.rawValue)
+                            Text("한국어").tag(AppLanguage.korean.rawValue)
+                            Text("English").tag(AppLanguage.english.rawValue)
+                        }
+                        Text(L10n.tr("언어 변경은 즉시 적용됩니다. 금고를 열기 전에도 언어를 선택할 수 있습니다.", "Language changes apply immediately, even while the vault is locked."))
+                            .font(.callout).foregroundStyle(.secondary)
+                    }.padding(8)
+                }
+                SupportSettingsSection()
             }
-            Text(L10n.tr("언어 변경은 즉시 적용됩니다. 금고를 열기 전에도 언어를 선택할 수 있습니다.", "Language changes apply immediately, even while the vault is locked."))
-                .font(.callout).foregroundStyle(.secondary)
+            .padding(20)
         }
-        .formStyle(.grouped)
-        .padding(16)
-        .frame(width: 420, height: 190)
+        .frame(width: 550, height: 550)
         .environment(\.locale, L10n.locale)
     }
 }

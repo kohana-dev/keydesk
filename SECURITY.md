@@ -1,12 +1,15 @@
 # Security policy
 
-Cellar is a local macOS secret vault. The current published app is **0.7.6**
+Cellar is a local macOS secret vault. The current published app is **0.7.8**
 (Apple Silicon, macOS 14+), distributed as a public beta. The CLI, MCP server,
 skill names, bundle/Keychain identity and existing vault location retain
 `keydesk` compatibility names. This project has not had an independent security
 audit. Only the latest published release receives fixes; older releases are not
 maintained separately. Updates are installed manually from the official
 [GitHub releases](https://github.com/kohana-dev/keydesk/releases).
+Settings offers a manual update check against the official GitHub public release API.
+It runs only when clicked, uses no vault/account data, and does not install software.
+GitHub receives normal network connection information such as the client IP.
 Verify the published checksum and use the signed, notarized app. Notarization
 is an Apple distribution check, not an independent security audit.
 
@@ -17,6 +20,13 @@ exploit details in public issues. Use the repository's GitHub Security tab and
 Report a vulnerability. Private vulnerability reporting is enabled for the
 official repository (checked 2026-10-13). If private reporting is unavailable, ask for a private reporting channel
 without disclosing vulnerability details.
+The in-app bug reporter composes a report locally and shows the full title/body
+before opening a GitHub draft. App version/build, macOS version, and architecture
+are optional. It never attaches vaults, keys, logs, paths, or screenshots. The user
+confirms the report and submits it publicly on GitHub; draft content is included
+in the browser URL. Common secret patterns are blocked locally, but this is not
+comprehensive detection. Use private vulnerability reporting for security issues.
+No Sentry, background telemetry, or automatic crash reporting is included.
 There is no guaranteed response SLA.
 
 ## Boundaries

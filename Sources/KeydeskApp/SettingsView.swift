@@ -18,6 +18,8 @@ struct SettingsView: View {
             }
             Text(L10n.tr("언어 변경은 즉시 적용됩니다.", "Language changes apply immediately.")).font(.caption).foregroundStyle(.secondary)
             Divider()
+            SupportSettingsSection()
+            Divider()
             Text(L10n.tr("백업과 개발 도구 설정", "Backup and developer settings")).font(.title2.bold())
             GroupBox(L10n.tr("자동 암호화 백업", "Automatic encrypted backup")) {
                 VStack(alignment: .leading, spacing: 10) {
