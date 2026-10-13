@@ -25,7 +25,7 @@ extension VaultModel {
         guard let pending = brokerApproval else { return }
         let token = generation
         do {
-            if !isDemo && pending.request.environment == .production { _ = try await keys.authenticate(reason: "Production 키 이름 목록을 AI에 보여주기 위해 인증합니다.") }
+            if !isDemo && pending.request.environment == .production { _ = try await keys.authenticate(reason: L10n.tr("Production 키 이름 목록을 AI에 보여주기 위해 인증합니다.", "Authenticate to show the list of Production key names to the AI.")) }
             guard pending.channel.isConnected, pending.grant.expiresAt > Date(), token == generation, snapshot != nil, brokerApproval?.id == pending.id else { throw VaultError.locked }
             try mutate(invalidateGrants: false) { $0.record("AI 키 이름 조회 허가 · \(pending.request.environment.title)") }
             grants[pending.grant.id] = pending.grant

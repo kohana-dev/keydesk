@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import KeydeskCore
 
 /// Owns approval windows independently of the main SwiftUI window's appearance lifecycle.
 /// Requests activation and provides a floating panel that can also be reopened from the vault menu.
@@ -19,11 +20,11 @@ final class ApprovalPanelController: NSObject, NSWindowDelegate {
         guard let model else { return }
         if let approval = model.approval {
             guard !model.reusingDevelopmentApproval else { return }
-            show(CLIApprovalView(model: model, approval: approval), title: "Cellar · 실행 승인")
+            show(CLIApprovalView(model: model, approval: approval), title: L10n.tr("Cellar · 실행 승인", "Cellar · Execution approval"))
         } else if let approval = model.apiApproval {
-            show(APIApprovalView(model: model, approval: approval), title: "Cellar · API 사용 승인")
+            show(APIApprovalView(model: model, approval: approval), title: L10n.tr("Cellar · API 사용 승인", "Cellar · API approval"))
         } else if let approval = model.brokerApproval {
-            show(BrokerApprovalView(model: model, approval: approval), title: "Cellar · AI 연결 승인")
+            show(BrokerApprovalView(model: model, approval: approval), title: L10n.tr("Cellar · AI 연결 승인", "Cellar · AI connection approval"))
         } else {
             closingFromModel = true
             panel?.close(); panel = nil
@@ -31,8 +32,19 @@ final class ApprovalPanelController: NSObject, NSWindowDelegate {
         }
     }
 
+    func refreshLanguage() {
+        guard let panel, let model else { return }
+        if model.approval != nil {
+            panel.title = L10n.tr("Cellar · 실행 승인", "Cellar · Execution approval")
+        } else if model.apiApproval != nil {
+            panel.title = L10n.tr("Cellar · API 사용 승인", "Cellar · API approval")
+        } else if model.brokerApproval != nil {
+            panel.title = L10n.tr("Cellar · AI 연결 승인", "Cellar · AI connection approval")
+        }
+    }
+
     private func show(_ view: some View, title: String) {
-        let hosting = NSHostingView(rootView: view.tint(Theme.accent).preferredColorScheme(.light))
+        let hosting = NSHostingView(rootView: view.tint(Theme.accent).preferredColorScheme(.light).environment(\.locale, L10n.locale))
         let panel = self.panel ?? {
             let created = NSPanel(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
             created.level = .floating

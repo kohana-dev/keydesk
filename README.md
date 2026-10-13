@@ -4,16 +4,17 @@ A local macOS vault for developers and their AI tools. Keep API keys and origina
 
 개인 개발자를 위한 macOS 로컬 키 금고입니다. API 키와 키 파일을 암호화해 보관하고, Codex·Claude가 키 값을 채팅에 노출하지 않고 사용할 수 있습니다.
 
-**[Download Cellar 0.7.6 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.6/Cellar-0.7.6-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
+**[Download Cellar 0.7.7 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.7/Cellar-0.7.7-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
 Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
-![Cellar project vault with masked demo credentials](docs/images/cellar-vault.png)
+![Cellar English project vault with masked demo credentials](docs/images/cellar-vault-en.jpg)
 
-*Actual Cellar 0.7.5 UI. Screenshots use an isolated demo vault with fictional projects and credentials; no personal vault data is shown. The current UI is in Korean.*
+*Actual English interface. Screenshots use an isolated demo vault with fictional projects and credentials; no personal vault data is shown.*
 
 ## What you can do
 
+- Choose English, 한국어, or the system language in **Cellar → Settings → App language**. The app applies changes immediately and remembers the choice; existing key names and project data stay unchanged.
 - Organize credentials by project and Development / Staging / Production environment. Add your own project images.
 - Find services with inline search recommendations and recognizable provider logos.
 - Store string keys and original `.p8`, `.pem`, service-account JSON, `.p12` and `.jks` files. Choose a file or drag it into the registration form.
@@ -23,14 +24,14 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 - Back up the encrypted vault to iCloud Drive and store its recovery key in iCloud Keychain when available. View backup and upload status in the app.
 - Use the signed CLI for SDKs, builds and original files, or MCP for supported provider API requests. View and revoke remembered approvals in the app.
 
-![Cellar inline Gemini service search and registration](docs/images/cellar-service-search.png)
+![Cellar English inline Gemini service search and registration](docs/images/cellar-service-search-en.jpg)
 
 ## Get started
 
-1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.6), and verify the checksum.
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.7), and verify the checksum.
 2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
 3. Open Cellar normally. Follow macOS authentication and check your encrypted backup / iCloud upload status.
-4. In **백업·CLI 설정**, connect the bundled CLI. Add a project and register a key or original file.
+4. In **Backup & CLI / 백업·CLI 설정**, connect the bundled CLI. Add a project and register a key or original file.
 5. For Codex and Claude, follow the [AI connection steps](docs/installation.md#connect-codex-and-claude). One global MCP connection routes requests using each repository's names-only project manifest.
 
 The app bundle and executable are **Cellar.app** and **Cellar**. The compatible CLI, MCP server and skill remain named **`keydesk`**. Existing vault paths and Keychain identity are unchanged. Upgrading from `Keydesk.app`? See the [migration steps](docs/installation.md#upgrade-from-keydeskapp).

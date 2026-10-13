@@ -70,12 +70,12 @@ public struct DevelopmentApprovalCache {
         return true
     }
     public func approvalReason(_ request: CLIRequest, executable: ExecutableIdentity, now: Date = Date()) -> String {
-        guard Self.eligible(request) else { return "위험 경고 또는 실행 모드 때문에 매번 확인이 필요합니다." }
-        guard let data = try? encoded(request), let entry = entries.first(where: { $0.request == data }) else { return "새 명령이거나 프로젝트·키·폴더·명령이 변경됐습니다." }
-        if entry.expiresAt <= now { return "기억한 명령 승인이 만료됐습니다." }
-        if entry.remainingUses <= 0 { return "허용한 재실행 횟수를 모두 사용했습니다." }
-        if entry.executablePath != executable.path || entry.executableDigest != executable.digest { return "실행 파일이 변경됐습니다." }
-        return "직접 지정한 파일이나 패키지 설정이 변경됐습니다."
+        guard Self.eligible(request) else { return L10n.tr("위험 경고 또는 실행 모드 때문에 매번 확인이 필요합니다.", "The risk warnings or execution mode require approval every time.") }
+        guard let data = try? encoded(request), let entry = entries.first(where: { $0.request == data }) else { return L10n.tr("새 명령이거나 프로젝트·키·폴더·명령이 변경됐습니다.", "This is a new command, or the project, keys, directory, or command has changed.") }
+        if entry.expiresAt <= now { return L10n.tr("기억한 명령 승인이 만료됐습니다.", "The remembered command approval has expired.") }
+        if entry.remainingUses <= 0 { return L10n.tr("허용한 재실행 횟수를 모두 사용했습니다.", "All permitted reruns have been used.") }
+        if entry.executablePath != executable.path || entry.executableDigest != executable.digest { return L10n.tr("실행 파일이 변경됐습니다.", "The executable has changed.") }
+        return L10n.tr("직접 지정한 파일이나 패키지 설정이 변경됐습니다.", "A directly specified file or package configuration has changed.")
     }
     public func active(now: Date = Date()) -> [Entry] { entries.filter { $0.expiresAt > now && $0.remainingUses > 0 } }
     public mutating func revoke(_ id: UUID) { entries.removeAll { $0.id == id } }

@@ -19,6 +19,7 @@ final_app="$PWD/dist/Cellar.app"
 mkdir -p "$app_dir/Contents/MacOS" "$app_dir/Contents/Helpers" "$app_dir/Contents/Resources"
 cp -R Resources/ProviderLogos "$app_dir/Contents/Resources/ProviderLogos"
 cp Resources/AppIcon/Cellar.icns "$app_dir/Contents/Resources/Cellar.icns"
+cp -R Resources/en.lproj Resources/ko.lproj "$app_dir/Contents/Resources/"
 cp LICENSE THIRD_PARTY_NOTICES.md "$app_dir/Contents/Resources/"
 cp "$build_dir/KeydeskDesktop" "$app_dir/Contents/MacOS/Cellar"
 cp "$build_dir/keydesk" "$app_dir/Contents/Helpers/keydesk"
@@ -32,10 +33,12 @@ cat > "$app_dir/Contents/Info.plist" <<'PLIST'
 <key>CFBundleIconFile</key><string>Cellar.icns</string>
 <key>CFBundleExecutable</key><string>Cellar</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>0.7.6</string>
-<key>CFBundleVersion</key><string>27</string>
+<key>CFBundleShortVersionString</key><string>0.7.7</string>
+<key>CFBundleVersion</key><string>28</string>
 <key>LSMinimumSystemVersion</key><string>14.0</string>
 <key>NSHighResolutionCapable</key><true/>
+<key>CFBundleDevelopmentRegion</key><string>en</string>
+<key>CFBundleLocalizations</key><array><string>en</string><string>ko</string></array>
 <key>NSFaceIDUsageDescription</key><string>Cellar 금고를 열기 위해 인증합니다.</string>
 </dict></plist>
 PLIST

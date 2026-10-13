@@ -2,13 +2,15 @@ import SwiftUI
 import KeydeskCore
 
 struct SecretFileReplacement: View {
+    @AppStorage(L10n.preferenceKey) private var interfaceLanguage = AppLanguage.system.rawValue
     @Bindable var model: VaultModel
     let credential: Credential
     @State private var file: SecretFile?
     var body: some View {
-        DisclosureGroup("파일 교체") {
+        let _ = interfaceLanguage
+        DisclosureGroup(L10n.tr("파일 교체", "Replace file")) {
             SecretFileInput(file: $file)
-            Button("새 파일 버전 저장") {
+            Button(L10n.tr("새 파일 버전 저장", "Save new version")) {
                 guard let file else { return }
                 do {
                     try model.restoreVersion(credential.id, version: SecretVersion(file: file)); self.file = nil

@@ -8,7 +8,7 @@ extension VaultModel {
     func verifyCloudRecovery() async throws -> [String: Bool] {
         guard !isDemo else { throw VaultError.invalidData }
         let token = generation
-        let context = try await keys.authenticate(reason: "iCloud 백업을 별도 암호화 금고로 복원 검증합니다. 기존 금고는 바꾸지 않습니다.")
+        let context = try await keys.authenticate(reason: L10n.tr("iCloud 백업을 별도 암호화 금고로 복원 검증합니다. 기존 금고는 바꾸지 않습니다.", "Authenticate to verify recovery of the iCloud backup in a separate encrypted vault. The existing vault will not be changed."))
         guard token == generation else { throw VaultError.locked }
         flushBackup()
         guard let directory = backupDirectory ?? Self.iCloudBackupDirectory,

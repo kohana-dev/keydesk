@@ -2,9 +2,28 @@ import Foundation
 
 public enum ProviderCatalog {
     public struct Category: Sendable, Identifiable {
-        public let title: String
+        public let id: String
         public let providers: [String]
-        public var id: String { title }
+        public var title: String { L10n.tr(id, englishTitle) }
+        fileprivate var englishTitle: String {
+            switch id {
+            case "AI · 모델": "AI · Models"
+            case "클라우드 · 배포": "Cloud · Deployment"
+            case "결제 · 구독": "Payments · Subscriptions"
+            case "앱 · 플랫폼": "Apps · Platforms"
+            case "데이터 · 검색 · 백업": "Data · Search · Backup"
+            case "인증": "Authentication"
+            case "메일 · 메시지": "Email · Messaging"
+            case "개발 · 협업": "Development · Collaboration"
+            case "모니터링 · 분석": "Monitoring · Analytics"
+            case "기타": "Other"
+            default: id
+            }
+        }
+        init(title: String, providers: [String]) {
+            self.id = title
+            self.providers = providers
+        }
     }
     public static let categories: [Category] = [
         Category(title: "AI · 모델", providers: ["OpenAI", "Anthropic", "Gemini", "Replicate", "Hugging Face", "ElevenLabs", "DeepSeek", "Groq", "Mistral", "Perplexity", "FAL"]),
@@ -32,10 +51,10 @@ public enum ProviderCatalog {
         let terms = query.lowercased().split(whereSeparator: { $0.isWhitespace }).map(String.init)
         return categories.compactMap { category in
             let providers = category.providers.filter { name in
-                let haystack = (name + " " + category.title + " " + (aliases[name] ?? "")).lowercased()
+                let haystack = (name + " " + category.id + " " + category.englishTitle + " " + (aliases[name] ?? "")).lowercased()
                 return terms.allSatisfy { haystack.contains($0) }
             }
-            return providers.isEmpty ? nil : Category(title: category.title, providers: providers)
+            return providers.isEmpty ? nil : Category(title: category.id, providers: providers)
         }
     }
     /// Classify only clear vendor prefixes, without inspecting secret values.

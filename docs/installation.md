@@ -10,6 +10,18 @@ The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` 
 - For AI setup: Git, Python 3.11+, the selected AI CLI(s) installed (both for the default recipe). Sign in to each selected AI client before asking it to work. The app itself does not require Git or Python.
 - Official setup references: [Python for macOS](https://www.python.org/downloads/macos/), [Git for macOS](https://git-scm.com/downloads/mac), [Codex CLI](https://developers.openai.com/codex/cli/) and [Claude Code setup](https://code.claude.com/docs/en/setup).
 
+## App language / 앱 언어
+
+Cellar 0.7.7 supports English and 한국어. Open **Cellar → Settings → App language**
+and select **System**, **한국어**, or **English**. The interface changes immediately
+and the choice is remembered after restarting. Your saved project names, key names,
+and vault contents are preserved. Settings are available while the vault is locked.
+
+Cellar 0.7.7부터 한국어와 영어를 지원합니다. **Cellar → 설정 → 앱 언어**에서
+**시스템 설정**, **한국어**, **English**를 선택하세요. 변경은 바로 적용되며,
+다시 실행해도 유지됩니다. 저장한 프로젝트·키 이름과 금고 내용은 유지됩니다.
+금고를 잠근 상태에서도 설정을 열 수 있습니다.
+
 ## Download and install
 
 1. Open the [latest release](https://github.com/kohana-dev/keydesk/releases/latest). Download its `Cellar-<version>-macOS-arm64.zip` and `SHA256SUMS.txt` into the same folder.
@@ -151,7 +163,7 @@ Existing vault locations, project manifests and Keychain access identity remain 
 - **Approval expired or was rejected:** stop that attempt. Start a new request only when the user is ready; do not automatically retry.
 - **Backup is pending:** keep Cellar open, check iCloud availability and the actual upload status. `queued` deposits are not off-device backups.
 
-Screenshots are from Cellar 0.7.5 in an isolated demo vault with fictional data. The UI is currently in Korean. Distribution remains beta; separate-Mac recovery and an independent security audit are not completed. See [SECURITY.md](../SECURITY.md).
+The Korean screenshots shown here are from Cellar 0.7.5 in an isolated demo vault with fictional data. Cellar 0.7.7 supports both Korean and English; choose the app language in Settings. Distribution remains beta; separate-Mac recovery and an independent security audit are not completed. See [SECURITY.md](../SECURITY.md).
 
 
 ## Manual first-run and system-lock verification

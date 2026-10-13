@@ -24,7 +24,7 @@ public struct ExecutableIdentity: Sendable {
     }
     public func validate() throws {
         guard FileManager.default.isExecutableFile(atPath: path), try Self.hashFile(path) == digest else {
-            throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "승인할 실행 파일이 변경되었습니다. 새 요청을 보내 주세요."])
+            throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("승인할 실행 파일이 변경되었습니다. 새 요청을 보내 주세요.", "The executable to approve has changed. Send a new request.")])
         }
     }
     static func hashFile(_ path: String) throws -> Data {

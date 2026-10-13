@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 spec = importlib.util.spec_from_file_location('verify_profile', ROOT / 'scripts/verify-profile.py')
@@ -17,6 +18,60 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 class ReleaseToolsTests(unittest.TestCase):
+    def localization_fixture(self, directory):
+        app = pathlib.Path(directory) / 'Cellar.app'
+        for language, reason in [('en', 'Authenticate to unlock your Cellar vault.'),
+                                 ('ko', 'Cellar 금고를 열기 위해 인증합니다.')]:
+            resource = app / 'Contents/Resources' / (language + '.lproj') / 'InfoPlist.strings'
+            resource.parent.mkdir(parents=True)
+            resource.write_text('"NSFaceIDUsageDescription" = ' + json.dumps(reason, ensure_ascii=False) + ';\n')
+        info = {'CFBundleDevelopmentRegion': 'en', 'CFBundleLocalizations': ['en', 'ko']}
+        return app, info
+
+    def test_bilingual_bundle_resources_are_validated_without_running_app(self):
+        spec = importlib.util.spec_from_file_location('verify_release', ROOT / 'scripts/verify-release.py')
+        release = importlib.util.module_from_spec(spec); spec.loader.exec_module(release)
+        with tempfile.TemporaryDirectory(prefix='cellar-localization-test-') as directory:
+            app, info = self.localization_fixture(directory)
+            with patch.object(release, 'run', wraps=release.run) as tool:
+                self.assertTrue(all(release.localization_checks(app, info).values()))
+                self.assertEqual(tool.call_count, 2)
+                self.assertTrue(all(call.args[0] == 'plutil' for call in tool.call_args_list))
+
+    def test_localization_gate_rejects_missing_or_invalid_resources_and_metadata(self):
+        spec = importlib.util.spec_from_file_location('verify_release', ROOT / 'scripts/verify-release.py')
+        release = importlib.util.module_from_spec(spec); spec.loader.exec_module(release)
+        cases = ['missing_en', 'missing_ko', 'empty_en', 'missing_usage_key', 'blank_usage_key',
+                 'malformed_strings', 'missing_languages', 'missing_korean', 'invalid_languages',
+                 'missing_region', 'wrong_region']
+        for case in cases:
+            with self.subTest(case=case), tempfile.TemporaryDirectory(prefix='cellar-localization-test-') as directory:
+                app, info = self.localization_fixture(directory)
+                resource = app / 'Contents/Resources/en.lproj/InfoPlist.strings'
+                if case in ('missing_en', 'missing_ko'):
+                    (app / 'Contents/Resources' / (case.removeprefix('missing_') + '.lproj') / 'InfoPlist.strings').unlink()
+                elif case == 'empty_en':
+                    resource.write_text('')
+                elif case == 'missing_usage_key':
+                    resource.write_text('"OtherKey" = "Not an authentication description";\n')
+                elif case == 'blank_usage_key':
+                    resource.write_text('"NSFaceIDUsageDescription" = " ";\n')
+                elif case == 'malformed_strings':
+                    resource.write_text('"NSFaceIDUsageDescription" = "unterminated;\n')
+                elif case == 'missing_languages':
+                    info.pop('CFBundleLocalizations')
+                elif case == 'missing_korean':
+                    info['CFBundleLocalizations'] = ['en']
+                elif case == 'invalid_languages':
+                    info['CFBundleLocalizations'] = 'en,ko'
+                elif case == 'missing_region':
+                    info.pop('CFBundleDevelopmentRegion')
+                elif case == 'wrong_region':
+                    info['CFBundleDevelopmentRegion'] = 'ko'
+                with patch.object(release, 'run', wraps=release.run) as tool:
+                    self.assertFalse(all(release.localization_checks(app, info).values()))
+                    self.assertTrue(all(call.args[0] == 'plutil' for call in tool.call_args_list))
+
     def test_non_system_linked_libraries_fail_closed(self):
         spec = importlib.util.spec_from_file_location('verify_release', ROOT / 'scripts/verify-release.py')
         release = importlib.util.module_from_spec(spec); spec.loader.exec_module(release)

@@ -14,14 +14,14 @@ enum DeviceKeyStore {
     static func save(_ key: SymmetricKey, id: UUID, epoch: UUID, cleanupPending: Bool = false) throws {
         var attributes = query(id, epoch: epoch)
         attributes[kSecValueData as String] = key.withUnsafeBytes { Data($0) }
-        attributes[kSecAttrLabel as String] = "Keydesk 로컬 금고"
+        attributes[kSecAttrLabel as String] = L10n.tr("Keydesk 로컬 금고", "Keydesk local vault")
         attributes[kSecAttrGeneric as String] = Data((cleanupPending ? "pending-legacy-cleanup" : "complete").utf8)
         attributes[kSecUseDataProtectionKeychain as String] = true
         var accessError: Unmanaged<CFError>?
         guard let access = SecAccessControlCreateWithFlags(nil, kSecAttrAccessibleWhenUnlockedThisDeviceOnly, .userPresence, &accessError) else { throw VaultError.accessDenied }
         attributes[kSecAttrAccessControl as String] = access
         let status = SecItemAdd(attributes as CFDictionary, nil)
-        guard status == errSecSuccess else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: "보호된 Keychain 저장 실패 (\(status)). 이 앱 ID의 provisioning profile과 서명을 확인하세요. 약한 저장 방식으로 전환하지 않습니다."]) }
+        guard status == errSecSuccess else { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: L10n.tr("보호된 Keychain 저장 실패 (\(status)). 이 앱 ID의 provisioning profile과 서명을 확인하세요. 약한 저장 방식으로 전환하지 않습니다.", "Protected Keychain storage failed (\(status)). Check the provisioning profile and signature for this app ID. Cellar will not fall back to weaker storage.")]) }
     }
     /// Pass the context already evaluated by `authenticate` so the user-presence item opens
     /// with that single OS prompt instead of asking a second time.
@@ -46,7 +46,7 @@ enum DeviceKeyStore {
             }
         }
         guard status == errSecSuccess, let data = result as? Data, data.count == 32 else {
-            throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: "기기 키를 열 수 없습니다. 백업과 복구 키로 복원할 수 있습니다."])
+            throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: L10n.tr("기기 키를 열 수 없습니다. 백업과 복구 키로 복원할 수 있습니다.", "The device key could not be opened. You can restore access using a backup and recovery key.")])
         }
         let key = SymmetricKey(data: data)
         _ = try VaultCrypto.open(envelope, key: key)
@@ -112,7 +112,7 @@ enum DeviceKeyStore {
         var attributes = recoveryQuery(vaultID)
         attributes[kSecValueData as String] = data
         attributes[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlocked
-        attributes[kSecAttrLabel as String] = "Keydesk 복구 키"
+        attributes[kSecAttrLabel as String] = L10n.tr("Keydesk 복구 키", "Keydesk recovery key")
         return SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess
     }
     static func loadRecoveryKey(vaultID: UUID) -> SymmetricKey? {
@@ -137,7 +137,7 @@ enum DeviceKeyStore {
         if let context { match[kSecUseAuthenticationContext as String] = context }
         let status = SecItemUpdate(match as CFDictionary, attributes as CFDictionary)
         if status == errSecItemNotFound { try save(key, id: id, epoch: epoch, cleanupPending: true) }
-        else if status != errSecSuccess { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: "기기 키를 복구하지 못했습니다."]) }
+        else if status != errSecSuccess { throw NSError(domain: NSOSStatusErrorDomain, code: Int(status), userInfo: [NSLocalizedDescriptionKey: L10n.tr("기기 키를 복구하지 못했습니다.", "The device key could not be recovered.")]) }
     }
     // Disposable random fixture: validates entitlements and fail-closed user-presence policy,
     // without reading any existing vault item or asking for the user's password.
@@ -172,9 +172,9 @@ enum DeviceKeyStore {
     }
     @discardableResult
     static func authenticate(reason: String) async throws -> LAContext {
-        guard configured else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "보호된 Keychain에 필요한 이 앱의 서명 프로필이 없습니다. 설치 안내를 확인하세요. 운영 키 등록을 중단했습니다."]) }
+        guard configured else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("보호된 Keychain에 필요한 이 앱의 서명 프로필이 없습니다. 설치 안내를 확인하세요. 운영 키 등록을 중단했습니다.", "The signing profile required for this app to use protected Keychain storage is missing. Check the installation guide. Production key registration has been stopped.")]) }
         let context = LAContext()
-        context.localizedCancelTitle = "취소"
+        context.localizedCancelTitle = L10n.tr("취소", "Cancel")
         var error: NSError?
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
             throw error ?? VaultError.locked as NSError

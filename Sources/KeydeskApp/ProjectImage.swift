@@ -1,4 +1,5 @@
 import AppKit
+import KeydeskCore
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -30,5 +31,5 @@ enum ProjectImage {
 }
 enum ProjectImageError: LocalizedError {
     case invalid
-    var errorDescription: String? { "이미지를 읽을 수 없습니다. 20MB 이하의 PNG, JPEG, HEIC 또는 앱 아이콘 파일을 선택하세요." }
+    var errorDescription: String? { L10n.tr("이미지를 읽을 수 없습니다. 20MB 이하의 PNG, JPEG, HEIC 또는 앱 아이콘 파일을 선택하세요.", "The image could not be read. Choose a PNG, JPEG, HEIC, or app icon file of 20 MB or less.") }
 }

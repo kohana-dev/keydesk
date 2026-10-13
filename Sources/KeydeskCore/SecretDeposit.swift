@@ -34,7 +34,7 @@ public struct SecretDeposit: Codable, Sendable {
         guard matches.count <= 1 else { throw VaultError.invalidData }
         let target = matches.first ?? Project(name: project, colorIndex: next.projects.count)
         guard !next.bindings.contains(where: { $0.projectID == target.id && $0.environment == environment && $0.variable == variable }) else {
-            throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "같은 변수 이름이 이미 있습니다. 기존 키를 자동으로 덮어쓰지 않습니다."])
+            throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("같은 변수 이름이 이미 있습니다. 기존 키를 자동으로 덮어쓰지 않습니다.", "This variable name already exists. Existing keys will not be overwritten automatically.")])
         }
         if matches.isEmpty { next.projects.append(target) }
         if let file { next.credentials.append(Credential(id: id, name: variable, file: file, provider: ProviderCatalog.inferredProvider(for: variable))) }

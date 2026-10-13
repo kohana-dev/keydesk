@@ -2,17 +2,19 @@ import SwiftUI
 import KeydeskCore
 
 struct LockedView: View {
+    @AppStorage(L10n.preferenceKey) private var interfaceLanguage = AppLanguage.system.rawValue
     @Bindable var model: VaultModel
     @State private var recovering = false
     @State private var depositing = false
     @State private var recoveryURL: URL?
     var body: some View {
+        let _ = interfaceLanguage
         VStack(spacing: 22) {
             CellarMark(size: 116)
             Text("Cellar").font(.system(size: 15, weight: .semibold)).foregroundStyle(Theme.accent)
             if model.exists || model.isDemo { lockedContent } else { firstRunContent }
             if model.busy { ProgressView().controlSize(.small) }
-            Text("로컬 보관 · iCloud 암호화 백업 · CLI 연결").font(.caption).foregroundStyle(.secondary).padding(.top, 20)
+            Text(L10n.tr("로컬 보관 · iCloud 암호화 백업 · CLI 연결", "Local storage · Encrypted iCloud backup · CLI access")).font(.caption).foregroundStyle(.secondary).padding(.top, 20)
         }
         .frame(maxWidth: 560).frame(maxWidth: .infinity, maxHeight: .infinity).background(Theme.canvas)
         .task(id: model.exists) { if !model.exists { await model.prepareFirstRun() } }
@@ -20,29 +22,29 @@ struct LockedView: View {
         .sheet(isPresented: $recovering) { RecoveryView(model: model, initialURL: recoveryURL) }
     }
     @ViewBuilder private var lockedContent: some View {
-        Text("금고가 잠겨 있습니다").font(.system(size: 28, weight: .semibold)).foregroundStyle(Theme.ink)
-        Text("인증 후 프로젝트와 키를 확인할 수 있습니다.").foregroundStyle(.secondary)
-        Button("금고 열기", systemImage: "touchid") { Task { await model.unlock() } }
+        Text(L10n.tr("금고가 잠겨 있습니다", "Your vault is locked")).font(.system(size: 28, weight: .semibold)).foregroundStyle(Theme.ink)
+        Text(L10n.tr("인증 후 프로젝트와 키를 확인할 수 있습니다.", "Authenticate to view your projects and keys.")).foregroundStyle(.secondary)
+        Button(L10n.tr("금고 열기", "Unlock vault"), systemImage: "touchid") { Task { await model.unlock() } }
             .buttonStyle(.borderedProminent).controlSize(.large).disabled(model.busy)
-        Button("새 키 맡기기", systemImage: "tray.and.arrow.down") { depositing = true }
-        Button("백업 복구 검증", systemImage: "arrow.counterclockwise") { recoveryURL = nil; recovering = true }
+        Button(L10n.tr("새 키 맡기기", "Deposit a new key"), systemImage: "tray.and.arrow.down") { depositing = true }
+        Button(L10n.tr("백업 복구 검증", "Verify backup recovery"), systemImage: "arrow.counterclockwise") { recoveryURL = nil; recovering = true }
     }
     @ViewBuilder private var firstRunContent: some View {
         switch model.firstRun {
         case .waitingForBackup:
-            message("이전 금고의 백업을 기다리는 중", "iCloud 키체인에 이전 금고의 복구 키가 있습니다. iCloud Drive의 Keydesk 폴더가 이 Mac에 내려오면 그 금고를 복원합니다.")
-            retryButtons(primary: "다시 확인")
+            message(L10n.tr("이전 금고의 백업을 기다리는 중", "Waiting for your previous vault backup"), L10n.tr("iCloud 키체인에 이전 금고의 복구 키가 있습니다. iCloud Drive의 Keydesk 폴더가 이 Mac에 내려오면 그 금고를 복원합니다.", "iCloud Keychain contains the recovery key for your previous vault. That vault will be restored when the Keydesk folder in iCloud Drive downloads to this Mac."))
+            retryButtons(primary: L10n.tr("다시 확인", "Check again"))
         case .needsRecoveryCode(let url):
-            message("iCloud 백업을 찾았습니다", "이 백업의 복구 키가 아직 이 Mac의 iCloud 키체인에 없습니다. 잠시 후 다시 확인하거나, 따로 보관한 복구 키를 입력하세요.")
-            retryButtons(primary: "다시 확인", manual: url)
+            message(L10n.tr("iCloud 백업을 찾았습니다", "iCloud backup found"), L10n.tr("이 백업의 복구 키가 아직 이 Mac의 iCloud 키체인에 없습니다. 잠시 후 다시 확인하거나, 따로 보관한 복구 키를 입력하세요.", "The recovery key for this backup is not yet in iCloud Keychain on this Mac. Check again shortly, or enter the recovery key you kept separately."))
+            retryButtons(primary: L10n.tr("다시 확인", "Check again"), manual: url)
         case .restoreStopped(let url, let reason):
-            message("복원을 마치지 못했습니다", reason)
-            retryButtons(primary: "다시 복원", manual: url)
+            message(L10n.tr("복원을 마치지 못했습니다", "Restore could not be completed"), reason)
+            retryButtons(primary: L10n.tr("다시 복원", "Retry restore"), manual: url)
         case .failed(let reason):
-            message("금고를 준비하지 못했습니다", reason)
-            Button("다시 시도") { Task { await model.prepareFirstRun() } }.buttonStyle(.borderedProminent).controlSize(.large)
+            message(L10n.tr("금고를 준비하지 못했습니다", "Could not prepare the vault"), reason)
+            Button(L10n.tr("다시 시도", "Try again")) { Task { await model.prepareFirstRun() } }.buttonStyle(.borderedProminent).controlSize(.large)
         case .checking, nil:
-            message("금고를 준비하는 중", "iCloud Drive에서 기존 백업을 확인하고 없으면 새 금고를 만듭니다.")
+            message(L10n.tr("금고를 준비하는 중", "Preparing your vault"), L10n.tr("iCloud Drive에서 기존 백업을 확인하고 없으면 새 금고를 만듭니다.", "Checking iCloud Drive for an existing backup. If none is found, a new vault will be created."))
         }
     }
     private func message(_ title: String, _ detail: String) -> some View {
@@ -55,8 +57,8 @@ struct LockedView: View {
         VStack(spacing: 12) {
             Button(primary) { Task { await model.prepareFirstRun() } }.buttonStyle(.borderedProminent).controlSize(.large).disabled(model.busy)
             HStack(spacing: 16) {
-                if let manual { Button("복구 키 직접 입력") { recoveryURL = manual; recovering = true } }
-                Button("새 금고로 시작") { Task { await model.prepareFirstRun(startNew: true) } }.disabled(model.busy)
+                if let manual { Button(L10n.tr("복구 키 직접 입력", "Enter recovery key")) { recoveryURL = manual; recovering = true } }
+                Button(L10n.tr("새 금고로 시작", "Start a new vault")) { Task { await model.prepareFirstRun(startNew: true) } }.disabled(model.busy)
             }
         }
     }

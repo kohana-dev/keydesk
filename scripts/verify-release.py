@@ -18,6 +18,30 @@ def apple_system_links(output):
     libraries = [line.strip().split(' (')[0] for line in output.splitlines()[1:] if line.strip()]
     return bool(libraries) and all(name.startswith(('/usr/lib/', '/System/Library/')) for name in libraries)
 
+def localization_checks(app, info):
+    """Validate shipped UI metadata and authentication strings without running the app."""
+    languages = info.get('CFBundleLocalizations')
+    checks = {
+        'interface_localizations_declared': isinstance(languages, list) and
+            all(isinstance(language, str) for language in languages) and
+            {'en', 'ko'}.issubset(languages),
+        'interface_development_region': info.get('CFBundleDevelopmentRegion') == 'en',
+    }
+    for language in ('en', 'ko'):
+        path = app / 'Contents/Resources' / (language + '.lproj') / 'InfoPlist.strings'
+        valid = False
+        try:
+            if path.is_file() and path.stat().st_size > 0:
+                parsed = run('plutil', '-convert', 'json', '-o', '-', str(path))
+                if parsed.returncode == 0:
+                    strings = json.loads(parsed.stdout)
+                    reason = strings.get('NSFaceIDUsageDescription') if isinstance(strings, dict) else None
+                    valid = isinstance(reason, str) and bool(reason.strip())
+        except (OSError, ValueError, subprocess.SubprocessError):
+            pass
+        checks['authentication_localization_' + language] = valid
+    return checks
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--app', type=pathlib.Path, default=ROOT / 'dist/Cellar.app')
@@ -34,6 +58,8 @@ def main():
 
     try:
         info = plistlib.loads((app / 'Contents/Info.plist').read_bytes())
+        for name, condition in localization_checks(app, info).items():
+            check(name, condition)
         bundle_id = __import__('os').environ.get('KEYDESK_BUNDLE_ID', 'com.keydesk.local')
         check('bundle_id', info.get('CFBundleIdentifier') == bundle_id)
         check('cellar_app_names', app.name == 'Cellar.app' and info.get('CFBundleName') == 'Cellar' and info.get('CFBundleDisplayName') == 'Cellar' and info.get('CFBundleExecutable') == 'Cellar')

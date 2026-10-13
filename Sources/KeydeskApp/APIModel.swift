@@ -19,11 +19,11 @@ extension VaultModel {
             guard !busy, approval == nil, brokerApproval == nil, apiApproval == nil, apiTasks.count < 4 else { throw VaultError.accessDenied }
             let pending = try resolveAPI(request, channel: channel)
             if apiApprovals.consume(pending.request, credentialID: pending.credentialID, versionID: pending.versionID) != nil {
-                channel.send(CLIEvent(kind: "status", text: "기억한 API 승인으로 요청합니다."))
+                channel.send(CLIEvent(kind: "status", text: L10n.tr("기억한 API 승인으로 요청합니다.", "Sending the request with a remembered API approval.")))
                 startAPI(pending, reused: true)
                 return
             }
-            channel.send(CLIEvent(kind: "status", text: "새 요청, 요청 내용 변경, 만료 또는 횟수 소진: Cellar에서 API 사용을 승인해 주세요."))
+            channel.send(CLIEvent(kind: "status", text: L10n.tr("새 요청, 요청 내용 변경, 만료 또는 횟수 소진: Cellar에서 API 사용을 승인해 주세요.", "New request, changed request details, expired approval, or no uses left: approve API access in Cellar.")))
             apiApproval = pending
             Task { @MainActor [weak self] in
                 try? await Task.sleep(for: .seconds(60))
@@ -40,7 +40,7 @@ extension VaultModel {
         let token = generation
         do {
             if pending.request.environment == .production && !isDemo {
-                _ = try await keys.authenticate(reason: "Production 키로 지정한 API 요청을 실행하기 위해 인증합니다.")
+                _ = try await keys.authenticate(reason: L10n.tr("Production 키로 지정한 API 요청을 실행하기 위해 인증합니다.", "Authenticate to execute the specified API request with a Production key."))
             }
             guard generation == token, apiApproval?.id == pending.id, pending.channel.isConnected else { throw VaultError.locked }
             let current = try resolveAPI(pending.request, channel: pending.channel)

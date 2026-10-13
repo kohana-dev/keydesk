@@ -16,4 +16,6 @@ class ExportTests(unittest.TestCase):
    providers={x['provider'] for x in json.loads((tree/'Resources/ProviderLogos/manifest.json').read_text())}
    self.assertNotIn('Postmark',providers);self.assertNotIn('Amplitude',providers)
    self.assertTrue(report['scan_passed']);self.assertEqual(len(providers),56)
+   self.assertTrue((tree/'Resources/en.lproj/InfoPlist.strings').is_file())
+   self.assertTrue((tree/'Resources/ko.lproj/InfoPlist.strings').is_file())
 if __name__=='__main__':unittest.main()

@@ -19,7 +19,7 @@ final class CLIServer: @unchecked Sendable {
                 ptr.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(probe, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
             }
             close(probe)
-            guard result != 0 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "다른 Cellar 앱이 실행 중입니다."]) }
+            guard result != 0 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("다른 Cellar 앱이 실행 중입니다.", "Another instance of Cellar is running.")]) }
             try FileManager.default.removeItem(atPath: path)
         }
         listener = socket(AF_UNIX, SOCK_STREAM, 0)
@@ -69,7 +69,7 @@ final class CLIServer: @unchecked Sendable {
                         guard !request.command.isEmpty, request.command.count <= 128, request.command.allSatisfy({ !$0.contains("\0") }), !request.directory.contains("\0") else { throw VaultError.invalidData }
                     deliver(try CLIApproval(request: request, channel: channel))
                     }
-                } catch { channel.send(CLIEvent(kind: "error", text: "유효하지 않은 CLI 요청입니다.")); channel.finish() }
+                } catch { channel.send(CLIEvent(kind: "error", text: L10n.tr("유효하지 않은 CLI 요청입니다.", "The CLI request is invalid."))); channel.finish() }
             }
         }
     }

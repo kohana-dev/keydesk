@@ -147,20 +147,21 @@ final class VaultModel {
     }
     var hasPendingApproval: Bool { approval != nil || brokerApproval != nil || apiApproval != nil }
     var menuBarBackupStatus: String {
-        guard snapshot != nil else { return "백업 상태는 금고를 연 뒤 확인합니다" }
-        if isDemo { return "데모 · 가상 키만 사용" }
-        if !recoveryKeySaved { return "복구 키 직접 보관 필요" }
-        if backupFailure != nil { return "백업 실패" }
-        if backupDirectory == nil { return "백업 폴더 없음" }
-        if hasUnbackedChanges { return "백업 대기 중" }
+        guard snapshot != nil else { return L10n.tr("백업 상태는 금고를 연 뒤 확인합니다", "Open the vault to check backup status") }
+        if isDemo { return L10n.tr("데모 · 가상 키만 사용", "Demo · Sample keys only") }
+        if !recoveryKeySaved { return L10n.tr("복구 키 직접 보관 필요", "Keep a separate copy of your recovery key") }
+        if backupFailure != nil { return L10n.tr("백업 실패", "Backup failed") }
+        if backupDirectory == nil { return L10n.tr("백업 폴더 없음", "No backup folder") }
+        if hasUnbackedChanges { return L10n.tr("백업 대기 중", "Backup pending") }
         switch cloudUpload {
-        case .uploaded: return "iCloud까지 백업됨"
-        case .pending: return "iCloud 업로드 대기 중"
-        case .failed: return "iCloud 업로드 안 됨"
-        case .notCloud: return "모든 변경 백업됨"
+        case .uploaded: return L10n.tr("iCloud까지 백업됨", "Backed up to iCloud")
+        case .pending: return L10n.tr("iCloud 업로드 대기 중", "iCloud upload pending")
+        case .failed: return L10n.tr("iCloud 업로드 안 됨", "Not uploaded to iCloud")
+        case .notCloud: return L10n.tr("모든 변경 백업됨", "All changes backed up")
         }
     }
     var detail: Credential? { snapshot?.credentials.first { $0.id == selectedCredential } }
+    func languageDidChange() { approvalPresenter?.refreshLanguage() }
     func lockIfIdle(now: Date = Date()) {
         if autoLockMinutes > 0, snapshot != nil, now.timeIntervalSince(lastActivity) >= Double(autoLockMinutes * 60) { lock() }
     }
@@ -171,7 +172,7 @@ final class VaultModel {
         // Never drop the key while changes exist only on this Mac.
         flushBackup()
         generation = UUID(); revokeAllAPI(); developmentApprovals.clear(); hideValue(); clipboard.clearOwned()
-        if let approval { approval.channel.send(CLIEvent(kind: "error", text: "금고가 잠겼습니다.")); approval.channel.finish() }
+        if let approval { approval.channel.send(CLIEvent(kind: "error", text: L10n.tr("금고가 잠겼습니다.", "The vault has been locked."))); approval.channel.finish() }
         approval = nil
         rejectBroker(); revokeAllGrants()
         for process in runningProcesses.values where process.isRunning && !process.keepRunning { process.terminate() }
@@ -199,7 +200,7 @@ final class VaultModel {
         let token = generation
         do {
             if isDemo { loadDemo(); try prepareDeposits(); return }
-            let context = try await keys.authenticate(reason: "Cellar 금고를 열기 위해 인증합니다.")
+            let context = try await keys.authenticate(reason: L10n.tr("Cellar 금고를 열기 위해 인증합니다.", "Authenticate to unlock your Cellar vault."))
             guard token == generation else { return }
             let envelope = try store.read()
             let key = try keys.loadDeviceKey(envelope: envelope, context: context)
@@ -249,7 +250,7 @@ final class VaultModel {
         recoveryKeySaved = keys.saveRecoveryKey(recovery, vaultID: header.vaultID)
         try prepareDeposits()
         flushBackup()
-        notify(backupDirectory == nil ? "금고를 만들었습니다. iCloud Drive가 꺼져 있어 백업 폴더를 직접 정해야 합니다." : "금고를 만들었습니다. 변경 내용은 iCloud Drive의 Keydesk 폴더에 자동으로 백업됩니다.")
+        notify(backupDirectory == nil ? L10n.tr("금고를 만들었습니다. iCloud Drive가 꺼져 있어 백업 폴더를 직접 정해야 합니다.", "Your vault has been created. iCloud Drive is off, so choose a backup folder manually.") : L10n.tr("금고를 만들었습니다. 변경 내용은 iCloud Drive의 Keydesk 폴더에 자동으로 백업됩니다.", "Your vault has been created. Changes are backed up automatically to the Keydesk folder in iCloud Drive."))
     }
     /// Keeps iCloud Keychain's copy matching the vault, re-adding it if the item was removed.
     private func ensureRecoveryKeySaved() {
@@ -261,7 +262,7 @@ final class VaultModel {
     func authenticatedRecoveryCode() async throws -> String? {
         guard snapshot != nil else { throw VaultError.locked }
         let token = generation
-        if !isDemo { _ = try await keys.authenticate(reason: "복구 키를 보기 위해 인증합니다.") }
+        if !isDemo { _ = try await keys.authenticate(reason: L10n.tr("복구 키를 보기 위해 인증합니다.", "Authenticate to view your recovery key.")) }
         guard token == generation else { throw VaultError.locked }
         return snapshot?.recoveryCode
     }
@@ -305,7 +306,7 @@ final class VaultModel {
             } else if existingID != nil { throw VaultError.invalidData }
             next.record(existingID == nil ? "키 등록" : "기존 키 연결")
         }
-        selectedCredential = id; notify("저장했습니다.")
+        selectedCredential = id; notify(L10n.tr("저장했습니다.", "Saved."))
     }
     func toggleFavorite(_ id: UUID) {
         do { try mutate { next in if let i = next.credentials.firstIndex(where: { $0.id == id }) { next.credentials[i].favorite.toggle() } } }
@@ -317,7 +318,7 @@ final class VaultModel {
             guard let i = next.credentials.firstIndex(where: { $0.id == id }) else { throw VaultError.invalidData }
             next.credentials[i].rotate(to: value); next.record("키 버전 교체 · 제공사 폐기는 별도")
         }
-        hideValue(); notify("새 버전을 저장했습니다. 실행 중인 앱과 외부 배포 반영은 별도입니다.")
+        hideValue(); notify(L10n.tr("새 버전을 저장했습니다. 실행 중인 앱과 외부 배포 반영은 별도입니다.", "The new version has been saved. Updating running apps and external deployments is separate."))
     }
     func unlink(_ id: UUID) throws {
         guard let project = selectedProject else { throw VaultError.invalidData }
@@ -332,7 +333,7 @@ final class VaultModel {
         guard snapshot != nil else { throw VaultError.locked }
         let token = generation
         if !isDemo, snapshot?.bindings.contains(where: { $0.credentialID == id && $0.environment == .production }) == true {
-            _ = try await keys.authenticate(reason: "Production에 연결된 키를 사용하기 위해 인증합니다.")
+            _ = try await keys.authenticate(reason: L10n.tr("Production에 연결된 키를 사용하기 위해 인증합니다.", "Authenticate to use a key connected to Production."))
         }
         guard token == generation, snapshot != nil else { throw VaultError.locked }
     }
@@ -340,7 +341,7 @@ final class VaultModel {
         do {
             try await sensitiveAccess(id)
             guard let value = snapshot?.credentials.first(where: { $0.id == id })?.currentValue else { throw VaultError.invalidData }
-            clipboard.copy(value, secret: true); notify("키를 복사했습니다. 30초 후 자동 삭제됩니다.")
+            clipboard.copy(value, secret: true); notify(L10n.tr("키를 복사했습니다. 30초 후 자동 삭제됩니다.", "The key has been copied. It will be cleared from the clipboard automatically after 30 seconds."))
         } catch { self.error = error.localizedDescription }
     }
     func reveal(_ id: UUID) async {
@@ -351,7 +352,7 @@ final class VaultModel {
             revealTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: false) { [weak self] _ in MainActor.assumeIsolated { self?.hideValue() } }
         } catch { self.error = error.localizedDescription }
     }
-    func copyText(_ text: String) { clipboard.copy(text, secret: false); notify("복사했습니다.") }
+    func copyText(_ text: String) { clipboard.copy(text, secret: false); notify(L10n.tr("복사했습니다.", "Copied.")) }
     func copyRecovery(_ text: String) { clipboard.copy(text, secret: true) }
     func backup(to url: URL) throws {
         guard let envelope, snapshot != nil else { throw VaultError.locked }
@@ -360,7 +361,7 @@ final class VaultModel {
         let check = try VaultFileStore.read(at: url)
         guard let key else { throw VaultError.locked }
         _ = try VaultCrypto.open(check, key: key)
-        notify("암호화 백업을 저장하고 검증했습니다.")
+        notify(L10n.tr("암호화 백업을 저장하고 검증했습니다.", "The encrypted backup has been saved and verified."))
     }
     func validateRecovery(at url: URL, code: String) throws -> Int {
         let envelope = try VaultFileStore.read(at: url)
@@ -375,22 +376,22 @@ final class VaultModel {
         guard backup.header.vaultID == current.header.vaultID, backup.header.keyEpoch == current.header.keyEpoch else { throw VaultError.invalidData }
         let recovered = try VaultCrypto.recover(backup, code: code)
         let snapshot = try VaultCrypto.open(current, key: recovered)
-        let context = try await keys.authenticate(reason: "복구 키로 이 Mac의 금고 접근을 복구하기 위해 인증합니다.")
+        let context = try await keys.authenticate(reason: L10n.tr("복구 키로 이 Mac의 금고 접근을 복구하기 위해 인증합니다.", "Authenticate to restore vault access on this Mac using your recovery key."))
         guard token == generation else { throw VaultError.locked }
         try keys.restoreDeviceKey(recovered, id: current.header.vaultID, epoch: current.header.keyEpoch, context: context)
         _ = try keys.loadDeviceKey(envelope: current, context: context)
         self.key = recovered; self.envelope = current; self.snapshot = snapshot; activity()
         loadBackupStatus(); scheduleBackup(); ensureRecoveryKeySaved()
-        notify("기기 접근을 복구했습니다. 현재 금고 파일은 덮어쓰지 않았습니다.")
+        notify(L10n.tr("기기 접근을 복구했습니다. 현재 금고 파일은 덮어쓰지 않았습니다.", "Device access has been restored. The current vault file has not been overwritten."))
     }
     func restore(at url: URL, code: String) async throws {
-        guard !exists, !busy else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "기존 금고를 덮어쓰지 않습니다. 별도 Mac 또는 사용자 계정에서 복원하세요. 현재 앱에서는 복구 검증을 사용할 수 있습니다." ]) }
+        guard !exists, !busy else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("기존 금고를 덮어쓰지 않습니다. 별도 Mac 또는 사용자 계정에서 복원하세요. 현재 앱에서는 복구 검증을 사용할 수 있습니다.", "The existing vault will not be overwritten. Restore on a separate Mac or user account. You can verify recovery in the current app.") ]) }
         busy = true; defer { busy = false }
         let token = generation
         let imported = try VaultFileStore.read(at: url)
         let recovered = try VaultCrypto.recover(imported, code: code)
         var snapshot = try VaultCrypto.open(imported, key: recovered)
-        _ = try await keys.authenticate(reason: "iCloud 백업에서 Cellar 금고를 복원하기 위해 인증합니다.")
+        _ = try await keys.authenticate(reason: L10n.tr("iCloud 백업에서 Cellar 금고를 복원하기 위해 인증합니다.", "Authenticate to restore your Cellar vault from an iCloud backup."))
         guard token == generation, !exists else { throw VaultError.locked }
         // A fresh local vault identity avoids altering existing Keychain entries.
         var header = VaultHeader(); header.revision = snapshot.revision + 1
@@ -411,7 +412,7 @@ final class VaultModel {
         recoveryKeySaved = keys.saveRecoveryKey(recovery, vaultID: header.vaultID)
         flushBackup()
         try prepareDeposits()
-        notify("iCloud 백업에서 금고를 복원했습니다.")
+        notify(L10n.tr("iCloud 백업에서 금고를 복원했습니다.", "The vault has been restored from an iCloud backup."))
     }
     func importRows(_ rows: [DotenvRow], replace: Bool) throws {
         guard let project = selectedProject else { throw VaultError.invalidData }
@@ -432,16 +433,16 @@ final class VaultModel {
             }
             next.record("dotenv 가져오기")
         }
-        notify("유효한 행을 가져왔습니다. 원본 파일은 변경하지 않았습니다.")
+        notify(L10n.tr("유효한 행을 가져왔습니다. 원본 파일은 변경하지 않았습니다.", "Valid rows have been imported. The original file has not been changed."))
     }
     func showPendingApproval() { approvalPresenter?.update() }
 
     func receive(_ request: CLIApproval) {
         guard snapshot != nil, !busy, approval == nil, brokerApproval == nil, apiApproval == nil, runningProcesses.count < 4 else {
-            request.channel.send(CLIEvent(kind: "error", text: "금고가 잠겨 있거나 다른 승인을 처리 중입니다.")); request.channel.finish(); return
+            request.channel.send(CLIEvent(kind: "error", text: L10n.tr("금고가 잠겨 있거나 다른 승인을 처리 중입니다.", "The vault is locked or another approval is being processed."))); request.channel.finish(); return
         }
         reusingDevelopmentApproval = developmentApprovals.allows(request.request, executable: request.executable)
-        request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? "기억한 명령 승인으로 실행합니다." : developmentApprovals.approvalReason(request.request, executable: request.executable) + " Cellar에서 실행을 승인해 주세요."))
+        request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? L10n.tr("기억한 명령 승인으로 실행합니다.", "Running with a remembered command approval.") : developmentApprovals.approvalReason(request.request, executable: request.executable) + L10n.tr(" Cellar에서 실행을 승인해 주세요.", " Approve the run in Cellar.")))
         approval = request
         if reusingDevelopmentApproval {
             Task { @MainActor [weak self] in await self?.acceptCLI() }
@@ -450,13 +451,13 @@ final class VaultModel {
         Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(60))
             if self?.approval?.id == request.id {
-                request.channel.send(CLIEvent(kind: "error", text: "승인 대기 60초가 지나 실행하지 않았습니다. 다시 요청해 주세요."))
+                request.channel.send(CLIEvent(kind: "error", text: L10n.tr("승인 대기 60초가 지나 실행하지 않았습니다. 다시 요청해 주세요.", "The 60-second approval wait expired, so nothing was run. Send a new request.")))
                 request.channel.finish(); self?.approval = nil
             }
         }
     }
     func rejectCLI() {
-        approval?.channel.send(CLIEvent(kind: "error", text: "실행을 취소했습니다.")); approval?.channel.finish(); approval = nil
+        approval?.channel.send(CLIEvent(kind: "error", text: L10n.tr("실행을 취소했습니다.", "The run has been cancelled."))); approval?.channel.finish(); approval = nil
     }
     var rememberedRuns: [DevelopmentApprovalCache.Entry] { developmentApprovals.active() }
     var runningCommands: [(UUID, RunningCommand)] { runningProcesses.map { ($0.key, $0.value) } }
@@ -472,11 +473,11 @@ final class VaultModel {
             let reuse = reusingDevelopmentApproval && developmentApprovals.consume(approval.request, executable: approval.executable)
             if reusingDevelopmentApproval && !reuse { throw VaultError.accessDenied }
             if approval.request.environment == .production && !isDemo && !reuse {
-                _ = try await keys.authenticate(reason: "Production 키를 CLI에 전달하기 위해 인증합니다.")
+                _ = try await keys.authenticate(reason: L10n.tr("Production 키를 CLI에 전달하기 위해 인증합니다.", "Authenticate to pass Production keys to the CLI."))
             }
             guard approval.channel.isConnected, token == generation, let snapshot, self.approval?.id == approval.id else { throw VaultError.locked }
             let matches = snapshot.projects.filter { $0.name == approval.request.project || $0.id.uuidString.lowercased() == approval.request.project.lowercased() }
-            guard matches.count == 1 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "프로젝트가 없거나 이름이 중복됩니다. 프로젝트 UUID를 사용하세요."]) }
+            guard matches.count == 1 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("프로젝트가 없거나 이름이 중복됩니다. 프로젝트 UUID를 사용하세요.", "The project is missing or its name is duplicated. Use the project UUID.")]) }
             let files = try approval.request.selectedFiles(from: snapshot.files(projectID: matches[0].id, environment: approval.request.environment))
             let secrets = try approval.request.selectedSecrets(from: snapshot.environment(projectID: matches[0].id, environment: approval.request.environment))
             try mutate(invalidateGrants: false) { $0.record("CLI 실행 승인 · \(approval.request.environment.title) · \(reuse ? "기억한 승인" : "새 승인")") }
@@ -488,7 +489,7 @@ final class VaultModel {
             runningInvocations[id] = approval.request
             runningProcesses[id] = process
             self.approval = nil; activity()
-            notify("CLI를 실행했습니다. 실행 코드는 전달된 키를 읽을 수 있습니다.")
+            notify(L10n.tr("CLI를 실행했습니다. 실행 코드는 전달된 키를 읽을 수 있습니다.", "The CLI has been started. The running code can read the keys passed to it."))
         } catch {
             approval.channel.send(CLIEvent(kind: "error", text: error.localizedDescription)); approval.channel.finish(); self.approval = nil
         }
@@ -557,16 +558,16 @@ final class VaultModel {
             lastBackupFile = try BackupManager.save(envelope, key: key, directory: directory)
             recordBackup(revision: envelope.header.revision, vaultID: envelope.header.vaultID)
             refreshCloudUpload()
-        } catch { backupFailure = "자동 백업에 실패했습니다. 백업 폴더가 연결되어 있는지, 권한과 저장 공간을 확인하세요." }
+        } catch { backupFailure = L10n.tr("자동 백업에 실패했습니다. 백업 폴더가 연결되어 있는지, 권한과 저장 공간을 확인하세요.", "Automatic backup failed. Check that the backup folder is connected and that permissions and storage space are available.") }
     }
     /// Replaces the recovery key (and optionally the data key). The new state is backed up and checked
     /// with the new recovery key before the local vault changes; iCloud Keychain then gets the new key.
     func rotateVaultKeys(code: String, dataKey: Bool, backupDirectory: URL? = nil) async throws {
         guard !busy, var snapshot, let current = envelope, let currentKey = key else { throw VaultError.locked }
-        guard let directory = backupDirectory ?? self.backupDirectory else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "먼저 백업 폴더를 정하세요."]) }
+        guard let directory = backupDirectory ?? self.backupDirectory else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("먼저 백업 폴더를 정하세요.", "Choose a backup folder first.")]) }
         busy = true; defer { busy = false }
         let token = generation
-        if !isDemo { _ = try await keys.authenticate(reason: "금고 암호화 키를 교체하기 위해 인증합니다.") }
+        if !isDemo { _ = try await keys.authenticate(reason: L10n.tr("금고 암호화 키를 교체하기 위해 인증합니다.", "Authenticate to rotate the vault encryption key.")) }
         guard token == generation else { throw VaultError.locked }
         snapshot.recoveryCode = code
         let (updated, newKey) = try KeyRotation.rotate(snapshot, current: current, newRecoveryCode: code, rotateDataKey: dataKey, currentKey: currentKey)
@@ -581,7 +582,7 @@ final class VaultModel {
         self.key = newKey; self.envelope = updated; self.snapshot = try VaultCrypto.open(updated, key: newKey)
         if directory == self.backupDirectory { recordBackup(revision: updated.header.revision, vaultID: updated.header.vaultID) } else { scheduleBackup() }
         ensureRecoveryKeySaved()
-        revokeAllGrants(); hideValue(); notify("키 교체와 새 백업 검증이 완료됐습니다.")
+        revokeAllGrants(); hideValue(); notify(L10n.tr("키 교체와 새 백업 검증이 완료됐습니다.", "Key rotation and verification of the new backup are complete."))
     }
     private func loadDemo() {
         do {
@@ -589,8 +590,8 @@ final class VaultModel {
             var snapshot = VaultSnapshot()
             let project = Project(name: "Studio Notes", colorIndex: 0), other = Project(name: "Daylight", colorIndex: 1)
             snapshot.projects = [project, other]
-            for (name, provider, variable) in [("OpenAI 개발 키", "OpenAI", "OPENAI_API_KEY"), ("Supabase 서버 키", "Supabase", "SUPABASE_SERVICE_ROLE_KEY"), ("테스트 메일", "Resend", "RESEND_API_KEY"), ("Stripe 테스트", "Stripe", "STRIPE_SECRET_KEY")] {
-                let credential = Credential(name: name, value: "DEMO_ONLY_\(provider)_not_a_real_credential", provider: provider, account: "개발 계정")
+            for (name, provider, variable) in [(L10n.tr("OpenAI 개발 키", "OpenAI development key"), "OpenAI", "OPENAI_API_KEY"), (L10n.tr("Supabase 서버 키", "Supabase server key"), "Supabase", "SUPABASE_SERVICE_ROLE_KEY"), (L10n.tr("테스트 메일", "Test email"), "Resend", "RESEND_API_KEY"), (L10n.tr("Stripe 테스트", "Stripe test"), "Stripe", "STRIPE_SECRET_KEY")] {
+                let credential = Credential(name: name, value: "DEMO_ONLY_\(provider)_not_a_real_credential", provider: provider, account: L10n.tr("개발 계정", "Development account"))
                 snapshot.credentials.append(credential)
                 snapshot.bindings.append(BindingRecord(projectID: project.id, environment: .development, variable: variable, credentialID: credential.id))
             }
@@ -600,6 +601,6 @@ final class VaultModel {
             try store.write(envelope, expectedRevision: old)
             self.key = key; self.envelope = envelope; self.snapshot = snapshot; selectedProject = project.id
             selectedCredential = snapshot.credentials.first?.id; exists = true; activity()
-        } catch { self.error = "데모 금고를 만들지 못했습니다." }
+        } catch { self.error = L10n.tr("데모 금고를 만들지 못했습니다.", "The demo vault could not be created.") }
     }
 }

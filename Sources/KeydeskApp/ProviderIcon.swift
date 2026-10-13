@@ -4,6 +4,7 @@ import KeydeskCore
 
 // Brand artwork is bundled locally. Unknown services use their own initials.
 struct ProviderLogo: View {
+    @AppStorage(L10n.preferenceKey) private var interfaceLanguage = AppLanguage.system.rawValue
     let provider: String
     var size: CGFloat = 24
     private struct Asset: Decodable { let provider: String; let file: String }
@@ -22,13 +23,15 @@ struct ProviderLogo: View {
         return Image(nsImage: copy)
     }
     var body: some View {
+        let _ = interfaceLanguage
         let name = provider.trimmingCharacters(in: .whitespacesAndNewlines)
         Group {
             if let image = Self.images[name.lowercased()] {
                 Image(nsImage: image).resizable().scaledToFit()
             } else {
-                Text(name == "Other" ? "기타" : String(name.prefix(2)).uppercased())
+                Text(name == "Other" ? L10n.tr("기타", "Other") : String(name.prefix(2)).uppercased())
                     .font(.system(size: size * 0.48, weight: .semibold)).foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.6)
             }
         }
         .frame(width: size, height: size)

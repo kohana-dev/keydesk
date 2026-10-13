@@ -1,10 +1,12 @@
 import SwiftUI
 import AppKit
+import KeydeskCore
 
 @main
 struct KeydeskApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model: VaultModel
+    @AppStorage(L10n.preferenceKey) private var interfaceLanguage = AppLanguage.system.rawValue
     init() {
         let args = CommandLine.arguments
         if args.contains("--keychain-self-test") {
@@ -16,16 +18,17 @@ struct KeydeskApp: App {
         _model = State(initialValue: VaultModel(demo: demo, demoSocket: demo ? socket : nil))
     }
     var body: some Scene {
+        let _ = interfaceLanguage
         Window("Cellar", id: "main") {
             MainWindowView(model: model, delegate: delegate)
         }
         .defaultSize(width: 1280, height: 800)
         .commands {
             CommandGroup(replacing: .newItem) {}
-            CommandMenu("금고") {
-                Button("대기 중인 실행 승인 보기") { model.showPendingApproval() }
+            CommandMenu(L10n.tr("금고", "Vault")) {
+                Button(L10n.tr("대기 중인 실행 승인 보기", "Show pending approval")) { model.showPendingApproval() }
                     .disabled(model.approval == nil && model.brokerApproval == nil && model.apiApproval == nil)
-                Button("금고 잠금", systemImage: "lock") { model.lock() }.keyboardShortcut("l", modifiers: [.command, .shift])
+                Button(L10n.tr("금고 잠금", "Lock vault"), systemImage: "lock") { model.lock() }.keyboardShortcut("l", modifiers: [.command, .shift])
             }
         }
         MenuBarExtra {
@@ -34,5 +37,6 @@ struct KeydeskApp: App {
             Image(nsImage: MenuBarIcon.image).renderingMode(.template)
                 .accessibilityLabel("Cellar")
         }.menuBarExtraStyle(.menu)
+        Settings { LanguagePreferencesView() }
     }
 }

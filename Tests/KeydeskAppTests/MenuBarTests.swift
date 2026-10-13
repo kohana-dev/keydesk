@@ -12,14 +12,14 @@ struct MenuBarTests {
         defer { model.shutdown(); try? FileManager.default.removeItem(at: root) }
         await model.prepareFirstRun()
         #expect(!model.hasPendingApproval)
-        #expect(model.menuBarBackupStatus == "백업 폴더 없음")
+        #expect(model.menuBarBackupStatus == L10n.tr("백업 폴더 없음", "No backup folder"))
         model.showQuickAdd = true
         model.lock()
         #expect(!model.showQuickAdd)
-        #expect(model.menuBarBackupStatus == "백업 상태는 금고를 연 뒤 확인합니다")
-        #expect(!model.menuBarBackupStatus.contains("백업됨"))
+        #expect(model.menuBarBackupStatus == L10n.tr("백업 상태는 금고를 연 뒤 확인합니다", "Open the vault to check backup status"))
+        #expect(!model.menuBarBackupStatus.contains(L10n.tr("백업됨", "Backed up")))
         await model.unlock()
-        #expect(model.menuBarBackupStatus == "백업 폴더 없음")
+        #expect(model.menuBarBackupStatus == L10n.tr("백업 폴더 없음", "No backup folder"))
     }
     @Test func ribbonIconIsTemplateAndRendersAtMenuBarSize() throws {
         let image = MenuBarIcon.image

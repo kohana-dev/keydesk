@@ -81,7 +81,7 @@ struct FirstRunTests {
         await app.prepareFirstRun()
         #expect(app.exists && app.snapshot != nil && app.firstRun == nil)
         #expect(app.backupDirectory == nil && app.lastBackupAt == nil && app.hasUnbackedChanges)
-        #expect(app.menuBarBackupStatus == "백업 폴더 없음")
+        #expect(app.menuBarBackupStatus == L10n.tr("백업 폴더 없음", "No backup folder"))
         app.lock()
         await app.unlock()
         #expect(keys.authentications == 1 && app.snapshot != nil)
@@ -94,7 +94,7 @@ struct FirstRunTests {
         defer { app.shutdown() }
         await app.prepareFirstRun()
         #expect(app.exists && app.snapshot != nil && !app.recoveryKeySaved)
-        #expect(app.menuBarBackupStatus == "복구 키 직접 보관 필요")
+        #expect(app.menuBarBackupStatus == L10n.tr("복구 키 직접 보관 필요", "Keep a separate copy of your recovery key"))
         #expect(keys.cloud.recovery.isEmpty)
         #expect(try await app.authenticatedRecoveryCode() != nil)
     }

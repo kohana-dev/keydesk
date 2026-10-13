@@ -3,6 +3,7 @@ import KeydeskCore
 import UniformTypeIdentifiers
 
 struct ProjectSheet: View {
+    @AppStorage(L10n.preferenceKey) private var interfaceLanguage = AppLanguage.system.rawValue
     @Bindable var model: VaultModel
     var project: Project? = nil
     @Environment(\.dismiss) private var dismiss
@@ -10,26 +11,27 @@ struct ProjectSheet: View {
     @State private var iconPNG: Data?
     @State private var error: String?
     var body: some View {
+        let _ = interfaceLanguage
         VStack(alignment: .leading, spacing: 20) {
             HStack(spacing: 16) {
-                ProjectAvatar(project: Project(name: name.isEmpty ? "프로젝트" : name, iconPNG: iconPNG), size: 64)
+                ProjectAvatar(project: Project(name: name.isEmpty ? L10n.tr("프로젝트", "Project") : name, iconPNG: iconPNG), size: 64)
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(project == nil ? "새 프로젝트" : "프로젝트 편집").font(.title2.bold())
-                    Text("앱 아이콘으로 프로젝트를 쉽게 구분하세요.").font(.callout).foregroundStyle(.secondary)
+                    Text(project == nil ? L10n.tr("새 프로젝트", "New project") : L10n.tr("프로젝트 편집", "Edit project")).font(.title2.bold())
+                    Text(L10n.tr("앱 아이콘으로 프로젝트를 쉽게 구분하세요.", "Use an app icon to recognize each project.")).font(.callout).foregroundStyle(.secondary)
                 }
             }
             Divider()
-            TextField("프로젝트 이름", text: $name).textFieldStyle(.roundedBorder)
+            TextField(L10n.tr("프로젝트 이름", "Project name"), text: $name).textFieldStyle(.roundedBorder)
             HStack {
-                Button(iconPNG == nil ? "이미지 선택…" : "이미지 변경…", systemImage: "photo") { chooseImage() }
-                if iconPNG != nil { Button("이미지 제거") { iconPNG = nil } }
+                Button(iconPNG == nil ? L10n.tr("이미지 선택…", "Choose image…") : L10n.tr("이미지 변경…", "Change image…"), systemImage: "photo") { chooseImage() }
+                if iconPNG != nil { Button(L10n.tr("이미지 제거", "Remove image")) { iconPNG = nil } }
             }
-            Text("PNG · JPEG · HEIC · ICNS. 이미지는 작은 썸네일로 보관되며 암호화 백업에 포함됩니다.").font(.caption).foregroundStyle(.secondary)
+            Text(L10n.tr("PNG · JPEG · HEIC · ICNS. 이미지는 작은 썸네일로 보관되며 암호화 백업에 포함됩니다.", "PNG · JPEG · HEIC · ICNS. Images are stored as small thumbnails and included in encrypted backups.")).font(.caption).foregroundStyle(.secondary)
             if let error { Text(error).foregroundStyle(.red) }
             HStack {
-                Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(L10n.tr("취소", "Cancel")) { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
-                Button(project == nil ? "만들기" : "저장") {
+                Button(project == nil ? L10n.tr("만들기", "Create") : L10n.tr("저장", "Save")) {
                     do {
                         if let project { try model.updateProject(project.id, name: name, iconPNG: iconPNG) }
                         else { try model.addProject(name, iconPNG: iconPNG) }

@@ -30,7 +30,7 @@ extension VaultModel {
             } catch { rejected += 1 }
         }
         flushBackup()
-        if rejected > 0 { notify("접수한 키 \(rejected)개가 중복 또는 검증 오류로 대기 중입니다. 기존 키는 변경하지 않았습니다.") }
+        if rejected > 0 { notify(L10n.tr("접수한 키 \(rejected)개가 중복 또는 검증 오류로 대기 중입니다. 기존 키는 변경하지 않았습니다.", "\(rejected) deposited keys remain pending because of duplicates or validation errors. Existing keys have not been changed.")) }
     }
 
     func deposit(_ deposit: SecretDeposit) throws -> String {
@@ -40,7 +40,7 @@ extension VaultModel {
             try prepareDeposits()
             try mutate { $0 = try deposit.adding(to: $0); $0.record("CLI 새 키 저장") }
             flushBackup()
-            return "stored · 금고 저장 완료. iCloud 업로드 완료 여부는 앱에서 확인하세요."
+            return L10n.tr("stored · 금고 저장 완료. iCloud 업로드 완료 여부는 앱에서 확인하세요.", "stored · Saved to the vault. Check the app to confirm whether the iCloud upload has completed.")
         }
         let publicKey = try keys.loadDepositPublicKey(vaultID: store.read().header.vaultID)
         guard publicKey.count == 64 else { throw VaultError.invalidData }
@@ -49,7 +49,7 @@ extension VaultModel {
         guard pending.count < 128 else { throw VaultError.accessDenied }
         let sealed = try SealedDeposit.seal(deposit, publicKey: publicKey)
         try VaultFileStore.atomicWrite(JSONEncoder().encode(sealed), to: depositDirectory.appendingPathComponent("\(deposit.id).deposit"))
-        return "queued · 잠금 상태에서 암호화 접수 완료. 이 Mac에만 보관됩니다. 다음 잠금 해제 때 금고 편입·iCloud 백업됩니다."
+        return L10n.tr("queued · 잠금 상태에서 암호화 접수 완료. 이 Mac에만 보관됩니다. 다음 잠금 해제 때 금고 편입·iCloud 백업됩니다.", "queued · Received and encrypted while locked. Stored only on this Mac. It will be added to the vault and backed up to iCloud at the next unlock.")
     }
 
     func receiveService(_ request: ServiceRequest, channel: CLIChannel) async {
@@ -58,7 +58,7 @@ extension VaultModel {
             switch request.kind {
             case "revoke-runs":
                 clearDevelopmentApprovals()
-                channel.send(CLIEvent(kind: "status", text: "기억한 실행 승인을 모두 해제했습니다. 이미 실행 중인 프로세스는 유지됩니다. 종료하려면 금고를 잠그세요."))
+                channel.send(CLIEvent(kind: "status", text: L10n.tr("기억한 실행 승인을 모두 해제했습니다. 이미 실행 중인 프로세스는 유지됩니다. 종료하려면 금고를 잠그세요.", "All remembered run approvals have been revoked. Processes that are already running will continue. Lock the vault to stop them.")))
                 channel.send(CLIEvent(kind: "exit", exitCode: 0))
             case "status":
                 // Signed local clients can inspect readiness, never vault metadata or values.
@@ -87,7 +87,7 @@ extension VaultModel {
                 channel.send(CLIEvent(kind: "status", text: message)); channel.send(CLIEvent(kind: "exit", exitCode: 0))
             case "lock":
                 lock()
-                channel.send(CLIEvent(kind: "status", text: "금고를 잠갔습니다."))
+                channel.send(CLIEvent(kind: "status", text: L10n.tr("금고를 잠갔습니다.", "The vault has been locked.")))
                 channel.send(CLIEvent(kind: "exit", exitCode: 0))
             case "verify-recovery":
                 let report = try await verifyCloudRecovery()
@@ -97,7 +97,7 @@ extension VaultModel {
             }
         } catch {
             // Never include the request or the key value in an error.
-            channel.send(CLIEvent(kind: "error", text: "작업 실패: 준비되지 않은 접수 키, 중복 변수, 인증 취소 또는 백업 검증 오류입니다. 앱에서 상태를 확인하세요."))
+            channel.send(CLIEvent(kind: "error", text: L10n.tr("작업 실패: 준비되지 않은 접수 키, 중복 변수, 인증 취소 또는 백업 검증 오류입니다. 앱에서 상태를 확인하세요.", "Operation failed: the deposit key is not ready, a variable is duplicated, authentication was cancelled, or backup verification failed. Check the status in the app.")))
         }
     }
 }

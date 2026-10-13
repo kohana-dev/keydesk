@@ -15,7 +15,7 @@ enum PeerVerifier {
         guard SecStaticCodeCreateWithPath(executable as CFURL, [], &code) == errSecSuccess,
               let code, SecStaticCodeCheckValidity(code, SecCSFlags(rawValue: kSecCSStrictValidate), nil) == errSecSuccess,
               SecCodeCopyDesignatedRequirement(code, [], &requirement) == errSecSuccess,
-              let requirement else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "내장 CLI 서명을 확인하지 못했습니다."]) }
+              let requirement else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("내장 CLI 서명을 확인하지 못했습니다.", "The bundled CLI signature could not be verified.")]) }
         return Requirement(requirement)
     }
     static func matches(pid: pid_t, requirement: Requirement) -> Bool {
