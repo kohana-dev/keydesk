@@ -20,11 +20,25 @@ struct SupportSettingsSection: View {
                     Link(L10n.tr("설치·사용 안내", "Installation and usage guide"), destination: URL(string: "https://github.com/kohana-dev/keydesk/blob/main/docs/installation.md")!)
                     Link(L10n.tr("보안 취약점 비공개 제보", "Report a vulnerability privately"), destination: URL(string: "https://github.com/kohana-dev/keydesk/security/advisories/new")!)
                         .font(.callout)
+                    Link(L10n.tr("개인정보 처리방침", "Privacy policy"), destination: privacyURL)
+                    Link(L10n.tr("이용약관", "Terms of use"), destination: termsURL)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(8)
             }
         }
         .sheet(isPresented: $showingBugReport) { BugReportView() }
+    }
+
+    private var privacyURL: URL {
+        URL(string: L10n.language == .korean
+            ? "https://www.kohanacloud.com/cellar/privacy"
+            : "https://www.kohanacloud.com/cellar/en/privacy")!
+    }
+
+    private var termsURL: URL {
+        URL(string: L10n.language == .korean
+            ? "https://www.kohanacloud.com/cellar/terms"
+            : "https://www.kohanacloud.com/cellar/en/terms")!
     }
 }

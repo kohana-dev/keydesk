@@ -33,20 +33,30 @@ checksum, quit Cellar, and replace the app in `~/Applications`.
 **Write a bug report** collects only what you type. App version/build, macOS
 version, and architecture are optional and visible before inclusion. Review
 the exact title/body, confirm that it contains no secrets or personal data, and
-choose **Open GitHub draft**. The reviewed content is passed in the browser URL.
+choose **Open GitHub draft**. This immediately passes the reviewed content to
+GitHub in the browser URL, before public submission. Browser history or browser
+sync may retain that URL.
 Sign in and submit it yourself on GitHub to publish it. No report is posted
 automatically, and logs, screenshots, key values, project names and paths are
 never attached. Common secret patterns are blocked locally, but you must check
 the full report. Security vulnerabilities use the separate private report link.
 Sentry and automatic crash/analytics collection are not included.
 
+Cellar 0.7.9 adds the [privacy policy](https://www.kohanacloud.com/cellar/en/privacy)
+and [terms of use](https://www.kohanacloud.com/cellar/en/terms) to Settings and the
+privacy policy to the report composer and review screen.
+
 0.7.8의 **Cellar → 설정**(⌘,)에서 **업데이트 확인** 또는 **버그 제보 작성**을
 선택하세요. 금고가 잠겨 있어도 사용할 수 있습니다. 업데이트는 버튼을 누를
 때만 확인하고, 새 버전은 체크섬 확인 후 직접 앱을 교체합니다. 버그 제보는
 작성 → 전체 내용 검토 → 비밀정보·개인 정보 없음 확인 → GitHub 초안 열기
-순서입니다. GitHub에서 직접 제출해야 공개됩니다. 앱·OS 정보는 선택 사항이며
+순서입니다. 초안을 여는 즉시 검토한 내용이 URL로 GitHub에 전달되며, 브라우저
+방문 기록이나 동기화에 남을 수 있습니다. GitHub에서 직접 제출해야 공개됩니다. 앱·OS 정보는 선택 사항이며
 키·금고·로그·스크린샷은 자동 첨부하지 않습니다. 보안 문제는 비공개 제보를
 사용하세요.
+
+0.7.9 설정에서 [개인정보 처리방침](https://www.kohanacloud.com/cellar/privacy)과
+[이용약관](https://www.kohanacloud.com/cellar/terms)을 확인할 수 있습니다.
 
 ## Download and install
 

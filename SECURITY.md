@@ -1,6 +1,6 @@
 # Security policy
 
-Cellar is a local macOS secret vault. The current published app is **0.7.8**
+Cellar is a local macOS secret vault. The current published app is **0.7.9**
 (Apple Silicon, macOS 14+), distributed as a public beta. The CLI, MCP server,
 skill names, bundle/Keychain identity and existing vault location retain
 `keydesk` compatibility names. This project has not had an independent security
@@ -23,11 +23,18 @@ without disclosing vulnerability details.
 The in-app bug reporter composes a report locally and shows the full title/body
 before opening a GitHub draft. App version/build, macOS version, and architecture
 are optional. It never attaches vaults, keys, logs, paths, or screenshots. The user
-confirms the report and submits it publicly on GitHub; draft content is included
-in the browser URL. Common secret patterns are blocked locally, but this is not
+confirms the report before opening the draft. That action immediately sends the
+reviewed content to GitHub in the browser URL, before any public submission.
+Browser history or browser sync can retain the URL. The user decides whether to
+submit it publicly on GitHub. Common secret patterns are blocked locally, but this is not
 comprehensive detection. Use private vulnerability reporting for security issues.
 No Sentry, background telemetry, or automatic crash reporting is included.
 There is no guaranteed response SLA.
+
+The [privacy policy](https://www.kohanacloud.com/cellar/en/privacy) and
+[terms of use](https://www.kohanacloud.com/cellar/en/terms) are also linked from
+Settings. The privacy policy describes local storage, Apple services, explicit
+update checks, reviewed reports, and website hosting.
 
 ## Boundaries
 

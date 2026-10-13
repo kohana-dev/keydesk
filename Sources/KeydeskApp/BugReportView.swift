@@ -78,6 +78,8 @@ struct BugReportView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text(L10n.tr("API 키, 비밀번호, 복구 키, 개인 정보는 적지 마세요. 금고, 로그, 파일, 스크린샷은 수집하지 않습니다.", "Do not include API keys, passwords, recovery keys, or personal information. Vaults, logs, files, and screenshots are not collected."))
                     .font(.callout).foregroundStyle(.secondary)
+                Link(L10n.tr("개인정보 처리방침", "Privacy policy"), destination: privacyURL)
+                    .font(.callout)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.tr("제목", "Title")).font(.headline)
                     TextField(L10n.tr("문제를 한 문장으로 설명하세요", "Describe the problem in one sentence"), text: $draft.title)
@@ -119,9 +121,19 @@ struct BugReportView: View {
             .privacySensitive()
             Text(L10n.tr("목적지: github.com/kohana-dev/keydesk/issues/new. 흔한 비밀정보 패턴만 검사하므로 자동 검사만으로 안전을 보장하지 않습니다.", "Destination: github.com/kohana-dev/keydesk/issues/new. The local check covers common secret patterns and cannot guarantee that the report is safe."))
                 .font(.caption).foregroundStyle(.secondary)
+            Text(L10n.tr("‘GitHub 초안 열기’를 누르면 위 내용이 브라우저 주소(URL)를 통해 즉시 GitHub에 전달됩니다. 공개 제보의 최종 제출은 그 다음에 GitHub에서 결정합니다.", "Clicking ‘Open GitHub draft’ immediately passes the reviewed content to GitHub through the browser URL. You decide whether to submit a public report afterward on GitHub."))
+                .font(.callout).foregroundStyle(.secondary)
+            Link(L10n.tr("개인정보 처리방침", "Privacy policy"), destination: privacyURL)
+                .font(.callout)
             Toggle(L10n.tr("전체 내용을 읽었으며 비밀정보와 개인 정보가 없음을 확인했습니다.", "I have read the full report and confirmed that it contains no secrets or personal information."), isOn: $confirmsNoSensitiveInformation)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+
+    private var privacyURL: URL {
+        URL(string: L10n.language == .korean
+            ? "https://www.kohanacloud.com/cellar/privacy"
+            : "https://www.kohanacloud.com/cellar/en/privacy")!
     }
 
     private var securityNotice: some View {
