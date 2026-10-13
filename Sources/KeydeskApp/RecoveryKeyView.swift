@@ -12,7 +12,7 @@ struct RecoveryKeyView: View {
         let _ = interfaceLanguage
         VStack(alignment: .leading, spacing: 16) {
             Text(L10n.tr("복구 키", "Recovery key")).font(.title2.bold())
-            Text(L10n.tr("복구 키는 iCloud 키체인에 자동 저장되어 같은 Apple 계정의 다른 Mac에서 iCloud Drive 백업을 열 때 쓰입니다. Apple 계정에 접근하지 못하게 될 때를 대비하려면 이 키를 종이나 다른 비밀번호 관리자에 따로 보관하세요.", "The recovery key is saved automatically in iCloud Keychain and opens your iCloud Drive backup on another Mac using the same Apple Account. Keep a separate copy on paper or in another password manager in case you lose access to your Apple Account.")).foregroundStyle(.secondary)
+            Text(L10n.tr("복구 키는 iCloud 키체인을 사용할 수 있으면 자동 저장되며, iCloud·Google Drive 또는 별도로 보관한 암호화 백업을 여는 데 쓰입니다. Apple 계정에 접근하지 못할 때도 복구할 수 있도록 종이나 다른 비밀번호 관리자에 따로 보관하세요. 백업 폴더에 복구 키를 함께 올리지 마세요.", "When iCloud Keychain is available, the recovery key is saved there automatically. It opens encrypted backups kept in iCloud, Google Drive, or elsewhere. Keep a separate copy on paper or in another password manager so you can recover without your Apple Account. Do not place the recovery key in the backup folder.")).foregroundStyle(.secondary)
             if let code {
                 Text(code).font(.system(.body, design: .monospaced)).textSelection(.enabled).padding().frame(maxWidth: .infinity, alignment: .leading)
                     .background(Theme.canvas, in: RoundedRectangle(cornerRadius: 12)).privacySensitive()

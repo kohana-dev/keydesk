@@ -10,7 +10,7 @@ struct StatusTests {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("status-test-\(UUID())")
         let model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: MemoryKeyStore(), serve: false, observeSystemEvents: false)
         defer { model.shutdown(); try? FileManager.default.removeItem(at: root) }
-        await model.prepareFirstRun()
+        await model.prepareFirstRun(startNew: true)
         _ = try model.deposit(SecretDeposit(project: "PRIVATE_PROJECT_SENTINEL", environment: .development, variable: "PRIVATE_VARIABLE_SENTINEL", value: "PRIVATE_VALUE_SENTINEL"))
         let unlocked = try await query(model)
         #expect(unlocked["locked"] == .bool(false))

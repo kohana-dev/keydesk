@@ -19,6 +19,23 @@ public struct BackupStatus: Codable, Sendable, Equatable {
 }
 
 public enum BackupLocation {
+    /// Infer a provider only from its standard macOS folder. Google Drive can also mirror to a
+    /// user-chosen directory, which must be recorded explicitly in `BackupSettings.destination`.
+    public static func destination(of directory: URL, homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) -> BackupDestination {
+        let components = directory.resolvingSymlinksInPath().standardizedFileURL.pathComponents
+        let home = homeDirectory.resolvingSymlinksInPath().standardizedFileURL
+        let iCloud = home.appendingPathComponent("Library/Mobile Documents/com~apple~CloudDocs").pathComponents
+        if components.starts(with: iCloud) { return .iCloud }
+
+        let cloudStorage = home.appendingPathComponent("Library/CloudStorage").pathComponents
+        if components.starts(with: cloudStorage), components.count > cloudStorage.count {
+            let account = components[cloudStorage.count]
+            let prefix = "GoogleDrive-"
+            if account.hasPrefix(prefix), account.count > prefix.count { return .googleDrive }
+        }
+        return .folder
+    }
+
     public enum CloudUpload: Equatable, Sendable {
         /// Not an iCloud Drive file, so there is nothing to upload.
         case notCloud

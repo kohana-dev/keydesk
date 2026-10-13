@@ -12,7 +12,7 @@ struct SystemLockTests {
             let model = VaultModel(directory: directory, defaultBackupDirectory: nil,
                                    keys: MemoryKeyStore(), serve: false, observeSystemEvents: true)
             defer { model.shutdown(); try? FileManager.default.removeItem(at: directory) }
-            await model.prepareFirstRun()
+            await model.prepareFirstRun(startNew: true)
             #expect(model.snapshot != nil)
             let generation = model.generation
             NSWorkspace.shared.notificationCenter.post(name: name, object: nil)

@@ -10,7 +10,7 @@ struct DepositTests {
         let keyStore = MemoryKeyStore()
         let model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: keyStore, serve: false, observeSystemEvents: false)
         defer { model.shutdown(); try? FileManager.default.removeItem(at: root) }
-        await model.prepareFirstRun()
+        await model.prepareFirstRun(startNew: true)
         model.lock()
         let payload = try SecretDeposit(project: "fixture", environment: .development, variable: "API_KEY", value: "DISPOSABLE_LOCKED_SENTINEL")
         let before = keyStore.authentications
@@ -39,7 +39,7 @@ struct DepositTests {
         let keys = MemoryKeyStore()
         let model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: keys, serve: false, observeSystemEvents: false)
         defer { model.shutdown(); try? FileManager.default.removeItem(at: root) }
-        await model.prepareFirstRun()
+        await model.prepareFirstRun(startNew: true)
         _ = try model.deposit(SecretDeposit(project: "fixture", environment: .production, variable: "PROD_KEY", value: "FAKE_PRODUCTION_ONLY"))
         let invocation = CLIRequest(project: "fixture", environment: .production, command: ["/usr/bin/true"], directory: "/tmp", stdinKey: nil, variables: ["PROD_KEY"])
         let baseline = keys.authentications

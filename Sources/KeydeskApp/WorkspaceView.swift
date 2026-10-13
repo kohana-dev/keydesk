@@ -96,6 +96,8 @@ struct WorkspaceView: View {
                     Label(L10n.tr("백업 실패", "Backup failed"), systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red)
                 } else if model.hasUnbackedChanges {
                     Label(L10n.tr("백업 대기 중", "Backup pending"), systemImage: "arrow.triangle.2.circlepath").foregroundStyle(.orange)
+                } else if model.backupDestination == .googleDrive {
+                    Label(L10n.tr("Google Drive 폴더 저장 · 동기화 확인", "Google Drive folder saved · Check sync"), systemImage: "folder.badge.checkmark").foregroundStyle(.secondary)
                 } else if model.cloudUpload == .failed {
                     Label(L10n.tr("iCloud 업로드 안 됨", "iCloud upload failed"), systemImage: "exclamationmark.icloud").foregroundStyle(.red)
                 } else if model.cloudUpload == .pending {

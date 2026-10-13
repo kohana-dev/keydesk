@@ -40,7 +40,7 @@ extension VaultModel {
             try prepareDeposits()
             try mutate { $0 = try deposit.adding(to: $0); $0.record("CLI 새 키 저장") }
             flushBackup()
-            return L10n.tr("stored · 금고 저장 완료. iCloud 업로드 완료 여부는 앱에서 확인하세요.", "stored · Saved to the vault. Check the app to confirm whether the iCloud upload has completed.")
+            return L10n.tr("stored · 금고 저장 완료. 백업 상태는 앱에서, Google Drive 동기화 완료는 Drive에서 확인하세요.", "stored · Saved to the vault. Check backup status in Cellar and Google Drive sync completion in Drive.")
         }
         let publicKey = try keys.loadDepositPublicKey(vaultID: store.read().header.vaultID)
         guard publicKey.count == 64 else { throw VaultError.invalidData }
@@ -49,7 +49,7 @@ extension VaultModel {
         guard pending.count < 128 else { throw VaultError.accessDenied }
         let sealed = try SealedDeposit.seal(deposit, publicKey: publicKey)
         try VaultFileStore.atomicWrite(JSONEncoder().encode(sealed), to: depositDirectory.appendingPathComponent("\(deposit.id).deposit"))
-        return L10n.tr("queued · 잠금 상태에서 암호화 접수 완료. 이 Mac에만 보관됩니다. 다음 잠금 해제 때 금고 편입·iCloud 백업됩니다.", "queued · Received and encrypted while locked. Stored only on this Mac. It will be added to the vault and backed up to iCloud at the next unlock.")
+        return L10n.tr("queued · 잠금 상태에서 암호화 접수 완료. 이 Mac에만 보관됩니다. 다음 잠금 해제 때 금고에 편입되고 설정한 폴더에 백업됩니다.", "queued · Received and encrypted while locked. Stored only on this Mac. At the next unlock, it will be added to the vault and backed up to your configured folder.")
     }
 
     func receiveService(_ request: ServiceRequest, channel: CLIChannel) async {

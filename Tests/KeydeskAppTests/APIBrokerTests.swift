@@ -19,7 +19,7 @@ struct APIBrokerTests {
     func fixture(_ transport: any APITransport) async throws -> VaultModel {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("api-model-\(UUID())")
         let model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: MemoryKeyStore(), apiTransport: transport, serve: false, observeSystemEvents: false)
-        await model.prepareFirstRun()
+        await model.prepareFirstRun(startNew: true)
         _ = try model.deposit(SecretDeposit(project: "fixture", environment: .production, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_BROKER_ONLY_KEY"))
         return model
     }

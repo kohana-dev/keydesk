@@ -59,10 +59,12 @@ struct FirstRunTests {
         try FileManager.default.contentsOfDirectory(at: folders.iCloud, includingPropertiesForKeys: nil).filter { $0.pathExtension == "keydesk" }
     }
 
-    @Test func firstLaunchCreatesVaultWithoutQuestionsAndBacksUpToICloud() async throws {
+    @Test func firstLaunchOffersRestoreBeforeCreatingVaultAndBacksUpToICloud() async throws {
         let folders = Folders(), keys = MemoryKeyStore()
         let app = model(folders, "mac-a", keys); defer { app.shutdown() }
         await app.prepareFirstRun()
+        #expect(!app.exists && app.snapshot == nil && app.firstRun == .readyToCreate)
+        await app.prepareFirstRun(startNew: true)
         #expect(app.exists && app.snapshot != nil && app.firstRun == nil)
         #expect(keys.authentications == 0)
         #expect(app.recoveryKeySaved && keys.cloud.recovery.count == 1)
@@ -79,6 +81,8 @@ struct FirstRunTests {
                              keys: keys, serve: false, observeSystemEvents: false)
         defer { app.shutdown() }
         await app.prepareFirstRun()
+        #expect(!app.exists && app.snapshot == nil && app.firstRun == .readyToCreate)
+        await app.prepareFirstRun(startNew: true)
         #expect(app.exists && app.snapshot != nil && app.firstRun == nil)
         #expect(app.backupDirectory == nil && app.lastBackupAt == nil && app.hasUnbackedChanges)
         #expect(app.menuBarBackupStatus == L10n.tr("백업 폴더 없음", "No backup folder"))
@@ -92,7 +96,7 @@ struct FirstRunTests {
         keys.recoveryWritable = false
         let app = model(folders, "recovery-unavailable", keys)
         defer { app.shutdown() }
-        await app.prepareFirstRun()
+        await app.prepareFirstRun(startNew: true)
         #expect(app.exists && app.snapshot != nil && !app.recoveryKeySaved)
         #expect(app.menuBarBackupStatus == L10n.tr("복구 키 직접 보관 필요", "Keep a separate copy of your recovery key"))
         #expect(keys.cloud.recovery.isEmpty)
@@ -104,25 +108,31 @@ struct FirstRunTests {
         keys.deviceWritable = false
         let app = model(folders, "device-unavailable", keys)
         defer { app.shutdown() }
-        await app.prepareFirstRun()
+        await app.prepareFirstRun(startNew: true)
         guard case .failed = app.firstRun else { Issue.record("Expected a visible first-run failure"); return }
         #expect(!app.exists && app.snapshot == nil && keys.device.isEmpty)
         #expect(!FileManager.default.fileExists(atPath: app.store.vaultURL.path))
         keys.deviceWritable = true
         await app.prepareFirstRun()
+        #expect(!app.exists && app.snapshot == nil && app.firstRun == .readyToCreate)
+        await app.prepareFirstRun(startNew: true)
         #expect(app.exists && app.snapshot != nil && app.firstRun == nil)
     }
 
-    @Test func secondMacRestoresLatestBackupAutomatically() async throws {
+    @Test func secondMacOffersLatestICloudBackupThenRestoresAfterSelection() async throws {
         let folders = Folders(), cloud = MemoryKeyStore.Cloud()
         let first = model(folders, "mac-a", MemoryKeyStore(cloud: cloud))
-        await first.prepareFirstRun()
+        await first.prepareFirstRun(startNew: true)
         try first.addProject("Studio Notes"); try first.addProject("Daylight")
         first.lock(); first.shutdown()
 
         let keys = MemoryKeyStore(cloud: cloud)
         let second = model(folders, "mac-b", keys); defer { second.shutdown() }
         await second.prepareFirstRun()
+        guard case .backupFound = second.firstRun else { Issue.record("Expected an iCloud backup choice"); return }
+        #expect(!second.exists && second.snapshot == nil && keys.authentications == 0)
+        #expect(!FileManager.default.fileExists(atPath: second.store.vaultURL.path))
+        await second.prepareFirstRun(restoreExisting: true)
         #expect(second.firstRun == nil)
         #expect(second.snapshot?.projects.map(\.name) == ["Studio Notes", "Daylight"])
         #expect(keys.authentications == 1)
@@ -135,21 +145,63 @@ struct FirstRunTests {
     @Test func cancelledAuthenticationDoesNotCreateEmptyVault() async throws {
         let folders = Folders(), cloud = MemoryKeyStore.Cloud()
         let first = model(folders, "mac-a", MemoryKeyStore(cloud: cloud))
-        await first.prepareFirstRun(); try first.addProject("Keep"); first.lock(); first.shutdown()
+        await first.prepareFirstRun(startNew: true); try first.addProject("Keep"); first.lock(); first.shutdown()
         let keys = MemoryKeyStore(cloud: cloud); keys.denyAuthentication = true
         let second = model(folders, "mac-b", keys); defer { second.shutdown() }
         await second.prepareFirstRun()
+        guard case .backupFound = second.firstRun else { Issue.record("Expected an iCloud backup choice before authentication"); return }
+        #expect(keys.authentications == 0 && !second.exists)
+        await second.prepareFirstRun(restoreExisting: true)
         guard case .restoreStopped = second.firstRun else { Issue.record("expected restoreStopped, got \(String(describing: second.firstRun))"); return }
         #expect(!second.exists)
         keys.denyAuthentication = false
-        await second.prepareFirstRun()
+        await second.prepareFirstRun(restoreExisting: true)
         #expect(second.snapshot?.projects.map(\.name) == ["Keep"])
+    }
+
+    @Test func retainedICloudBackupDoesNotBlockNewerGoogleDriveRestore() async throws {
+        let folders = Folders(), cloud = MemoryKeyStore.Cloud()
+        let first = model(folders, "mac-a", MemoryKeyStore(cloud: cloud))
+        defer { first.shutdown() }
+        await first.prepareFirstRun(startNew: true)
+        try first.addProject("Before provider switch")
+        first.flushBackup()
+        let iCloudBackups = try Set(backups(folders))
+        let oldICloud = try #require(BackupManager.latestBackup(in: folders.iCloud))
+
+        let googleDirectory = folders.root.appendingPathComponent("Google Drive/Cellar", isDirectory: true)
+        try FileManager.default.createDirectory(at: googleDirectory, withIntermediateDirectories: true)
+        try first.configureBackup(directory: googleDirectory, destination: .googleDrive)
+        try first.addProject("After provider switch")
+        first.flushBackup()
+        let latestGoogleURL = try #require(first.lastBackupFile)
+        let recoveryCode = try #require(first.snapshot?.recoveryCode)
+        let latestGoogleRevision = try #require(first.snapshot?.revision)
+        #expect(try Set(backups(folders)) == iCloudBackups)
+        #expect(oldICloud.envelope.header.revision < latestGoogleRevision)
+
+        let keys = MemoryKeyStore(cloud: cloud)
+        let second = model(folders, "mac-b", keys)
+        defer { second.shutdown() }
+        await second.prepareFirstRun()
+        guard case .backupFound(let offeredURL) = second.firstRun else { Issue.record("Expected a choice despite the retained iCloud backup"); return }
+        #expect(offeredURL.resolvingSymlinksInPath() == oldICloud.url.resolvingSymlinksInPath())
+        #expect(!second.exists && second.snapshot == nil && keys.authentications == 0)
+        #expect(!FileManager.default.fileExists(atPath: second.store.vaultURL.path))
+
+        // Selecting Google's newer file remains possible before any stale iCloud vault is created.
+        try await second.restore(at: latestGoogleURL, code: recoveryCode)
+        #expect(second.exists && second.firstRun == nil)
+        #expect(second.snapshot?.projects.map(\.name) == ["Before provider switch", "After provider switch"])
+        #expect(second.backupDirectory == nil && second.backupDestination == nil)
+        #expect(keys.authentications == 1)
+        #expect(try Set(backups(folders)) == iCloudBackups)
     }
 
     @Test func backupWithoutSyncedRecoveryKeyWaitsForCode() async throws {
         let folders = Folders(), firstKeys = MemoryKeyStore()
         let first = model(folders, "mac-a", firstKeys)
-        await first.prepareFirstRun(); try first.addProject("Manual"); first.lock(); first.shutdown()
+        await first.prepareFirstRun(startNew: true); try first.addProject("Manual"); first.lock(); first.shutdown()
         let code = try RecoveryCode.encode(SymmetricKey(data: #require(firstKeys.cloud.recovery.values.first)))
 
         let second = model(folders, "mac-b", MemoryKeyStore()); defer { second.shutdown() }
@@ -173,7 +225,7 @@ struct FirstRunTests {
     @Test func missingICloudKeychainItemIsRepairedOrReported() async throws {
         let folders = Folders(), keys = MemoryKeyStore()
         let app = model(folders, "mac-a", keys); defer { app.shutdown() }
-        await app.prepareFirstRun()
+        await app.prepareFirstRun(startNew: true)
         let code = try #require(app.snapshot?.recoveryCode)
         keys.cloud.recovery.removeAll()
         app.lock(); await app.unlock()
@@ -187,7 +239,7 @@ struct FirstRunTests {
     @Test func rotationUpdatesICloudKeychainAndBackup() async throws {
         let folders = Folders(), keys = MemoryKeyStore()
         let app = model(folders, "mac-a", keys); defer { app.shutdown() }
-        await app.prepareFirstRun()
+        await app.prepareFirstRun(startNew: true)
         let vaultID = try #require(keys.cloud.recovery.keys.first)
         let newCode = RecoveryCode.encode(SymmetricKey(size: .bits256))
         try await app.rotateVaultKeys(code: newCode, dataKey: true)

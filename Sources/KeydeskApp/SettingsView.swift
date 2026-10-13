@@ -21,31 +21,7 @@ struct SettingsView: View {
             SupportSettingsSection()
             Divider()
             Text(L10n.tr("백업과 개발 도구 설정", "Backup and developer settings")).font(.title2.bold())
-            GroupBox(L10n.tr("자동 암호화 백업", "Automatic encrypted backup")) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(model.backupDirectory?.path ?? L10n.tr("설정되지 않음 · Mac을 잃으면 복구할 수 없습니다", "Not configured · Recovery is unavailable if you lose this Mac")).font(.caption).textSelection(.enabled)
-                    Text(L10n.tr("변경할 때마다 몇 초 안에, 그리고 잠그거나 종료할 때 백업합니다. 최근 7일의 일별 및 최근 4주의 주별 마지막 백업을 보존합니다.", "Backups run within a few seconds of each change, and when you lock the vault or quit. The last daily backup for the past 7 days and the last weekly backup for the past 4 weeks are kept.")).font(.caption).foregroundStyle(.secondary)
-                    if let directory = model.backupDirectory, BackupLocation.isOnlyOnThisMac(directory) {
-                        Label(L10n.tr("이 폴더는 이 Mac 안에만 있습니다. iCloud Drive나 외장 디스크를 권장합니다.", "This folder is only on this Mac. iCloud Drive or an external disk is recommended."), systemImage: "exclamationmark.triangle.fill").font(.caption).foregroundStyle(.orange)
-                    }
-                    if let date = model.lastBackupAt { Text(L10n.tr("마지막 성공: \(date.formatted(Date.FormatStyle().locale(L10n.locale)))", "Last successful backup: \(date.formatted(Date.FormatStyle().locale(L10n.locale)))")).font(.caption) }
-                    switch model.cloudUpload {
-                    case .failed: Label(L10n.tr("백업 파일이 iCloud에 올라가지 않았습니다. 시스템 설정의 Apple 계정에서 동의가 필요한 약관이나 iCloud 상태를 확인하세요. 해결 전에는 Mac을 잃으면 복구할 수 없습니다.", "The backup file has not uploaded to iCloud. Check your Apple Account in System Settings for terms that need acceptance or iCloud issues. Until this is resolved, recovery is unavailable if you lose this Mac."), systemImage: "exclamationmark.icloud").font(.caption).foregroundStyle(.red)
-                    case .pending: Label(L10n.tr("iCloud 업로드를 기다리는 중입니다.", "Waiting for the iCloud upload."), systemImage: "icloud.and.arrow.up").font(.caption).foregroundStyle(.orange)
-                    case .uploaded: Label(L10n.tr("최근 백업이 iCloud에 업로드됐습니다.", "The latest backup has uploaded to iCloud."), systemImage: "checkmark.icloud").font(.caption).foregroundStyle(.green)
-                    case .notCloud: EmptyView()
-                    }
-                    if let error = model.backupFailure { Text(error).font(.caption).foregroundStyle(.red) }
-                    HStack {
-                        Button(L10n.tr("백업 폴더 선택", "Choose backup folder")) {
-                            let panel = NSOpenPanel(); panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false; panel.canCreateDirectories = true
-                            if panel.runModal() == .OK, let url = panel.url { do { try model.configureBackup(directory: url) } catch { model.error = error.localizedDescription } }
-                        }
-                        Button(L10n.tr("지금 백업", "Back up now")) { model.flushBackup() }.disabled(model.backupDirectory == nil || !model.hasUnbackedChanges)
-                        Button(L10n.tr("자동 백업 해제", "Turn off automatic backup")) { do { try model.configureBackup(directory: nil) } catch { model.error = error.localizedDescription } }.disabled(model.snapshot?.backup == nil)
-                    }
-                }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
-            }
+            BackupSettingsSection(model: model)
             GroupBox(L10n.tr("복구 키", "Recovery key")) {
                 VStack(alignment: .leading, spacing: 10) {
                     if model.recoveryKeySaved {
@@ -53,7 +29,9 @@ struct SettingsView: View {
                     } else {
                         Label(L10n.tr("iCloud 키체인에 저장하지 못했습니다. 복구 키를 직접 보관하세요.", "Could not save to iCloud Keychain. Keep your own copy of the recovery key."), systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red).font(.callout)
                     }
-                    Text(L10n.tr("같은 Apple 계정으로 로그인한 다른 Mac에서 Cellar를 열면 iCloud Drive 백업과 이 키로 자동 복원합니다.", "When you open Cellar on another Mac signed in to the same Apple Account, it automatically restores using the iCloud Drive backup and this key.")).font(.caption).foregroundStyle(.secondary)
+                    Text(model.backupDestination == .iCloud
+                        ? L10n.tr("같은 Apple 계정으로 로그인한 다른 Mac에서 iCloud Drive 백업이 내려오면 복원을 선택할 수 있습니다. 다른 위치에 더 최근 백업이 있는지도 확인하세요.", "On another Mac signed in to the same Apple Account, you can choose to restore after the iCloud Drive backup downloads. Check whether you have a newer backup elsewhere, too.")
+                        : L10n.tr("백업을 복원할 때는 내려받은 .keydesk 파일과 복구 키가 필요합니다. 복구 키는 백업 폴더에 함께 올리지 않고 직접 안전하게 보관하세요. Google Drive 백업 복원 후 이 Mac의 백업 폴더를 다시 선택합니다.", "To restore a backup, use the downloaded .keydesk file and your recovery key. Keep the recovery key safely and separately from the backup folder. Select this Mac’s backup folder again after restoring a Google Drive backup.")).font(.caption).foregroundStyle(.secondary)
                     HStack {
                         Button(L10n.tr("복구 키 보기", "Show recovery key"), systemImage: "key") { showingRecovery = true }
                         Button(L10n.tr("복구 키 / 데이터 키 교체", "Rotate recovery / data keys"), systemImage: "arrow.triangle.2.circlepath") { rotating = true }

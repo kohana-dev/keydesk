@@ -10,7 +10,7 @@ struct MenuBarTests {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("menu-test-\(UUID())")
         let model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: MemoryKeyStore(), serve: false, observeSystemEvents: false)
         defer { model.shutdown(); try? FileManager.default.removeItem(at: root) }
-        await model.prepareFirstRun()
+        await model.prepareFirstRun(startNew: true)
         #expect(!model.hasPendingApproval)
         #expect(model.menuBarBackupStatus == L10n.tr("백업 폴더 없음", "No backup folder"))
         model.showQuickAdd = true

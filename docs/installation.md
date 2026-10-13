@@ -1,6 +1,6 @@
 # Install Cellar / Cellar 설치 안내
 
-Cellar 0.7.10 fixes the UI callback after opening a reviewed GitHub bug-report draft. The optional metadata and review/confirmation flow are unchanged. / 0.7.10은 검토한 GitHub 제보 초안을 연 뒤 화면 상태를 갱신하는 스레드 경고를 수정했습니다.
+Cellar 0.7.11 adds Google Drive for desktop as an encrypted backup location alongside iCloud Drive. First launch offers a backup-file restore before creating a new vault. / 0.7.11은 iCloud Drive와 함께 Google Drive 동기화 폴더를 암호화 백업 위치로 선택할 수 있게 합니다. 새 금고를 만들기 전에 백업 파일 복원을 선택할 수 있습니다.
 
 The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` CLI, MCP server and companion skill names stay compatible with earlier installations.
 
@@ -8,7 +8,8 @@ The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` 
 
 - Apple Silicon Mac with macOS 14 or later. The current release does not include Intel binaries.
 - No Apple Developer membership is required to install the official signed, notarized app.
-- For automatic cloud backup/recovery: the same Apple account, iCloud Drive and iCloud Keychain enabled. Check upload status; choosing an iCloud folder alone does not prove the file has uploaded.
+- For iCloud backup and recovery: the same Apple account, iCloud Drive and iCloud Keychain enabled. Check upload status; choosing an iCloud folder alone does not prove the file has uploaded.
+- For optional Google Drive backups: install [Google Drive for desktop](https://support.google.com/drive/answer/10838124?hl=en), sign in to your account, and select an actual synced folder in Cellar. Drive for desktop handles uploads; Cellar does not sign in to Google or use the Drive API.
 - For AI setup: Git, Python 3.11+, the selected AI CLI(s) installed (both for the default recipe). Sign in to each selected AI client before asking it to work. The app itself does not require Git or Python.
 - Official setup references: [Python for macOS](https://www.python.org/downloads/macos/), [Git for macOS](https://git-scm.com/downloads/mac), [Codex CLI](https://developers.openai.com/codex/cli/) and [Claude Code setup](https://code.claude.com/docs/en/setup).
 
@@ -71,7 +72,7 @@ privacy policy to the report composer and review screen.
 
    Continue only when the ZIP reports `OK`.
 3. Unzip and move **Cellar.app** into your user Applications folder, **`~/Applications`**. In Finder, choose **Go → Go to Folder** and enter `~/Applications`; create the folder if needed. The AI installers currently expect this location. `/Applications` can run the app, but is not the path used by these setup scripts.
-4. Open Cellar normally. Follow its first-run flow and authenticate in the macOS prompt. Do not bypass Gatekeeper warnings.
+4. Open Cellar normally. On first launch, choose to create a new vault or restore a backup; if an iCloud backup is found, choose that copy or a newer file from another location. Follow macOS authentication when prompted. Do not bypass Gatekeeper warnings.
 5. Check the sidebar backup indicator. If cloud backup is unavailable, choose an encrypted backup location and keep the recovery key independently. A local backup is not an uploaded backup.
 6. Open **백업·CLI 설정** and connect the bundled CLI to `~/.local/bin/keydesk`. Confirm the connection without exposing credentials:
 
@@ -83,7 +84,61 @@ Cellar creates the initial vault through its first-run flow. After unlocking, cr
 
 ![Cellar 0.7.5 demo vault](images/cellar-vault.png)
 
-잠금 중에도 **새 키 맡기기**로 새 키나 파일을 암호화 접수할 수 있습니다. 다음 잠금 해제 때 금고에 편입되고 백업됩니다. 접수 직후에는 이 Mac에만 저장된 상태이므로 iCloud 업로드가 끝났다고 간주하지 마세요.
+잠금 중에도 **새 키 맡기기**로 새 키나 파일을 암호화 접수할 수 있습니다. 다음 잠금 해제 때 금고에 편입되고 백업됩니다. 접수 직후에는 이 Mac에만 저장된 상태이므로 클라우드 업로드가 끝났다고 간주하지 마세요.
+
+## Backup location and recovery / 백업 위치와 복원
+
+Open **Backup & CLI → Choose backup location** and choose **iCloud Drive**,
+**Google Drive**, or **Other folder / external disk…**. Your existing iCloud backup setting stays
+in place until you select a different location.
+
+For Google Drive:
+
+1. Install Drive for desktop and sign in before choosing the backup location.
+   On macOS, enable Google Drive in Finder if prompted. See Google's
+   [macOS instructions](https://support.google.com/drive/answer/12178485?hl=en).
+2. In Cellar, choose **Backup & CLI → Choose backup location → Google Drive**.
+   Select a folder that Drive for desktop actually syncs. A private folder such
+   as **My Drive/CellarBackups** keeps backups separate from other files. A folder
+   named “Google Drive” is not automatically synced; mirrored folders can also
+   be stored at a custom location.
+3. Cellar writes and verifies the encrypted `.keydesk` backup in that folder.
+   This confirms file storage, not upload completion. Check **Sync status** in
+   Google Drive for desktop and resolve any paused sync, account, storage, or
+   upload errors there. Keep cloud sync enabled until the backup has uploaded.
+4. For reliable local access to streamed backups, make the backup folder
+   **Available offline** in Finder. This also applies to new files in that folder;
+   see Google's [offline instructions](https://support.google.com/drive/answer/2375012?hl=en).
+
+The recovery key is still stored in **iCloud Keychain**, when available, and can
+be viewed from **Backup & CLI → Show recovery key** after authentication. Keep a
+separate safe copy when iCloud Keychain is unavailable or for an independent
+recovery route. Cellar does not put a plaintext recovery key in Google Drive.
+
+Google Drive recovery is manual: download the required `.keydesk` backup and
+keep its matching recovery key ready. On a Mac or user account without an
+existing Cellar vault, use **Restore encrypted backup file**, choose that downloaded
+file, and enter the recovery key. An existing vault is preserved; use **Verify
+backup recovery** there to check the file and key without replacing it. After
+restoring a Google Drive backup, automatic backup is unconfigured until you
+select this Mac's sync folder again in **Backup & CLI**. The old Mac's saved path
+and folder access are not reused. Actual Google account sync and recovery on a
+separate Mac have not been verified by the local tests.
+
+**백업·CLI 설정 → 백업 위치 선택**에서 **iCloud Drive**, **Google Drive** 또는
+**다른 폴더 / 외장 디스크…**를 선택하세요. Google Drive를 쓰려면 먼저 Drive for desktop을
+설치하고 로그인한 뒤 실제 동기화되는 폴더를 선택하세요. 예를 들어 내 드라이브의
+비공유 **CellarBackups** 폴더를 사용할 수 있습니다. 앱의 저장·검증 성공은
+업로드 완료를 뜻하지 않으므로 Google Drive의 **동기화 상태**를 확인하세요.
+스트리밍 폴더는 Finder에서 **오프라인 사용 가능**으로 지정할 수 있습니다.
+
+복구 키는 계속 iCloud 키체인 또는 사용자의 별도 보관 경로를 사용하며, 앱이
+평문 복구 키를 Google Drive에 저장하지 않습니다. 수동 복원은 내려받은
+`.keydesk` 파일과 해당 복구 키로 **암호화 백업 파일 복원**에서 진행합니다. 기존
+금고가 있으면 덮어쓰지 않고 **백업 복구 검증**으로 확인할 수 있습니다.
+Google Drive 백업을 복원한 뒤에는 이 Mac의 동기화 폴더를 다시 선택해야 자동
+백업이 재개됩니다. 실제 Google 계정의 동기화와 다른 Mac 복원은 별도 검증이
+필요합니다.
 
 ## Connect Codex and Claude
 
@@ -199,7 +254,7 @@ Existing vault locations, project manifests and Keychain access identity remain 
 - **AI cannot see MCP tools:** reload the session after setup and check the client's `keydesk` MCP connection. Do not fall back to reading `.env` or private key contents.
 - **Project is unconfigured:** fix the repository's names-only manifest. Do not select another project's production credential based on its provider.
 - **Approval expired or was rejected:** stop that attempt. Start a new request only when the user is ready; do not automatically retry.
-- **Backup is pending:** keep Cellar open, check iCloud availability and the actual upload status. `queued` deposits are not off-device backups.
+- **Backup is pending:** keep Cellar open and check the selected backup folder. For iCloud, check the app's upload status and Apple account availability; for Google Drive, check Drive for desktop's Sync status and confirm that the chosen folder still syncs. `queued` deposits are not off-device backups.
 
 The Korean screenshots shown here are from Cellar 0.7.5 in an isolated demo vault with fictional data. Cellar 0.7.7 supports both Korean and English; choose the app language in Settings. Distribution remains beta; separate-Mac recovery and an independent security audit are not completed. See [SECURITY.md](../SECURITY.md).
 

@@ -51,7 +51,7 @@ struct FileRunnerTests {
         let backup = root.appendingPathComponent("backup")
         let model = VaultModel(directory: root.appendingPathComponent("vault"), defaultBackupDirectory: backup, keys: MemoryKeyStore(), serve: false, observeSystemEvents: false)
         defer { model.shutdown(); try? FileManager.default.removeItem(at: root) }
-        await model.prepareFirstRun(); model.lock()
+        await model.prepareFirstRun(startNew: true); model.lock()
         let file = try SecretFile(name: "key.p12", data: Data([0,255,13,10]))
         #expect(try model.deposit(SecretDeposit(project: "fixture", environment: .development, variable: "FILE", file: file)).hasPrefix("queued"))
         await model.unlock()

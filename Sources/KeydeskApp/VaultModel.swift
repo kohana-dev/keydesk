@@ -7,6 +7,10 @@ import KeydeskCore
 /// What the app shows before a vault exists on this Mac.
 enum FirstRunState: Equatable {
     case checking
+    /// An empty iCloud folder does not rule out a Google Drive or manually kept backup.
+    case readyToCreate
+    /// An iCloud copy may predate a switch to Google Drive, so restore needs a choice.
+    case backupFound(URL)
     /// iCloud Keychain knows an earlier vault but its backup has not reached iCloud Drive here yet.
     case waitingForBackup
     /// A backup exists but its recovery key has not synced to this Mac.
@@ -153,6 +157,9 @@ final class VaultModel {
         if backupFailure != nil { return L10n.tr("백업 실패", "Backup failed") }
         if backupDirectory == nil { return L10n.tr("백업 폴더 없음", "No backup folder") }
         if hasUnbackedChanges { return L10n.tr("백업 대기 중", "Backup pending") }
+        if backupDestination == .googleDrive {
+            return L10n.tr("Google Drive 폴더에 저장됨 · 동기화 확인 필요", "Saved in Google Drive folder · Check sync")
+        }
         switch cloudUpload {
         case .uploaded: return L10n.tr("iCloud까지 백업됨", "Backed up to iCloud")
         case .pending: return L10n.tr("iCloud 업로드 대기 중", "iCloud upload pending")
@@ -212,20 +219,21 @@ final class VaultModel {
             try prepareDeposits()
         } catch { self.error = error.localizedDescription }
     }
-    /// Runs when no vault exists on this Mac. Restores the newest iCloud Drive backup when its recovery
-    /// key has synced, waits when iCloud Keychain knows an earlier vault whose backup has not arrived,
-    /// and otherwise creates a new vault without asking anything.
-    func prepareFirstRun(startNew: Bool = false) async {
+    /// Finds iCloud backups without replacing the choice to restore a newer Google Drive copy.
+    /// Restore or creating a vault begins only after the user's choice.
+    func prepareFirstRun(startNew: Bool = false, restoreExisting: Bool = false) async {
         guard !exists, !isDemo, !busy, snapshot == nil else { return }
         firstRun = .checking
         let directory = defaultBackupDirectory
         if !startNew, let directory, let latest = BackupManager.latestBackup(in: directory) {
             guard let recovery = keys.loadRecoveryKey(vaultID: latest.envelope.header.vaultID) else { firstRun = .needsRecoveryCode(latest.url); return }
+            guard restoreExisting else { firstRun = .backupFound(latest.url); return }
             do { try await restore(at: latest.url, code: RecoveryCode.encode(recovery)); firstRun = nil }
             catch { firstRun = .restoreStopped(latest.url, error.localizedDescription) }
             return
         }
         if !startNew && !keys.knownRecoveryVaults().isEmpty { firstRun = .waitingForBackup; return }
+        if !startNew { firstRun = .readyToCreate; return }
         do { try createAutomatically(backupDirectory: directory); firstRun = nil }
         catch { firstRun = .failed(error.localizedDescription) }
     }
@@ -238,7 +246,7 @@ final class VaultModel {
         snapshot.recoveryCode = RecoveryCode.encode(recovery)
         if let backupDirectory {
             try? FileManager.default.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
-            snapshot.backup = BackupSettings(directory: backupDirectory.path, bookmark: try? backupDirectory.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil))
+            snapshot.backup = BackupSettings(directory: backupDirectory.path, bookmark: try? backupDirectory.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil), destination: .iCloud)
         }
         snapshot.record("금고 생성")
         let wrapped = try VaultCrypto.wrap(key, recoveryKey: recovery, vaultID: header.vaultID, keyEpoch: header.keyEpoch)
@@ -391,15 +399,19 @@ final class VaultModel {
         let imported = try VaultFileStore.read(at: url)
         let recovered = try VaultCrypto.recover(imported, code: code)
         var snapshot = try VaultCrypto.open(imported, key: recovered)
-        _ = try await keys.authenticate(reason: L10n.tr("iCloud 백업에서 Cellar 금고를 복원하기 위해 인증합니다.", "Authenticate to restore your Cellar vault from an iCloud backup."))
+        _ = try await keys.authenticate(reason: L10n.tr("암호화 백업에서 Cellar 금고를 복원하기 위해 인증합니다.", "Authenticate to restore your Cellar vault from an encrypted backup."))
         guard token == generation, !exists else { throw VaultError.locked }
         // A fresh local vault identity avoids altering existing Keychain entries.
         var header = VaultHeader(); header.revision = snapshot.revision + 1
         snapshot.revision = header.revision; snapshot.record("백업 복원 · 제공사 유효성 재확인 필요")
-        // Back up to this Mac's iCloud Drive folder; the stored path belongs to the previous Mac.
-        if let directory = defaultBackupDirectory {
+        // A Google Drive path/bookmark belongs to the old Mac. Require a new selection rather than
+        // silently switching the user's chosen provider to iCloud or writing to the old location.
+        let wasGoogleDrive = snapshot.backup?.destination == .googleDrive
+            || BackupLocation.destination(of: url.deletingLastPathComponent()) == .googleDrive
+        snapshot.backup = nil
+        if !wasGoogleDrive, let directory = defaultBackupDirectory {
             try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            snapshot.backup = BackupSettings(directory: directory.path, bookmark: try? directory.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil))
+            snapshot.backup = BackupSettings(directory: directory.path, bookmark: try? directory.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil), destination: .iCloud)
         }
         let recovery = try RecoveryCode.decode(code)
         snapshot.recoveryCode = RecoveryCode.encode(recovery)
@@ -412,7 +424,9 @@ final class VaultModel {
         recoveryKeySaved = keys.saveRecoveryKey(recovery, vaultID: header.vaultID)
         flushBackup()
         try prepareDeposits()
-        notify(L10n.tr("iCloud 백업에서 금고를 복원했습니다.", "The vault has been restored from an iCloud backup."))
+        notify(wasGoogleDrive
+            ? L10n.tr("금고를 복원했습니다. 백업·CLI 설정에서 이 Mac의 Google Drive 백업 폴더를 다시 선택하세요.", "Your vault has been restored. Select this Mac’s Google Drive backup folder again in Backup & CLI settings.")
+            : L10n.tr("암호화 백업에서 금고를 복원했습니다.", "The vault has been restored from an encrypted backup."))
     }
     func importRows(_ rows: [DotenvRow], replace: Bool) throws {
         guard let project = selectedProject else { throw VaultError.invalidData }
@@ -499,17 +513,33 @@ final class VaultModel {
         if FileManager.default.isExecutableFile(atPath: bundled.path) { return bundled }
         return (Bundle.main.executableURL?.deletingLastPathComponent() ?? Bundle.main.bundleURL).appendingPathComponent("keydesk")
     }
-    func configureBackup(directory: URL?) throws {
+    func configureBackup(directory: URL?, destination: BackupDestination? = nil) throws {
         if let directory {
-            guard !directory.standardizedFileURL.path.hasPrefix(store.directory.standardizedFileURL.path) else { throw VaultError.invalidData }
+            let path = directory.resolvingSymlinksInPath().standardizedFileURL.path
+            let vaultPath = store.directory.resolvingSymlinksInPath().standardizedFileURL.path
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: path, isDirectory: &isDirectory), isDirectory.boolValue,
+                  path != vaultPath, !path.hasPrefix(vaultPath + "/") else { throw VaultError.invalidData }
         }
         try mutate { next in
             let bookmark = try directory?.bookmarkData(options: .minimalBookmark, includingResourceValuesForKeys: nil, relativeTo: nil)
-            next.backup = directory.map { BackupSettings(directory: $0.path, bookmark: bookmark) }
+            next.backup = directory.map { BackupSettings(directory: $0.path, bookmark: bookmark, destination: destination ?? BackupLocation.destination(of: $0)) }
             next.record(directory == nil ? "자동 백업 해제" : "자동 백업 설정")
         }
-        backedUpRevision = nil; lastBackupAt = nil; backupFailure = nil
+        backedUpRevision = nil; lastBackupAt = nil; lastBackupFile = nil; cloudUpload = .notCloud; backupFailure = nil
         flushBackup()
+    }
+    var backupDestination: BackupDestination? {
+        guard let directory = backupDirectory else { return nil }
+        return snapshot?.backup?.destination ?? BackupLocation.destination(of: directory)
+    }
+    var availableICloudBackupDirectory: URL? {
+        defaultBackupDirectory ?? (isDemo ? nil : Self.iCloudBackupDirectory)
+    }
+    func configureICloudBackup() throws {
+        guard let directory = availableICloudBackupDirectory else { throw VaultError.invalidData }
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try configureBackup(directory: directory, destination: .iCloud)
     }
     var backupDirectory: URL? {
         guard let settings = snapshot?.backup, let path = settings.directory else { return nil }
@@ -529,11 +559,13 @@ final class VaultModel {
     private func loadBackupStatus() {
         lastBackupFile = backupDirectory.flatMap { BackupManager.latestBackup(in: $0)?.url }
         refreshCloudUpload()
-        guard let envelope, let status = BackupStatus.read(at: backupStatusURL, vaultID: envelope.header.vaultID) else { backedUpRevision = nil; lastBackupAt = nil; return }
+        guard let envelope, let status = BackupStatus.read(at: backupStatusURL, vaultID: envelope.header.vaultID),
+              let lastBackupFile, let backup = try? VaultFileStore.read(at: lastBackupFile),
+              backup.header.vaultID == status.vaultID, backup.header.revision == status.revision else { backedUpRevision = nil; lastBackupAt = nil; return }
         backedUpRevision = status.revision; lastBackupAt = status.date
     }
     func refreshCloudUpload() {
-        cloudUpload = lastBackupFile.map(BackupLocation.cloudUpload(of:)) ?? .notCloud
+        cloudUpload = backupDestination == .googleDrive ? .notCloud : (lastBackupFile.map(BackupLocation.cloudUpload(of:)) ?? .notCloud)
     }
     private func recordBackup(revision: UInt64, vaultID: UUID) {
         let now = Date()
@@ -551,9 +583,9 @@ final class VaultModel {
             self.flushBackup()
         }
     }
-    func flushBackup() {
+    func flushBackup(force: Bool = false) {
         backupTask?.cancel(); backupTask = nil
-        guard let envelope, let key, let directory = backupDirectory, backedUpRevision != envelope.header.revision else { return }
+        guard let envelope, let key, let directory = backupDirectory, force || backedUpRevision != envelope.header.revision else { return }
         do {
             lastBackupFile = try BackupManager.save(envelope, key: key, directory: directory)
             recordBackup(revision: envelope.header.revision, vaultID: envelope.header.vaultID)
