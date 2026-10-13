@@ -152,3 +152,40 @@ Existing vault locations, project manifests and Keychain access identity remain 
 - **Backup is pending:** keep Cellar open, check iCloud availability and the actual upload status. `queued` deposits are not off-device backups.
 
 Screenshots are from Cellar 0.7.5 in an isolated demo vault with fictional data. The UI is currently in Korean. Distribution remains beta; separate-Mac recovery and an independent security audit are not completed. See [SECURITY.md](../SECURITY.md).
+
+
+## Manual first-run and system-lock verification
+
+A clean HOME directory is not a separate macOS account: Keychain and GUI login
+sessions must also be distinct. For a clean-account creation test on the same
+Mac, create a **standard test user** in System Settings and log into it. Enter
+account passwords and macOS authentication yourself; never send them to an AI.
+Do not connect the existing Apple account for this specific empty-vault test;
+otherwise automatic restore may replace the intended creation scenario.
+
+Follow the installation steps above in that account, then check:
+
+1. With no existing vault, Cellar creates an empty vault and opens its main screen.
+2. With iCloud unavailable, the UI reports the need for a backup folder; it must
+   not claim an uploaded backup. Recovery-key storage may also require manual
+   handling. Keep any displayed recovery key private.
+3. Lock the vault, unlock it, and authenticate in the native macOS prompt. Run
+   the bundled helper's `status` command; `locked` should be `false` after success.
+4. Quit and reopen Cellar. The existing vault must remain intact and require
+   authentication to unlock. Cancel authentication once and check it stays locked.
+5. Use only a disposable test credential if exercising storage. Keep the real
+   production vault and Apple account out of this creation test.
+
+For screen-lock and sleep testing, first unlock a disposable demo vault. Trigger
+an actual macOS screen lock, unlock the **screen** yourself, and verify the vault
+still requires its own unlock. Repeat with a real system sleep/wake transition.
+Posting notification names in a test is not evidence of actual system sleep.
+
+On 2026-10-13 the published Cellar 0.7.5 app was exercised in demo mode on the
+maintainer's Mac. Actual screen-lock/unlock and sleep/wake notifications were
+observed independently; CLI status changed from unlocked to locked and remained
+locked after return. No real credentials were used. Automated tests also cover
+creation without iCloud, failed recovery-key storage, and device-Keychain failure
+with a successful retry. These tests substitute a Keychain and do not establish
+the separate-user first-run authentication result; that manual check remains
+pending until performed in a separate logged-in account.

@@ -32,8 +32,10 @@ There is no guaranteed response SLA.
   privacy policies. Keep an independent encrypted backup and recovery key.
 - Locked deposits remain only on that Mac until unlock, merge and backup upload.
 - Cross-Mac iCloud Keychain sync/restore is not yet physically verified. Same-Mac
-  isolated restore has been verified. Physical sleep/screen lock remains a
-  separate manual check; automated state tests do not prove it.
+  isolated restore has been verified. Real screen lock and system sleep/wake
+  transitions were exercised on the maintainer's Mac with the published app
+  and a disposable demo vault; it locked and remained locked after return.
+  Other macOS accounts and hardware remain unverified.
 - Changing a recovery key does not invalidate old backups. Deleting a local key
   does not revoke it at its provider. Full memory erasure is not guaranteed.
 - A signing identity change can make old Keychain items inaccessible. Verify a
@@ -83,7 +85,8 @@ vault or authenticates an AI account. Client-level MCP tool permissions do not
 remove native Cellar approval or OS authentication.
 
 Published-app signature, notarization and Gatekeeper checks, isolated setup,
-configuration preservation and same-Mac isolated recovery have been exercised.
+configuration preservation, real system lock/sleep transitions with a demo
+vault, and same-Mac isolated recovery have been exercised.
 Actual Gemini calls through fresh Codex and Claude sessions have been exercised
 on the maintainer's Mac. A separate Mac/new macOS user's complete first-run
 Keychain flow, cross-Mac recovery, and an independent security audit remain

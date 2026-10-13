@@ -16,13 +16,16 @@ final class MemoryKeyStore: VaultKeyStore {
     var authentications = 0
     var denyAuthentication = false
     var recoveryWritable = true
+    var deviceWritable = true
     init(cloud: Cloud = Cloud()) { self.cloud = cloud }
     func authenticate(reason: String) async throws -> LAContext? {
         authentications += 1
         if denyAuthentication { throw VaultError.locked }
         return nil
     }
-    func saveDeviceKey(_ key: SymmetricKey, id: UUID, epoch: UUID) throws { device["\(id)/\(epoch)"] = key.rawData }
+    func saveDeviceKey(_ key: SymmetricKey, id: UUID, epoch: UUID) throws {
+        guard deviceWritable else { throw VaultError.accessDenied }
+        device["\(id)/\(epoch)"] = key.rawData }
     func loadDeviceKey(envelope: VaultEnvelope, context: LAContext?) throws -> SymmetricKey {
         guard let data = device["\(envelope.header.vaultID)/\(envelope.header.keyEpoch)"] else { throw VaultError.accessDenied }
         return SymmetricKey(data: data)
@@ -68,6 +71,46 @@ struct FirstRunTests {
         let backup = try VaultFileStore.read(at: #require(try backups(folders).first))
         let recovery = try #require(keys.cloud.recovery[backup.header.vaultID])
         #expect(try VaultCrypto.open(backup, key: VaultCrypto.recover(backup, code: RecoveryCode.encode(SymmetricKey(data: recovery)))).recoveryCode != nil)
+    }
+
+    @Test func cleanAccountWithoutICloudDoesNotClaimBackupCompleted() async throws {
+        let folders = Folders(), keys = MemoryKeyStore()
+        let app = VaultModel(directory: folders.mac("offline"), defaultBackupDirectory: nil,
+                             keys: keys, serve: false, observeSystemEvents: false)
+        defer { app.shutdown() }
+        await app.prepareFirstRun()
+        #expect(app.exists && app.snapshot != nil && app.firstRun == nil)
+        #expect(app.backupDirectory == nil && app.lastBackupAt == nil && app.hasUnbackedChanges)
+        #expect(app.menuBarBackupStatus == "백업 폴더 없음")
+        app.lock()
+        await app.unlock()
+        #expect(keys.authentications == 1 && app.snapshot != nil)
+    }
+
+    @Test func unavailableRecoveryKeychainDoesNotClaimRecoverySaved() async throws {
+        let folders = Folders(), keys = MemoryKeyStore()
+        keys.recoveryWritable = false
+        let app = model(folders, "recovery-unavailable", keys)
+        defer { app.shutdown() }
+        await app.prepareFirstRun()
+        #expect(app.exists && app.snapshot != nil && !app.recoveryKeySaved)
+        #expect(app.menuBarBackupStatus == "복구 키 직접 보관 필요")
+        #expect(keys.cloud.recovery.isEmpty)
+        #expect(try await app.authenticatedRecoveryCode() != nil)
+    }
+
+    @Test func deviceKeychainFailureCreatesNoVaultAndRetrySucceeds() async throws {
+        let folders = Folders(), keys = MemoryKeyStore()
+        keys.deviceWritable = false
+        let app = model(folders, "device-unavailable", keys)
+        defer { app.shutdown() }
+        await app.prepareFirstRun()
+        guard case .failed = app.firstRun else { Issue.record("Expected a visible first-run failure"); return }
+        #expect(!app.exists && app.snapshot == nil && keys.device.isEmpty)
+        #expect(!FileManager.default.fileExists(atPath: app.store.vaultURL.path))
+        keys.deviceWritable = true
+        await app.prepareFirstRun()
+        #expect(app.exists && app.snapshot != nil && app.firstRun == nil)
     }
 
     @Test func secondMacRestoresLatestBackupAutomatically() async throws {
