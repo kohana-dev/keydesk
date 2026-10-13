@@ -48,10 +48,12 @@ struct BugReportView: View {
                     Button(L10n.tr("GitHub 초안 열기", "Open GitHub draft"), systemImage: "arrow.up.right") {
                         guard confirmsNoSensitiveInformation else { return }
                         error = nil
-                        openURL(preview.destination) { accepted in
-                            openedDraft = accepted
-                            if !accepted {
-                                error = L10n.tr("브라우저를 열지 못했습니다. 다시 시도하세요.", "Could not open the browser. Try again.")
+                        openURL(preview.destination) { @Sendable accepted in
+                            Task { @MainActor in
+                                openedDraft = accepted
+                                if !accepted {
+                                    error = L10n.tr("브라우저를 열지 못했습니다. 다시 시도하세요.", "Could not open the browser. Try again.")
+                                }
                             }
                         }
                     }

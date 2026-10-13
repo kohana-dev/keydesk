@@ -1,5 +1,7 @@
 # Install Cellar / Cellar 설치 안내
 
+Cellar 0.7.10 fixes the UI callback after opening a reviewed GitHub bug-report draft. The optional metadata and review/confirmation flow are unchanged. / 0.7.10은 검토한 GitHub 제보 초안을 연 뒤 화면 상태를 갱신하는 스레드 경고를 수정했습니다.
+
 The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` CLI, MCP server and companion skill names stay compatible with earlier installations.
 
 ## Requirements
