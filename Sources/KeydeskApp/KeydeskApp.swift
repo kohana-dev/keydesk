@@ -17,9 +17,7 @@ struct KeydeskApp: App {
     }
     var body: some Scene {
         Window("Cellar", id: "main") {
-            ContentView(model: model)
-                .frame(minWidth: 1000, minHeight: 680)
-                .onAppear { delegate.model = model; NSApp.activate() }
+            MainWindowView(model: model, delegate: delegate)
         }
         .defaultSize(width: 1280, height: 800)
         .commands {

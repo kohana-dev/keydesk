@@ -1,6 +1,6 @@
 # Security policy
 
-Cellar is a local macOS secret vault. The current published app is **0.7.5**
+Cellar is a local macOS secret vault. The current published app is **0.7.6**
 (Apple Silicon, macOS 14+), distributed as a public beta. The CLI, MCP server,
 skill names, bundle/Keychain identity and existing vault location retain
 `keydesk` compatibility names. This project has not had an independent security
