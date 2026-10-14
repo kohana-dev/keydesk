@@ -26,7 +26,7 @@ struct KeydeskApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {}
             CommandGroup(after: .appInfo) {
-                SettingsLink { Text(L10n.tr("업데이트와 버그 제보…", "Updates and bug reports…")) }
+                SettingsLink { Text(L10n.tr("앱 설정…", "App settings…")) }
             }
             CommandMenu(L10n.tr("금고", "Vault")) {
                 Button(L10n.tr("대기 중인 실행 승인 보기", "Show pending approval")) { model.showPendingApproval() }

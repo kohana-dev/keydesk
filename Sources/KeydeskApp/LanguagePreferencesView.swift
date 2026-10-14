@@ -19,6 +19,7 @@ struct LanguagePreferencesView: View {
                             .font(.callout).foregroundStyle(.secondary)
                     }.padding(8)
                 }
+                LoginSettingsSection()
                 SupportSettingsSection()
             }
             .padding(20)
