@@ -1,6 +1,6 @@
 # Install Cellar / Cellar 설치 안내
 
-Cellar 0.7.12 adds a login launch switch in app Settings. Google Drive for desktop remains available as an encrypted backup location alongside iCloud Drive. / 0.7.12는 앱 설정에 로그인 시 자동 실행 스위치를 추가합니다. iCloud Drive와 Google Drive 동기화 폴더를 암호화 백업 위치로 선택할 수 있습니다.
+Cellar 0.7.13 shows the current Caps Lock state on the lock screen and beside focused app-owned secret inputs. / 0.7.13은 잠금 해제 화면과 앱이 제공하는 비밀값 입력란에 현재 Caps Lock 상태를 표시합니다.
 
 The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` CLI, MCP server and companion skill names stay compatible with earlier installations.
 
@@ -30,6 +30,12 @@ Cellar 0.7.7부터 한국어와 영어를 지원합니다. **Cellar → 설정 �
 In Cellar 0.7.12 or later, open **Cellar → Settings** (⌘,) and turn **Launch at login** on or off. This changes the macOS login item registration and is available while the vault is locked. Cellar reads the current macOS setting; it does not turn the option back on after you disable it in System Settings. If macOS requires approval, use the **Open Login Items Settings** button and allow Cellar there. Starting the app at login keeps the vault locked until you authenticate.
 
 Cellar 0.7.12부터 **Cellar → 설정**(⌘,)에서 **로그인 시 자동 실행**을 켜거나 끌 수 있습니다. macOS의 실제 로그인 항목 등록을 변경하며 금고가 잠겨 있어도 설정할 수 있습니다. 시스템 설정에서 꺼둔 항목을 앱이 임의로 다시 켜지 않습니다. macOS 승인이 필요하다고 표시되면 **로그인 항목 설정 열기**에서 Cellar를 허용하세요. 로그인할 때 앱이 실행되어도 금고는 인증 전까지 잠겨 있습니다.
+
+## Caps Lock state / Caps Lock 상태
+
+Cellar 0.7.13 shows **Caps Lock is on / off** below **Unlock vault** and below a focused secret or recovery-key input. The display updates while the view is visible. The Mac password dialog is provided by macOS; Cellar cannot insert a custom indicator inside that system-owned input field. Check the state on Cellar’s lock screen before opening authentication. Cellar reads only the Caps Lock modifier state, never your Mac password or typed characters.
+
+Cellar 0.7.13은 **금고 열기** 아래와 선택한 비밀값·복구 키 입력란 아래에 **Caps Lock 켜짐 / 꺼짐**을 표시합니다. 화면이 보이는 동안 상태를 계속 갱신합니다. Mac 비밀번호 인증창은 macOS가 제공하므로 그 입력칸 안쪽에는 앱의 표시를 넣을 수 없습니다. 인증을 열기 전에 Cellar 잠금 화면에서 상태를 확인하세요. Caps Lock 상태만 읽으며 Mac 비밀번호나 입력한 문자를 수집하지 않습니다.
 
 ## Updates and bug reports / 업데이트와 버그 제보
 

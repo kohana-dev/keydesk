@@ -4,7 +4,7 @@ A local macOS vault for developers and their AI tools. Keep API keys and origina
 
 개인 개발자를 위한 macOS 로컬 키 금고입니다. API 키와 키 파일을 암호화해 보관하고, Codex·Claude가 키 값을 채팅에 노출하지 않고 사용할 수 있습니다.
 
-**[Download Cellar 0.7.12 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.12/Cellar-0.7.12-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
+**[Download Cellar 0.7.13 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.13/Cellar-0.7.13-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
 Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
@@ -31,7 +31,7 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 
 ## Get started
 
-1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.12), and verify the checksum.
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.13), and verify the checksum.
 2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
 3. Open Cellar normally. Follow macOS authentication and check your encrypted backup status. For Google Drive, install and sign in to Drive for desktop first, then open **Backup & CLI → Choose backup location → Google Drive** and select its actual sync folder. Check upload completion in Google Drive.
 4. In **Backup & CLI / 백업·CLI 설정**, connect the bundled CLI. Add a project and register a key or original file.

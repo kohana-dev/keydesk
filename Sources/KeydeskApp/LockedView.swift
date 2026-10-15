@@ -24,8 +24,11 @@ struct LockedView: View {
     @ViewBuilder private var lockedContent: some View {
         Text(L10n.tr("금고가 잠겨 있습니다", "Your vault is locked")).font(.system(size: 28, weight: .semibold)).foregroundStyle(Theme.ink)
         Text(L10n.tr("인증 후 프로젝트와 키를 확인할 수 있습니다.", "Authenticate to view your projects and keys.")).foregroundStyle(.secondary)
-        Button(L10n.tr("금고 열기", "Unlock vault"), systemImage: "touchid") { Task { await model.unlock() } }
-            .buttonStyle(.borderedProminent).controlSize(.large).disabled(model.busy)
+        VStack(spacing: 8) {
+            Button(L10n.tr("금고 열기", "Unlock vault"), systemImage: "touchid") { Task { await model.unlock() } }
+                .buttonStyle(.borderedProminent).controlSize(.large).disabled(model.busy)
+            CapsLockIndicator()
+        }
         Button(L10n.tr("새 키 맡기기", "Deposit a new key"), systemImage: "tray.and.arrow.down") { depositing = true }
         Button(L10n.tr("백업 복구 검증", "Verify backup recovery"), systemImage: "arrow.counterclockwise") { recoveryURL = nil; recovering = true }
     }

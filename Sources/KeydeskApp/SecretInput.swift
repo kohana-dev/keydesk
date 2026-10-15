@@ -12,17 +12,20 @@ struct SecretInput: View {
     @Environment(\.scenePhase) private var scenePhase
     var body: some View {
         let _ = interfaceLanguage
-        HStack {
-            Group {
-                if shown { TextField(title, text: $value).focused($fieldFocused) }
-                else { SecureField(title, text: $value).focused($fieldFocused) }
-            }.textFieldStyle(.roundedBorder).privacySensitive()
-            Button(shown ? L10n.tr("숨기기", "Hide") : L10n.tr("보기", "Show"), systemImage: shown ? "eye.slash" : "eye") {
-                fieldFocused = false
-                shown.toggle()
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Group {
+                    if shown { TextField(title, text: $value).focused($fieldFocused) }
+                    else { SecureField(title, text: $value).focused($fieldFocused) }
+                }.textFieldStyle(.roundedBorder).privacySensitive()
+                Button(shown ? L10n.tr("숨기기", "Hide") : L10n.tr("보기", "Show"), systemImage: shown ? "eye.slash" : "eye") {
+                    fieldFocused = false
+                    shown.toggle()
+                }
+                    .help(shown ? L10n.tr("입력한 비밀값 숨기기", "Hide entered secret") : L10n.tr("입력한 비밀값 보기", "Show entered secret"))
+                    .accessibilityLabel(shown ? L10n.tr("입력한 비밀값 숨기기", "Hide entered secret") : L10n.tr("입력한 비밀값 보기", "Show entered secret"))
             }
-                .help(shown ? L10n.tr("입력한 비밀값 숨기기", "Hide entered secret") : L10n.tr("입력한 비밀값 보기", "Show entered secret"))
-                .accessibilityLabel(shown ? L10n.tr("입력한 비밀값 숨기기", "Hide entered secret") : L10n.tr("입력한 비밀값 보기", "Show entered secret"))
+            if fieldFocused { CapsLockIndicator() }
         }
         .onChange(of: shown) {
             Task { @MainActor in
