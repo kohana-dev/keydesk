@@ -18,13 +18,15 @@ final class ApprovalPanelController: NSObject, NSWindowDelegate {
 
     func update() {
         guard let model else { return }
+        let mouse = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main
         if let approval = model.approval {
             guard !model.reusingDevelopmentApproval else { return }
-            show(CLIApprovalView(model: model, approval: approval), title: L10n.tr("Cellar · 실행 승인", "Cellar · Execution approval"))
+            show(CLIApprovalView(model: model, approval: approval, dialogHeight: DialogSizing.height(preferred: 640, on: screen)), title: L10n.tr("Cellar · 실행 승인", "Cellar · Execution approval"), on: screen)
         } else if let approval = model.apiApproval {
-            show(APIApprovalView(model: model, approval: approval), title: L10n.tr("Cellar · API 사용 승인", "Cellar · API approval"))
+            show(APIApprovalView(model: model, approval: approval, dialogHeight: DialogSizing.height(preferred: 640, on: screen)), title: L10n.tr("Cellar · API 사용 승인", "Cellar · API approval"), on: screen)
         } else if let approval = model.brokerApproval {
-            show(BrokerApprovalView(model: model, approval: approval), title: L10n.tr("Cellar · AI 연결 승인", "Cellar · AI connection approval"))
+            show(BrokerApprovalView(model: model, approval: approval, dialogHeight: DialogSizing.height(preferred: 440, on: screen)), title: L10n.tr("Cellar · AI 연결 승인", "Cellar · AI connection approval"), on: screen)
         } else {
             closingFromModel = true
             panel?.close(); panel = nil
@@ -43,7 +45,7 @@ final class ApprovalPanelController: NSObject, NSWindowDelegate {
         }
     }
 
-    private func show(_ view: some View, title: String) {
+    private func show(_ view: some View, title: String, on screen: NSScreen?) {
         let hosting = NSHostingView(rootView: view.tint(Theme.accent).preferredColorScheme(.light).environment(\.locale, L10n.locale))
         let panel = self.panel ?? {
             let created = NSPanel(contentRect: .zero, styleMask: [.titled, .closable], backing: .buffered, defer: false)
@@ -58,8 +60,7 @@ final class ApprovalPanelController: NSObject, NSWindowDelegate {
         panel.contentView = hosting
         panel.setContentSize(hosting.fittingSize)
         // Open on the display the user is working on (where the pointer is), not the main window's display.
-        let mouse = NSEvent.mouseLocation
-        if let screen = NSScreen.screens.first(where: { NSMouseInRect(mouse, $0.frame, false) }) ?? NSScreen.main {
+        if let screen {
             let area = screen.visibleFrame, size = panel.frame.size
             panel.setFrameOrigin(NSPoint(x: area.midX - size.width / 2, y: area.midY - size.height / 2))
         } else { panel.center() }

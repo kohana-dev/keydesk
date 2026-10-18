@@ -10,23 +10,25 @@ struct TimedApprovalWindowView: View {
 
     var body: some View {
         let _ = interfaceLanguage
-        VStack(alignment: .leading, spacing: 14) {
-            if let menuFailure {
-                Label(menuFailure, systemImage: "exclamationmark.circle")
-                    .font(.callout)
-                    .foregroundStyle(.red)
-                    .accessibilityIdentifier("timed-approval-menu-error")
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    if let menuFailure {
+                        Label(menuFailure, systemImage: "exclamationmark.circle")
+                            .font(.callout)
+                            .foregroundStyle(.red)
+                            .accessibilityIdentifier("timed-approval-menu-error")
+                    }
+                    TimedApprovalSection(model: model, initiallyCustom: true)
+                }
+                .padding(20)
             }
-            TimedApprovalSection(model: model, initiallyCustom: true)
-            HStack {
+            DialogFooter {
                 Spacer()
-                Button(L10n.tr("닫기", "Close")) { dismissWindow(id: "timed-approval") }
-                    .keyboardShortcut(.cancelAction)
+                DialogDismissButton { dismissWindow(id: "timed-approval") }
             }
         }
-        .padding(20)
-        .frame(width: 510)
-        .fixedSize(horizontal: false, vertical: true)
+        .frame(width: 510, height: DialogSizing.height(preferred: 500))
         .environment(\.locale, L10n.locale)
         .onChange(of: model.timedApprovalStarting) { _, starting in
             if starting { menuFailure = nil }

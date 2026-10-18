@@ -22,23 +22,27 @@ struct MetadataView: View {
     }
     var body: some View {
         let _ = interfaceLanguage
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(spacing: 12) {
-                ProviderIcon(provider: provider)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("키 정보 편집", "Edit key details")).font(.title2.weight(.semibold)).foregroundStyle(Theme.ink)
-                    Text(L10n.tr("이름, 서비스와 보관 정보를 수정하세요.", "Update the name, service, and stored details.")).font(.callout).foregroundStyle(.secondary)
-                }
+        VStack(spacing: 0) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 12) {
+                        ProviderIcon(provider: provider)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(L10n.tr("키 정보 편집", "Edit key details")).font(.title2.weight(.semibold)).foregroundStyle(Theme.ink)
+                            Text(L10n.tr("이름, 서비스와 보관 정보를 수정하세요.", "Update the name, service, and stored details.")).font(.callout).foregroundStyle(.secondary)
+                        }
+                    }
+                    Divider()
+                    TextField(L10n.tr("이름", "Name"), text: $name).textFieldStyle(.roundedBorder).focused($nameFocused)
+                    ProviderPicker(provider: $provider)
+                    if credential.currentFile == nil { SecretInput(title: L10n.tr("새 키 값 (선택)", "New key value (optional)"), value: $value) }
+                    Text(L10n.tr("비워두면 기존 키 값을 유지합니다. 입력하면 새 버전으로 저장합니다.", "Leave blank to keep the current key value. Enter a value to save a new version.")).font(.caption).foregroundStyle(.secondary)
+                    TextField(L10n.tr("계정", "Account"), text: $account).textFieldStyle(.roundedBorder)
+                    TextField(L10n.tr("메모", "Note"), text: $note).textFieldStyle(.roundedBorder)
+                    if let error { Text(error).foregroundStyle(.red) }
+                }.padding(28)
             }
-            Divider()
-            TextField(L10n.tr("이름", "Name"), text: $name).textFieldStyle(.roundedBorder).focused($nameFocused)
-            ProviderPicker(provider: $provider)
-            if credential.currentFile == nil { SecretInput(title: L10n.tr("새 키 값 (선택)", "New key value (optional)"), value: $value) }
-            Text(L10n.tr("비워두면 기존 키 값을 유지합니다. 입력하면 새 버전으로 저장합니다.", "Leave blank to keep the current key value. Enter a value to save a new version.")).font(.caption).foregroundStyle(.secondary)
-            TextField(L10n.tr("계정", "Account"), text: $account).textFieldStyle(.roundedBorder)
-            TextField(L10n.tr("메모", "Note"), text: $note).textFieldStyle(.roundedBorder)
-            if let error { Text(error).foregroundStyle(.red) }
-            HStack { Button(L10n.tr("취소", "Cancel")) { dismiss() }.keyboardShortcut(.cancelAction); Spacer(); Button(L10n.tr("저장", "Save")) {
+            DialogFooter { DialogDismissButton(L10n.tr("취소", "Cancel"), prominent: false) { dismiss() }; Spacer(); Button(L10n.tr("저장", "Save")) {
                 do {
                     try model.mutate { next in
                         guard let i = next.credentials.firstIndex(where: { $0.id == credential.id }) else { throw VaultError.invalidData }
@@ -52,7 +56,7 @@ struct MetadataView: View {
                     }; dismiss()
                 } catch { self.error = error.localizedDescription }
             }.buttonStyle(.borderedProminent).disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) }
-        }.padding(28).frame(width: 540).controlSize(.large).background(Theme.surface)
+        }.frame(width: 540, height: DialogSizing.height(preferred: 522)).controlSize(.large).background(Theme.surface)
         .task { nameFocused = true }
         .onDisappear { value = "" }
     }

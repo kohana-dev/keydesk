@@ -4,7 +4,7 @@ A local macOS vault for developers and their AI tools. Keep API keys and origina
 
 개인 개발자를 위한 macOS 로컬 키 금고입니다. API 키와 키 파일을 암호화해 보관하고, Codex·Claude가 키 값을 채팅에 노출하지 않고 사용할 수 있습니다.
 
-**[Download Cellar 0.7.15 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.15/Cellar-0.7.15-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
+**[Download Cellar 0.7.16 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.16/Cellar-0.7.16-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
 Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
@@ -14,6 +14,7 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 
 ## What you can do
 
+- Keep Close, Cancel and approval actions visible in a fixed footer while scrolling settings, forms and request details. Dismissal buttons are larger and easier to see.
 - Check the latest official release from Settings, only when you choose to. Updates are downloaded and installed manually.
 - Write a bug report, review the exact contents, then open a GitHub draft. App/OS details are optional; vaults, credentials, logs, and screenshots are not collected. You submit the public report yourself on GitHub.
 
@@ -32,7 +33,7 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 
 ## Get started
 
-1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.15), and verify the checksum.
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.16), and verify the checksum.
 2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
 3. Open Cellar normally. Follow macOS authentication and check your encrypted backup status. For Google Drive, install and sign in to Drive for desktop first, then open **Backup & CLI → Choose backup location → Google Drive** and select its actual sync folder. Check upload completion in Google Drive.
 4. In **Backup & CLI / 백업·CLI 설정**, connect the bundled CLI. Add a project and register a key or original file.
