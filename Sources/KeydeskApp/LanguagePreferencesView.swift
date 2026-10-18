@@ -2,6 +2,7 @@ import SwiftUI
 import KeydeskCore
 
 struct LanguagePreferencesView: View {
+    @Bindable var model: VaultModel
     @AppStorage(L10n.preferenceKey) private var interfaceLanguage = AppLanguage.system.rawValue
 
     var body: some View {
@@ -20,6 +21,7 @@ struct LanguagePreferencesView: View {
                     }.padding(8)
                 }
                 LoginSettingsSection()
+                TimedApprovalSection(model: model)
                 SupportSettingsSection()
             }
             .padding(20)

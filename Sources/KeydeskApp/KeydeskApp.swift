@@ -40,6 +40,6 @@ struct KeydeskApp: App {
             Image(nsImage: MenuBarIcon.image).renderingMode(.template)
                 .accessibilityLabel("Cellar")
         }.menuBarExtraStyle(.menu)
-        Settings { LanguagePreferencesView() }
+        Settings { LanguagePreferencesView(model: model) }
     }
 }

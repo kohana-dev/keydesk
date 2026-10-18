@@ -4,7 +4,7 @@ A local macOS vault for developers and their AI tools. Keep API keys and origina
 
 개인 개발자를 위한 macOS 로컬 키 금고입니다. API 키와 키 파일을 암호화해 보관하고, Codex·Claude가 키 값을 채팅에 노출하지 않고 사용할 수 있습니다.
 
-**[Download Cellar 0.7.13 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.13/Cellar-0.7.13-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
+**[Download Cellar 0.7.14 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.14/Cellar-0.7.14-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
 Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
@@ -26,12 +26,13 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 - Copy values with 30-second clipboard cleanup; revealed values hide after 15 seconds.
 - Choose iCloud Drive, a Google Drive for desktop sync folder, or another folder for automatic encrypted backups. Google Drive sync completion is checked in Google Drive; the app verifies the saved encrypted file. The recovery key stays in iCloud Keychain when available or in your separate safekeeping.
 - Use the signed CLI for SDKs, builds and original files, or MCP for supported provider API requests. View and revoke remembered approvals in the app.
+- Choose **Allow all requests temporarily** in Settings for 1–480 minutes of automatic CLI, API and MCP approval across all projects and environments, including Production. Authenticate once to start, monitor the remaining time and stop immediately from Settings or the menu bar. Locking the vault or quitting also ends the session. Stopping or expiry lets already started work continue; lock and quit keep their existing cancellation behavior.
 
 ![Cellar English inline Gemini service search and registration](docs/images/cellar-service-search-en.jpg)
 
 ## Get started
 
-1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.13), and verify the checksum.
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.14), and verify the checksum.
 2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
 3. Open Cellar normally. Follow macOS authentication and check your encrypted backup status. For Google Drive, install and sign in to Drive for desktop first, then open **Backup & CLI → Choose backup location → Google Drive** and select its actual sync folder. Check upload completion in Google Drive.
 4. In **Backup & CLI / 백업·CLI 설정**, connect the bundled CLI. Add a project and register a key or original file.
@@ -57,7 +58,7 @@ keydesk run --project my-app --env dev --files GOOGLE_APPLICATION_CREDENTIALS --
 
 For direct API calls, the local broker injects authentication internally. MCP exposes `project_context` and `request_http` through the global router; there is no credential-reading tool. Supported provider requests include Gemini, OpenAI, Anthropic, Cloudflare, Paddle and RevenueCat. See [API broker](docs/local-api-broker.md), [MCP setup](docs/mcp-setup.md) and [project CLI](docs/project-cli.md).
 
-Initial use requires human approval. Exact development commands can be remembered for 30 minutes. Production reuse is optional, lasts five minutes and allows ten additional starts/requests. Requests must match exactly; lock, key changes and quitting revoke remembered approvals. API requests in dev/staging have a separate 30-minute / 100-repeat limit.
+By default, initial use requires human approval. Exact development commands can be remembered for 30 minutes. Production reuse is optional, lasts five minutes and allows ten additional starts/requests. Requests must match exactly; lock, key changes and quitting revoke remembered approvals. API requests in dev/staging have a separate 30-minute / 100-repeat limit. An explicitly started temporary all-request session replaces these per-request prompts until it ends. It does not bypass project/key matching, supported API targets or executable validation, and cannot be started by the CLI or AI.
 
 `stored` confirms a vault save; verify backup upload separately. `queued` means encrypted on this Mac only until unlock, merge and successful backup. Source env/key files are preserved. Original files are limited to 1 MiB each; selected temporary files are cleaned up on exit, cancellation or vault lock. Intentional `--keep-running` retains injected credentials/files until the process ends.
 

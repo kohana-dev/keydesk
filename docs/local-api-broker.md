@@ -29,7 +29,9 @@ The request uses the same signed local CLI and private Unix socket as existing c
 
 ## Human permission and repeat use
 
-The initial request requires approval in the app; production additionally requires OS authentication. Reuse is opt-in, initially unchecked. A remembered grant binds the project UUID, environment, key ID/version, HTTP method, exact URL including query and exact JSON string. Project name and UUID aliases resolve to the same project before matching. These grants are shared by trusted local CLI/MCP callers, not isolated by AI identity; the approval UI explicitly says so.
+Cellar 0.7.14 also supports **Settings → Allow all requests temporarily**. A user unlocks the vault, chooses 1–480 minutes and authenticates once to start. During that session, CLI, supported API and MCP approvals for every project and environment, including production, are automatic. The setting cannot be activated or extended through CLI/MCP. Stop, expiry, vault lock or quitting clears the session and remembered permissions; stopping or expiry lets already accepted work continue. Vault lock and quitting retain their existing process-cancellation behavior. Request validation, project/key matching, official-host restrictions and credential delivery rules remain enforced.
+
+By default, the initial request requires approval in the app; production additionally requires OS authentication. Reuse is opt-in, initially unchecked. A remembered grant binds the project UUID, environment, key ID/version, HTTP method, exact URL including query and exact JSON string. Project name and UUID aliases resolve to the same project before matching. These grants are shared by trusted local CLI/MCP callers, not isolated by AI identity; the approval UI explicitly says so.
 
 - Production: 300 seconds and at most ten additional requests.
 - Development/staging: 1,800 seconds and at most 100 additional requests.
@@ -52,6 +54,8 @@ Stdout contains JSON:
 ```json
 {"requestId":"...","status":401,"body":"...","approval":"new","credentialDelivery":"broker_only"}
 ```
+
+The `approval` field is `new` for an individual approval, `reused` for a remembered request, or `timed` when the user’s temporary allow-all session admits the request.
 
 HTTP 4xx/5xx: exit code 2. Successful 2xx: exit code 0. Approval, transport, redirect, size, reflection or cancellation failure: exit code 1 with a generic error. No request body, authentication header, raw upstream error or secret is put in activity records. The encrypted activity log correlates starts/results with a request ID and approval reuse. It is not tamper-proof audit evidence.
 

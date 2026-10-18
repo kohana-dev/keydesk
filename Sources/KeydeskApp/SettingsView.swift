@@ -20,6 +20,8 @@ struct SettingsView: View {
             Divider()
             LoginSettingsSection()
             Divider()
+            TimedApprovalSection(model: model)
+            Divider()
             SupportSettingsSection()
             Divider()
             Text(L10n.tr("백업과 개발 도구 설정", "Backup and developer settings")).font(.title2.bold())

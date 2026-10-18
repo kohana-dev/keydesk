@@ -12,6 +12,7 @@ struct ApprovalStatusView: View {
         let _ = interfaceLanguage
         TimelineView(.periodic(from: .now, by: 1)) { context in
             List {
+                TimedApprovalSection(model: model)
                 Section(L10n.tr("CLI 명령 · 키/파일을 실행 프로그램에 전달", "CLI commands · Keys/files passed to the program")) {
                     ForEach(model.rememberedRuns.filter { $0.expiresAt > context.date }) { grant in
                         HStack(alignment: .top) {

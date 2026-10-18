@@ -21,19 +21,30 @@ extension VaultModel {
         if let pending = brokerApproval { brokerError(pending.channel, "access_denied") }
         brokerApproval = nil
     }
-    func acceptBroker() async {
+    func acceptBroker(timedSessionID: UUID? = nil) async {
         guard let pending = brokerApproval else { return }
+        await fulfillBroker(pending, timedSessionID: timedSessionID ?? currentTimedApprovalID(), requiresPending: true)
+    }
+    private func fulfillBroker(_ pending: BrokerApproval, timedSessionID: UUID?, requiresPending: Bool) async {
         let token = generation
         do {
-            if !isDemo && pending.request.environment == .production { _ = try await keys.authenticate(reason: L10n.tr("Production 키 이름 목록을 AI에 보여주기 위해 인증합니다.", "Authenticate to show the list of Production key names to the AI.")) }
-            guard pending.channel.isConnected, pending.grant.expiresAt > Date(), token == generation, snapshot != nil, brokerApproval?.id == pending.id else { throw VaultError.locked }
-            try mutate(invalidateGrants: false) { $0.record("AI 키 이름 조회 허가 · \(pending.request.environment.title)") }
+            if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
+            if !isDemo && pending.request.environment == .production && timedSessionID == nil { _ = try await keys.authenticate(reason: L10n.tr("Production 키 이름 목록을 AI에 보여주기 위해 인증합니다.", "Authenticate to show the list of Production key names to the AI.")) }
+            guard pending.channel.isConnected, pending.grant.expiresAt > Date(), token == generation, snapshot != nil,
+                  grants.count < 32, !requiresPending || brokerApproval?.id == pending.id else { throw VaultError.locked }
+            if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
+            try mutate(invalidateGrants: false) { $0.record("AI 키 이름 조회 허가 · \(pending.request.environment.title)\(timedSessionID != nil ? " · 시간 지정 자동 허용" : "")") }
+            if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
             grants[pending.grant.id] = pending.grant
             brokerResult(pending.channel, .object(["grantId": .string(pending.grant.id), "expiresAt": .string(pending.grant.expiresAt.formatted(.iso8601)), "maximumCalls": .number(Double(pending.grant.maximumCalls))]))
-            brokerApproval = nil
-        } catch { brokerError(pending.channel, "access_denied"); brokerApproval = nil }
+            if brokerApproval?.id == pending.id { brokerApproval = nil }
+        } catch {
+            brokerError(pending.channel, "access_denied")
+            if brokerApproval?.id == pending.id { brokerApproval = nil }
+        }
     }
     func receiveBroker(_ request: BrokerRequest, channel: CLIChannel) {
+        let timedSessionID = currentTimedApprovalID()
         expireGrants()
         guard let snapshot else { brokerError(channel, "vault_locked"); return }
         guard let projectID = UUID(uuidString: request.project), let project = snapshot.projects.first(where: { $0.id == projectID }), !request.session.isEmpty else { brokerError(channel, "access_denied"); return }
@@ -41,13 +52,19 @@ extension VaultModel {
         do {
             switch request.tool {
             case "list_connections":
-                guard a.isEmpty, let id = grants.first(where: { $0.value.session == request.session && $0.value.projectID == projectID && $0.value.environment == request.environment && $0.value.usedCalls < $0.value.maximumCalls })?.key else { throw VaultError.accessDenied }
-                try grants[id]!.reserve(session: request.session, projectID: projectID, environment: request.environment, connectionID: nil, operation: "metadata", resource: nil)
+                guard a.isEmpty else { throw VaultError.accessDenied }
+                if let timedSessionID {
+                    guard timedApprovalAllows(timedSessionID) else { throw VaultError.accessDenied }
+                } else {
+                    guard let id = grants.first(where: { $0.value.session == request.session && $0.value.projectID == projectID && $0.value.environment == request.environment && $0.value.usedCalls < $0.value.maximumCalls })?.key else { throw VaultError.accessDenied }
+                    try grants[id]!.reserve(session: request.session, projectID: projectID, environment: request.environment, connectionID: nil, operation: "metadata", resource: nil)
+                }
                 let variables = snapshot.bindings.filter { $0.projectID == projectID && $0.environment == request.environment }.sorted { $0.variable < $1.variable }.compactMap { binding -> JSONValue? in
                     guard let credential = snapshot.credentials.first(where: { $0.id == binding.credentialID }) else { return nil }
                     return .object(["variable": .string(binding.variable), "provider": .string(ProviderName.canonical(credential.provider)), "kind": .string(credential.currentFile == nil ? "value" : "file")])
                 }
                 let usage = "keydesk run --project \(projectID.uuidString) --env \(request.environment.rawValue) --only VARIABLE -- <command>"
+                if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
                 brokerResult(channel, .object(["variables": .array(variables), "usage": .string(usage), "fileUsage": .string("keydesk run --project \(projectID.uuidString) --env \(request.environment.rawValue) --files FILE_VARIABLE -- <command>"), "note": .string("Initial runs require approval; exact runs can reuse a limited grant. API requests can use keydesk request. Values are never returned here.")]))
             case "request_access":
                 guard Set(a.keys).isSubset(of: ["operation", "duration", "maximumCalls"]), a["operation"] == nil || a["operation"]?.string == "metadata",
@@ -58,6 +75,12 @@ extension VaultModel {
                 guard duration >= 1, duration <= 600, duration.rounded() == duration, maximum >= 1, maximum <= 20, maximum.rounded() == maximum else { throw VaultError.accessDenied }
                 let grant = AccessGrant(session: request.session, projectID: projectID, environment: request.environment, connectionID: nil, operation: "metadata", resource: nil, duration: duration, maximumCalls: Int(maximum))
                 let pending = BrokerApproval(request: request, channel: channel, grant: grant, projectName: project.name)
+                if let timedSessionID {
+                    Task { @MainActor [weak self] in
+                        await self?.fulfillBroker(pending, timedSessionID: timedSessionID, requiresPending: false)
+                    }
+                    return
+                }
                 brokerApproval = pending
                 Task { @MainActor [weak self] in
                     try? await Task.sleep(for: .seconds(60))

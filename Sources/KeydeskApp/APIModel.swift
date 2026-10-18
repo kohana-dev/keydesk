@@ -16,8 +16,14 @@ extension VaultModel {
     }
     func receiveAPI(_ request: APIRequest, channel: CLIChannel) {
         do {
+            let timedSessionID = currentTimedApprovalID()
             guard !busy, approval == nil, brokerApproval == nil, apiApproval == nil, apiTasks.count < 4 else { throw VaultError.accessDenied }
             let pending = try resolveAPI(request, channel: channel)
+            if let timedSessionID {
+                channel.send(CLIEvent(kind: "status", text: L10n.tr("모든 요청 자동 허용 시간 안에 API를 요청합니다.", "Sending the API request during the allow-all requests window.")))
+                startAPI(pending, reused: false, timedSessionID: timedSessionID)
+                return
+            }
             if apiApprovals.consume(pending.request, credentialID: pending.credentialID, versionID: pending.versionID) != nil {
                 channel.send(CLIEvent(kind: "status", text: L10n.tr("기억한 API 승인으로 요청합니다.", "Sending the request with a remembered API approval.")))
                 startAPI(pending, reused: true)
@@ -35,24 +41,31 @@ extension VaultModel {
         if let pending = apiApproval { apiFailure(pending.channel, code: "api_approval_denied_or_timeout") }
         apiApproval = nil
     }
-    func acceptAPI(remember: Bool) async {
+    func acceptAPI(remember: Bool, timedSessionID: UUID? = nil) async {
         guard let pending = apiApproval else { return }
+        let timedSessionID = timedSessionID ?? currentTimedApprovalID()
         let token = generation
         do {
-            if pending.request.environment == .production && !isDemo {
+            if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
+            if pending.request.environment == .production && !isDemo && timedSessionID == nil {
                 _ = try await keys.authenticate(reason: L10n.tr("Production 키로 지정한 API 요청을 실행하기 위해 인증합니다.", "Authenticate to execute the specified API request with a Production key."))
             }
             guard generation == token, apiApproval?.id == pending.id, pending.channel.isConnected else { throw VaultError.locked }
+            if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
             let current = try resolveAPI(pending.request, channel: pending.channel)
             guard current.credentialID == pending.credentialID, current.versionID == pending.versionID else { throw VaultError.accessDenied }
-            if remember { apiApprovals.remember(pending.request, credentialID: pending.credentialID, versionID: pending.versionID) }
+            if remember && timedSessionID == nil { apiApprovals.remember(pending.request, credentialID: pending.credentialID, versionID: pending.versionID) }
             apiApproval = nil
-            startAPI(pending, reused: false)
-        } catch { apiFailure(pending.channel, code: "api_approval_denied"); apiApproval = nil }
+            startAPI(pending, reused: false, timedSessionID: timedSessionID)
+        } catch {
+            apiFailure(pending.channel, code: "api_approval_denied")
+            if apiApproval?.id == pending.id { apiApproval = nil }
+        }
     }
-    private func startAPI(_ pending: APIApproval, reused: Bool) {
+    private func startAPI(_ pending: APIApproval, reused: Bool, timedSessionID: UUID? = nil) {
+        if let timedSessionID, !timedApprovalAllows(timedSessionID) { apiFailure(pending.channel, code: "api_approval_expired_or_revoked"); return }
         guard let secret = snapshot?.credentials.first(where: { $0.id == pending.credentialID && $0.currentVersionID == pending.versionID })?.currentValue,
-              pending.channel.isConnected else { apiFailure(pending.channel, code: "api_request_denied"); return }
+              pending.channel.isConnected, apiTasks.count < 4 else { apiFailure(pending.channel, code: "api_request_denied"); return }
         let token = generation, id = pending.id, transport = apiTransport
         apiRunning[id] = pending.request
         let task = Task { @MainActor [weak self] in
@@ -65,13 +78,19 @@ extension VaultModel {
             }
             defer { watcher.cancel(); self.apiTasks.removeValue(forKey: id); self.apiRunning.removeValue(forKey: id); pending.channel.finish() }
             do {
-                try self.mutate(invalidateGrants: false) { $0.record("API 시작 · \(id.uuidString) · \(pending.request.environment.title) · \(reused ? "승인 재사용" : "새 승인")") }
+                try Task.checkCancellation()
+                guard token == self.generation, self.snapshot != nil, pending.channel.isConnected else { throw VaultError.locked }
+                if let timedSessionID, !self.timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
+                let current = try self.resolveAPI(pending.request, channel: pending.channel)
+                guard current.credentialID == pending.credentialID, current.versionID == pending.versionID else { throw VaultError.accessDenied }
+                try self.mutate(invalidateGrants: false) { $0.record("API 시작 · \(id.uuidString) · \(pending.request.environment.title) · \(timedSessionID != nil ? "시간 지정 자동 허용" : (reused ? "승인 재사용" : "새 승인"))") }
+                if let timedSessionID, !self.timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
                 let response = try await transport.execute(pending.request, provider: pending.provider, secret: secret).validated(secret: secret)
                 try Task.checkCancellation()
                 guard token == self.generation, self.snapshot != nil, pending.channel.isConnected else { throw VaultError.locked }
                 try self.mutate(invalidateGrants: false) { $0.record("API 완료 · \(id.uuidString) · HTTP \(response.status)") }
                 let report: JSONValue = .object(["requestId": .string(id.uuidString), "status": .number(Double(response.status)),
-                    "body": .string(response.body), "approval": .string(reused ? "reused" : "new"), "credentialDelivery": .string("broker_only")])
+                    "body": .string(response.body), "approval": .string(timedSessionID != nil ? "timed" : (reused ? "reused" : "new")), "credentialDelivery": .string("broker_only")])
                 pending.channel.send(CLIEvent(kind: "stdout", data: try JSONEncoder().encode(report) + Data([10])))
                 pending.channel.send(CLIEvent(kind: "exit", exitCode: response.status >= 400 ? 2 : 0))
                 self.activity()
@@ -91,6 +110,6 @@ extension VaultModel {
         apiApprovals.clear(); rejectAPI()
         for task in apiTasks.values { task.cancel() }
     }
-    func revokeAllPermissions() { clearDevelopmentApprovals(); revokeAllGrants(); apiApprovals.clear() }
+    func revokeAllPermissions() { stopTimedApproval() }
     func cancelAPI(_ id: UUID) { apiTasks[id]?.cancel() }
 }

@@ -21,7 +21,7 @@ struct AIConnectionsView: View {
                     Text(L10n.tr("개발 도구 연결과 사용 허가를 관리하세요.", "Manage developer tool connections and permissions.")).font(.callout).foregroundStyle(.secondary)
                 }
             }
-            Text(L10n.tr("CLI 명령은 선택한 키·파일을 실행 프로그램에 전달하고, API 요청은 앱이 인증값을 넣어 호출합니다. 최초 승인이 필요하며 동일한 요청은 제한된 허가를 재사용할 수 있습니다. MCP 키 이름 조회 허가는 별도입니다.", "CLI commands pass selected keys and files to the program being run. For API requests, the app adds authentication and makes the call. Initial approval is required; identical requests can reuse a limited permission. MCP key-name lookup requires separate permission.")).font(.caption).foregroundStyle(.secondary)
+            Text(L10n.tr("CLI 명령은 선택한 키·파일을 실행 프로그램에 전달하고, API 요청은 앱이 인증값을 넣어 호출합니다. 기본은 개별 승인 방식이며 동일한 요청은 제한된 허가를 재사용할 수 있습니다. 일정 시간 모든 요청 허용을 켜면 해당 시간 동안 자동 승인합니다.", "CLI commands pass selected keys and files to the program being run. For API requests, the app adds authentication and makes the call. Individual approval is the default; identical requests can reuse a limited permission. A temporary all-request session automatically approves requests while it is active.")).font(.caption).foregroundStyle(.secondary)
             HStack {
                 Picker(L10n.tr("프로젝트", "Project"), selection: $project) { ForEach(model.snapshot?.projects ?? []) { Text($0.name).tag(Optional($0.id)) } }
                 Picker(L10n.tr("환경", "Environment"), selection: $environment) { ForEach(EnvironmentName.allCases, id: \.self) { Text($0.title).tag($0) } }
@@ -33,7 +33,7 @@ struct AIConnectionsView: View {
             }
             ApprovalStatusView(model: model).frame(height: 380).cellarCard()
             Text(L10n.tr("철회는 새 실행을 막습니다. 이미 실행 중인 작업은 종료·취소를 따로 요청하세요. 외부 API에 이미 반영된 작업은 취소되지 않을 수 있습니다.", "Revoking permission blocks new runs. Separately request termination or cancellation for work already running. Actions already applied by an external API may not be reversible.")).font(.caption).foregroundStyle(.secondary)
-            HStack { Button(L10n.tr("모든 반복·조회 허가 철회", "Revoke all repeat and lookup permissions"), role: .destructive) { model.revokeAllPermissions() }; Spacer(); Button(L10n.tr("닫기", "Close")) { dismiss() }.keyboardShortcut(.cancelAction) }
+            HStack { Button(L10n.tr("모든 허가 철회", "Revoke all permissions"), role: .destructive) { model.revokeAllPermissions() }; Spacer(); Button(L10n.tr("닫기", "Close")) { dismiss() }.keyboardShortcut(.cancelAction) }
           }.padding(28)
         }.frame(width: 780).frame(maxHeight: 720).background(Theme.canvas)
         .onAppear { project = model.selectedProject ?? model.snapshot?.projects.first?.id; environment = model.environment }

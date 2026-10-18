@@ -10,6 +10,16 @@ struct MenuBarView: View {
         let _ = interfaceLanguage
         Text("Cellar · \(model.snapshot == nil ? L10n.tr("잠김", "Locked") : L10n.tr("열림", "Unlocked"))")
         Text(model.menuBarBackupStatus)
+        if let expiresAt = model.timedApprovalExpiresAt, model.timedApprovalIsActive {
+            Text(L10n.tr("모든 요청 자동 허용 중", "All requests allowed automatically"))
+                .foregroundStyle(.orange)
+                .accessibilityIdentifier("timed-approval-menu-status")
+            Text(L10n.tr("종료: \(expiresAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(L10n.locale)))", "Ends: \(expiresAt.formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(L10n.locale)))"))
+            Button(L10n.tr("자동 허용 지금 중지", "Stop automatic approval now"), systemImage: "stop.circle") {
+                model.stopTimedApproval()
+            }
+            .accessibilityIdentifier("timed-approval-stop")
+        }
         Divider()
         Button(L10n.tr("Cellar 열기", "Open Cellar"), systemImage: "macwindow") { showMain() }
         if model.snapshot == nil {

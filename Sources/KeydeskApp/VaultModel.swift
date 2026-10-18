@@ -54,6 +54,11 @@ final class VaultModel {
     @ObservationIgnored private var approvalPresenter: ApprovalPanelController?
     var brokerApproval: BrokerApproval? { didSet { onApprovalChange?() } }
     var grants: [String: AccessGrant] = [:]
+    private(set) var timedApprovalExpiresAt: Date?
+    private(set) var timedApprovalStarting = false
+    private var timedApprovalSession: TimedApprovalSession?
+    @ObservationIgnored private var timedApprovalExpiryTask: Task<Void, Never>?
+    @ObservationIgnored private var timedApprovalAttemptID = UUID()
     var backupFailure: String?
     private(set) var backedUpRevision: UInt64?
     private(set) var lastBackupAt: Date?
@@ -124,6 +129,7 @@ final class VaultModel {
         idleTimer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.expireGrants()
+                self?.expireTimedApproval()
                 self?.lockIfIdle()
                 self?.refreshCloudUpload()
             }
@@ -169,6 +175,67 @@ final class VaultModel {
     }
     var detail: Credential? { snapshot?.credentials.first { $0.id == selectedCredential } }
     func languageDidChange() { approvalPresenter?.refreshLanguage() }
+    var timedApprovalIsActive: Bool {
+        // Read the observable date too, so status views update when consent changes.
+        timedApprovalExpiresAt != nil && snapshot != nil && timedApprovalSession?.isActive() == true
+    }
+    func currentTimedApprovalID() -> UUID? {
+        expireTimedApproval()
+        guard snapshot != nil, let session = timedApprovalSession, session.isActive() else { return nil }
+        return session.id
+    }
+    func timedApprovalAllows(_ id: UUID) -> Bool {
+        currentTimedApprovalID() == id
+    }
+    func expireTimedApproval(now: Date = Date(), instant: ContinuousClock.Instant = ContinuousClock().now) {
+        guard let session = timedApprovalSession, !session.isActive(now: now, instant: instant) else { return }
+        stopTimedApproval()
+    }
+    func stopTimedApproval() {
+        timedApprovalAttemptID = UUID()
+        timedApprovalStarting = false
+        timedApprovalExpiryTask?.cancel(); timedApprovalExpiryTask = nil
+        timedApprovalSession = nil; timedApprovalExpiresAt = nil
+        // Nothing approved under this window may become a longer-lived remembered grant.
+        clearDevelopmentApprovals(); apiApprovals.clear(); revokeAllGrants()
+    }
+    func startTimedApproval(minutes: Int) async {
+        guard (1...480).contains(minutes) else {
+            error = L10n.tr("허용 시간은 1분부터 480분까지 설정할 수 있습니다.", "Choose an approval duration between 1 and 480 minutes.")
+            return
+        }
+        guard snapshot != nil, !busy, !timedApprovalStarting else {
+            error = L10n.tr("금고를 연 뒤 현재 작업이 끝나면 다시 시도해 주세요.", "Open the vault and wait for the current operation to finish, then try again.")
+            return
+        }
+        let token = generation, attempt = UUID()
+        timedApprovalAttemptID = attempt; timedApprovalStarting = true
+        defer { if timedApprovalAttemptID == attempt { timedApprovalStarting = false } }
+        do {
+            if !isDemo {
+                _ = try await keys.authenticate(reason: L10n.tr("\(minutes)분 동안 Production을 포함한 모든 CLI·API·MCP 요청을 자동 허용하기 위해 인증합니다.", "Authenticate to automatically allow all CLI, API, and MCP requests, including Production, for \(minutes) minutes."))
+            }
+            guard token == generation, snapshot != nil, !busy, timedApprovalAttemptID == attempt else { return }
+            try mutate(invalidateGrants: false) { $0.record("모든 요청 자동 허용 시작 · \(minutes)분 · Production 포함") }
+            clearDevelopmentApprovals(); apiApprovals.clear(); revokeAllGrants()
+            timedApprovalExpiryTask?.cancel()
+            let session = TimedApprovalSession(minutes: minutes)
+            timedApprovalSession = session; timedApprovalExpiresAt = session.expiresAt
+            timedApprovalExpiryTask = Task { @MainActor [weak self] in
+                do { try await Task.sleep(until: session.deadline, clock: .continuous) }
+                catch { return }
+                guard self?.timedApprovalSession?.id == session.id else { return }
+                self?.stopTimedApproval()
+            }
+            notify(L10n.tr("\(minutes)분 동안 모든 요청을 자동 허용합니다. 금고를 잠그면 즉시 종료됩니다.", "All requests are automatically allowed for \(minutes) minutes. Locking the vault ends this immediately."))
+            // Keep an already displayed request while clearing old grants, then fulfill it.
+            if approval != nil { await acceptCLI(timedSessionID: session.id) }
+            else if apiApproval != nil { await acceptAPI(remember: false, timedSessionID: session.id) }
+            else if brokerApproval != nil { await acceptBroker(timedSessionID: session.id) }
+        } catch {
+            if token == generation, timedApprovalAttemptID == attempt { self.error = error.localizedDescription }
+        }
+    }
     func lockIfIdle(now: Date = Date()) {
         if autoLockMinutes > 0, snapshot != nil, now.timeIntervalSince(lastActivity) >= Double(autoLockMinutes * 60) { lock() }
     }
@@ -178,6 +245,7 @@ final class VaultModel {
     func lock() {
         // Never drop the key while changes exist only on this Mac.
         flushBackup()
+        stopTimedApproval()
         generation = UUID(); revokeAllAPI(); developmentApprovals.clear(); hideValue(); clipboard.clearOwned()
         if let approval { approval.channel.send(CLIEvent(kind: "error", text: L10n.tr("금고가 잠겼습니다.", "The vault has been locked."))); approval.channel.finish() }
         approval = nil
@@ -452,8 +520,17 @@ final class VaultModel {
     func showPendingApproval() { approvalPresenter?.update() }
 
     func receive(_ request: CLIApproval) {
+        let timedSessionID = currentTimedApprovalID()
         guard snapshot != nil, !busy, approval == nil, brokerApproval == nil, apiApproval == nil, runningProcesses.count < 4 else {
             request.channel.send(CLIEvent(kind: "error", text: L10n.tr("금고가 잠겨 있거나 다른 승인을 처리 중입니다.", "The vault is locked or another approval is being processed."))); request.channel.finish(); return
+        }
+        if let timedSessionID {
+            request.channel.send(CLIEvent(kind: "status", text: L10n.tr("모든 요청 자동 허용 시간 안에 실행합니다.", "Running during the allow-all requests window.")))
+            // Do not publish a pending approval: that would open and focus an approval panel.
+            Task { @MainActor [weak self] in
+                await self?.executeCLI(request, remember: false, timedSessionID: timedSessionID, requiresPending: false)
+            }
+            return
         }
         reusingDevelopmentApproval = developmentApprovals.allows(request.request, executable: request.executable)
         request.channel.send(CLIEvent(kind: "status", text: reusingDevelopmentApproval ? L10n.tr("기억한 명령 승인으로 실행합니다.", "Running with a remembered command approval.") : developmentApprovals.approvalReason(request.request, executable: request.executable) + L10n.tr(" Cellar에서 실행을 승인해 주세요.", " Approve the run in Cellar.")))
@@ -479,33 +556,43 @@ final class VaultModel {
     func terminateRun(_ id: UUID) { runningProcesses[id]?.terminate() }
     func clearDevelopmentApprovals() { developmentApprovals.clear() }
 
-    func acceptCLI(remember: Bool = false) async {
+    func acceptCLI(remember: Bool = false, timedSessionID: UUID? = nil) async {
         defer { reusingDevelopmentApproval = false }
         guard let approval else { return }
+        await executeCLI(approval, remember: remember, timedSessionID: timedSessionID ?? currentTimedApprovalID(), requiresPending: true)
+    }
+    private func executeCLI(_ approval: CLIApproval, remember: Bool, timedSessionID: UUID?, requiresPending: Bool) async {
         let token = generation
         do {
-            let reuse = reusingDevelopmentApproval && developmentApprovals.consume(approval.request, executable: approval.executable)
-            if reusingDevelopmentApproval && !reuse { throw VaultError.accessDenied }
-            if approval.request.environment == .production && !isDemo && !reuse {
+            if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
+            let timed = timedSessionID != nil
+            let reuse = !timed && reusingDevelopmentApproval && developmentApprovals.consume(approval.request, executable: approval.executable)
+            if !timed && reusingDevelopmentApproval && !reuse { throw VaultError.accessDenied }
+            if approval.request.environment == .production && !isDemo && !reuse && !timed {
                 _ = try await keys.authenticate(reason: L10n.tr("Production 키를 CLI에 전달하기 위해 인증합니다.", "Authenticate to pass Production keys to the CLI."))
             }
-            guard approval.channel.isConnected, token == generation, let snapshot, self.approval?.id == approval.id else { throw VaultError.locked }
+            guard approval.channel.isConnected, token == generation, let snapshot, !busy,
+                  runningProcesses.count < 4, !requiresPending || self.approval?.id == approval.id else { throw VaultError.locked }
+            if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
             let matches = snapshot.projects.filter { $0.name == approval.request.project || $0.id.uuidString.lowercased() == approval.request.project.lowercased() }
             guard matches.count == 1 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("프로젝트가 없거나 이름이 중복됩니다. 프로젝트 UUID를 사용하세요.", "The project is missing or its name is duplicated. Use the project UUID.")]) }
             let files = try approval.request.selectedFiles(from: snapshot.files(projectID: matches[0].id, environment: approval.request.environment))
             let secrets = try approval.request.selectedSecrets(from: snapshot.environment(projectID: matches[0].id, environment: approval.request.environment))
-            try mutate(invalidateGrants: false) { $0.record("CLI 실행 승인 · \(approval.request.environment.title) · \(reuse ? "기억한 승인" : "새 승인")") }
+            try mutate(invalidateGrants: false) { $0.record("CLI 실행 승인 · \(approval.request.environment.title) · \(timed ? "시간 지정 자동 허용" : (reuse ? "기억한 승인" : "새 승인"))") }
             let id = approval.id
-            if remember { try? developmentApprovals.remember(approval.request, executable: approval.executable) }
+            if remember && !timed { try? developmentApprovals.remember(approval.request, executable: approval.executable) }
+            if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
             let process = try CommandRunner.start(approval.request, secrets: secrets, channel: approval.channel, approvedExecutable: approval.executable, files: files) { [weak self] in
                 Task { @MainActor in self?.runningProcesses.removeValue(forKey: id); self?.runningInvocations.removeValue(forKey: id) }
             }
             runningInvocations[id] = approval.request
             runningProcesses[id] = process
-            self.approval = nil; activity()
+            if self.approval?.id == approval.id { self.approval = nil }
+            activity()
             notify(L10n.tr("CLI를 실행했습니다. 실행 코드는 전달된 키를 읽을 수 있습니다.", "The CLI has been started. The running code can read the keys passed to it."))
         } catch {
-            approval.channel.send(CLIEvent(kind: "error", text: error.localizedDescription)); approval.channel.finish(); self.approval = nil
+            approval.channel.send(CLIEvent(kind: "error", text: error.localizedDescription)); approval.channel.finish()
+            if self.approval?.id == approval.id { self.approval = nil }
         }
     }
     var cliURL: URL {
