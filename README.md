@@ -4,7 +4,7 @@ A local macOS vault for developers and their AI tools. Keep API keys and origina
 
 개인 개발자를 위한 macOS 로컬 키 금고입니다. API 키와 키 파일을 암호화해 보관하고, Codex·Claude가 키 값을 채팅에 노출하지 않고 사용할 수 있습니다.
 
-**[Download Cellar 0.7.14 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.14/Cellar-0.7.14-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
+**[Download Cellar 0.7.15 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.15/Cellar-0.7.15-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
 Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
@@ -26,13 +26,13 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 - Copy values with 30-second clipboard cleanup; revealed values hide after 15 seconds.
 - Choose iCloud Drive, a Google Drive for desktop sync folder, or another folder for automatic encrypted backups. Google Drive sync completion is checked in Google Drive; the app verifies the saved encrypted file. The recovery key stays in iCloud Keychain when available or in your separate safekeeping.
 - Use the signed CLI for SDKs, builds and original files, or MCP for supported provider API requests. View and revoke remembered approvals in the app.
-- Choose **Allow all requests temporarily** in Settings for 1–480 minutes of automatic CLI, API and MCP approval across all projects and environments, including Production. Authenticate once to start, monitor the remaining time and stop immediately from Settings or the menu bar. Locking the vault or quitting also ends the session. Stopping or expiry lets already started work continue; lock and quit keep their existing cancellation behavior.
+- Choose **Allow all requests temporarily** in Settings or the menu bar for 1–480 minutes of automatic CLI, API and MCP approval across all projects and environments, including Production. Authenticate once to start, monitor the remaining time and stop immediately from Settings or the menu bar. Locking the vault or quitting also ends the session. Stopping or expiry lets already started work continue; lock and quit keep their existing cancellation behavior.
 
 ![Cellar English inline Gemini service search and registration](docs/images/cellar-service-search-en.jpg)
 
 ## Get started
 
-1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.14), and verify the checksum.
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.15), and verify the checksum.
 2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
 3. Open Cellar normally. Follow macOS authentication and check your encrypted backup status. For Google Drive, install and sign in to Drive for desktop first, then open **Backup & CLI → Choose backup location → Google Drive** and select its actual sync folder. Check upload completion in Google Drive.
 4. In **Backup & CLI / 백업·CLI 설정**, connect the bundled CLI. Add a project and register a key or original file.

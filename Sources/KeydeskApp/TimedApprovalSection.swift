@@ -9,6 +9,11 @@ struct TimedApprovalSection: View {
     @State private var customMinutes = 15
     @State private var startFailure: String?
 
+    init(model: VaultModel, initiallyCustom: Bool = false) {
+        self.model = model
+        _selectedMinutes = State(initialValue: initiallyCustom ? 0 : 15)
+    }
+
     private var duration: Int { selectedMinutes == 0 ? customMinutes : selectedMinutes }
 
     var body: some View {

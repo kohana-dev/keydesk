@@ -1,6 +1,6 @@
 # Install Cellar / Cellar 설치 안내
 
-Cellar 0.7.14 adds a user-controlled temporary session that automatically approves all supported CLI, API and MCP requests. / 0.7.14는 사용자가 정한 시간 동안 CLI·API·MCP 요청을 자동 승인하는 기능을 추가합니다.
+Cellar 0.7.15 adds duration selection and direct temporary-approval controls to the menu bar. / 0.7.15는 메뉴 막대에서 허용 시간을 고르고 자동 허용을 바로 켜고 끄는 기능을 추가합니다.
 
 The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` CLI, MCP server and companion skill names stay compatible with earlier installations.
 
@@ -35,11 +35,15 @@ Cellar 0.7.12부터 **Cellar → 설정**(⌘,)에서 **로그인 시 자동 실
 
 Open **Cellar → Settings → Allow all requests temporarily** after unlocking the vault. Choose 15, 30, 60 or 120 minutes, or enter a custom duration from 1 to 480 minutes, then start. Authenticate once on your Mac. All projects and Development, Staging and **Production** environments are included: CLI runs, supported API requests and MCP key-name lookups no longer require individual approval during the session. A request already waiting for approval is included, too.
 
+In Cellar 0.7.15 or later, click the Cellar menu-bar icon and choose **Allow all requests temporarily** to start for 15, 30, 60 or 120 minutes directly. **Custom…** opens a compact control window where you can enter 1–480 minutes. Starting still requires one Mac authentication. The same menu shows the active session and **Stop automatic approval now**.
+
 Settings, **AI connections → Approval status** and the menu bar show the active session and remaining time. Use **Stop now** to end it immediately. Expiry, vault lock, screen lock, sleep or quitting also ends it. The session is kept only in memory and stays off after restarting or unlocking. Ending it clears remembered permissions and returns subsequent requests to individual approval; stopping or expiry does not cancel already accepted work. Vault lock and quitting retain their existing cancellation behavior, including CLI `--keep-running` when locking.
 
 Project/key mappings, supported API hosts, request validation and executable identity checks still apply. Unsupported or invalid requests remain rejected. The CLI and AI cannot enable or extend this setting. Manual operations such as unlocking, showing a recovery key or rotating vault keys keep their existing authentication.
 
 금고를 연 뒤 **Cellar → 설정 → 일정 시간 모든 요청 허용**에서 15·30·60·120분을 고르거나 1~480분을 직접 입력하고 시작하세요. 시작할 때 한 번 Mac 인증을 받습니다. 모든 프로젝트의 개발·스테이징·**운영 환경**에 적용되며, 해당 시간 동안 CLI 실행·지원 API 호출·MCP 키 이름 조회를 개별 승인 없이 처리합니다. 이미 승인 대기 중인 요청도 포함합니다.
+
+0.7.15부터 메뉴 막대의 Cellar 아이콘에서 **일정 시간 모든 요청 허용**을 선택하면 15·30·60·120분 동안 바로 시작할 수 있습니다. **직접 입력…**은 1~480분을 입력할 수 있는 작은 제어 창을 엽니다. 시작할 때 Mac 인증은 한 번 필요합니다. 같은 메뉴의 **자동 허용 지금 중지**로 바로 끌 수 있습니다.
 
 설정, **AI 연결 → 승인 상태**, 메뉴 막대에서 활성 상태와 남은 시간을 확인하고 **지금 중지**로 즉시 끌 수 있습니다. 시간 만료·금고 잠금·화면 잠금·잠자기·앱 종료 시에도 해제됩니다. 메모리에만 유지하므로 다시 실행하거나 금고를 열어도 자동으로 켜지지 않습니다. 해제하면 기억한 허가도 지우고 이후 요청을 다시 개별 승인합니다. 중지나 시간 만료 전에 시작한 작업은 자동 취소하지 않습니다. 금고 잠금과 앱 종료의 기존 작업 종료 동작 및 잠금 시 CLI의 `--keep-running` 동작은 유지됩니다.
 

@@ -6,6 +6,7 @@ import KeydeskCore
 struct KeydeskApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @State private var model: VaultModel
+    @State private var timedApprovalMenuFailure: String?
     @AppStorage(L10n.preferenceKey) private var interfaceLanguage = AppLanguage.system.rawValue
     init() {
         let args = CommandLine.arguments
@@ -34,8 +35,13 @@ struct KeydeskApp: App {
                 Button(L10n.tr("금고 잠금", "Lock vault"), systemImage: "lock") { model.lock() }.keyboardShortcut("l", modifiers: [.command, .shift])
             }
         }
+        Window(L10n.tr("일정 시간 모든 요청 허용", "Allow all requests temporarily"), id: "timed-approval") {
+            TimedApprovalWindowView(model: model, menuFailure: $timedApprovalMenuFailure)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
         MenuBarExtra {
-            MenuBarView(model: model)
+            MenuBarView(model: model, timedApprovalMenuFailure: $timedApprovalMenuFailure)
         } label: {
             Image(nsImage: MenuBarIcon.image).renderingMode(.template)
                 .accessibilityLabel("Cellar")
