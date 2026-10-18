@@ -10,6 +10,7 @@ struct SettingsView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar { dismiss() }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Picker(L10n.tr("언어", "Language"), selection: $interfaceLanguage) {

@@ -8,6 +8,7 @@ struct ActivityView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar { dismiss() }
             VStack(alignment: .leading, spacing: 18) {
                 Text(L10n.tr("활동 기록", "Activity")).font(.title2.bold())
                 Text(L10n.tr("최근 200개 이벤트를 금고 안에 암호화해 보관합니다. 비밀 값은 기록하지 않으며, 변조 불가능한 감사 로그는 아닙니다.", "The latest 200 events are encrypted in the vault. Secret values are not recorded. This is not a tamper-proof audit log.")).font(.caption).foregroundStyle(.secondary)

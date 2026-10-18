@@ -16,6 +16,8 @@ struct CLIApprovalView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar(L10n.tr("거절하고 닫기", "Deny and close")) { model.rejectCLI() }
+                .disabled(busy)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Label(L10n.tr("CLI 실행 요청", "CLI execution request"), systemImage: "terminal").font(.title2.bold())

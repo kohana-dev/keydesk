@@ -11,6 +11,7 @@ struct RotateView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar { dismiss() }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(L10n.tr("새 키 버전 저장", "New key version")).font(.title2.bold())

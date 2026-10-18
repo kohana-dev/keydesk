@@ -13,6 +13,7 @@ struct ImportView: View {
         let _ = interfaceLanguage
         let validRowCount = rows.filter { $0.error == nil }.count
         VStack(spacing: 0) {
+            DialogCloseBar { dismiss() }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(L10n.tr(".env 가져오기 미리보기", "Preview .env import")).font(.title2.bold())

@@ -10,6 +10,8 @@ struct BrokerApprovalView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar(L10n.tr("거절하고 닫기", "Deny and close")) { model.rejectBroker() }
+                .disabled(busy)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Label(L10n.tr("AI가 키 이름 목록을 요청합니다", "AI is requesting key names"), systemImage: "sparkles").font(.title2.bold())

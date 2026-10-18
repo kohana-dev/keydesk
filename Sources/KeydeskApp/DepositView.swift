@@ -15,6 +15,7 @@ struct DepositView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar { dismiss() }
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(L10n.tr("잠금 중 새 키 맡기기", "Deposit a new key while locked")).font(.title2.bold())

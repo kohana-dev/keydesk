@@ -1,6 +1,6 @@
 # Install Cellar / Cellar 설치 안내
 
-Cellar 0.7.16 keeps Close, Cancel and form or approval actions in a fixed footer while the dialog body scrolls. Dismissal buttons are larger and easier to see. / 0.7.16은 창 본문을 스크롤해도 닫기·취소·실행 버튼을 고정 하단 영역에 표시하며, 닫기 버튼의 크기와 대비를 높입니다.
+Cellar 0.7.17 adds a fixed upper-right X to dialogs. It stays visible while the body scrolls, alongside the existing fixed footer and Escape shortcut. In request approval dialogs, X denies the request. / 0.7.17은 팝업 오른쪽 위에 스크롤과 무관하게 보이는 X 버튼을 추가합니다. 기존 하단 버튼과 Esc도 유지하며, 승인 창에서 X를 누르면 요청을 거절합니다.
 
 The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` CLI, MCP server and companion skill names stay compatible with earlier installations.
 

@@ -11,6 +11,7 @@ struct RecoveryKeyView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar { dismiss() }
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text(L10n.tr("복구 키", "Recovery key")).font(.title2.bold())

@@ -11,6 +11,8 @@ struct APIApprovalView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar(L10n.tr("거절하고 닫기", "Deny and close")) { model.rejectAPI() }
+                .disabled(busy)
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Label(L10n.tr("API 사용 요청", "API request"), systemImage: "network").font(.title2.bold())

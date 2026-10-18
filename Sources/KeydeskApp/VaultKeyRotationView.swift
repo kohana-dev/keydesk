@@ -12,6 +12,7 @@ struct VaultKeyRotationView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar { dismiss() }.disabled(busy)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(L10n.tr("금고 키 교체", "Rotate vault keys")).font(.title2.bold())

@@ -13,6 +13,7 @@ struct RecoveryView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar { dismiss() }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(model.exists ? L10n.tr("백업 복구 검증", "Verify backup recovery") : L10n.tr("암호화 백업 복원", "Restore encrypted backup")).font(.title2.bold())

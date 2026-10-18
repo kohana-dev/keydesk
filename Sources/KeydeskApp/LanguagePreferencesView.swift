@@ -8,6 +8,7 @@ struct LanguagePreferencesView: View {
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
+            DialogCloseBar { NSApp.keyWindow?.performClose(nil) }
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     GroupBox(L10n.tr("앱 언어", "App language")) {
