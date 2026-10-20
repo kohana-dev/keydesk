@@ -11,7 +11,7 @@ import sys
 CONFIG_NAME = 'keydesk.project.json'
 ENVIRONMENTS = {'dev', 'staging', 'prod'}
 BINDING_KINDS = {'value', 'apiKey', 'keyValue', 'json', 'text', 'file'}
-PROVIDERS = {'OpenAI', 'Anthropic', 'Gemini', 'GitHub', 'Cloudflare', 'Paddle', 'RevenueCat', 'Stripe', 'Resend', 'Vercel', 'Sentry'}
+PROVIDERS = {'OpenAI', 'Anthropic', 'Gemini', 'GitHub', 'Cloudflare', 'Paddle', 'RevenueCat', 'Stripe', 'Resend', 'Vercel', 'Sentry', 'OpenWeather', 'WeatherAPI', 'Tomorrow.io', 'Visual Crossing', 'Weatherbit', 'AccuWeather'}
 BLOCKED_VARIABLES = {'PATH', 'HOME', 'USER', 'LOGNAME', 'TMPDIR', 'TERM', 'SHELL', 'ENV', 'BASH_ENV', 'ZDOTDIR', 'IFS', 'NODE_OPTIONS', 'NODE_PATH', 'PYTHONPATH', 'PYTHONHOME', 'RUBYOPT', 'PERL5OPT', 'PERL5LIB', 'JAVA_TOOL_OPTIONS', 'JDK_JAVA_OPTIONS', 'GIT_CONFIG_COUNT', 'GIT_CONFIG_SYSTEM', 'GIT_CONFIG_GLOBAL'}
 
 def valid_variable(name):

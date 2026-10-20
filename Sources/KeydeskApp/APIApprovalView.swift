@@ -25,6 +25,10 @@ struct APIApprovalView: View {
                             .font(.system(.callout, design: .monospaced)).textSelection(.enabled)
                         Text(L10n.tr("이 문서의 선택한 문자열만 인증값으로 사용합니다. 문서 전체와 나머지 필드는 전달하지 않습니다.", "Only the selected string is used for authentication. The whole document and its other fields are not sent.")).font(.caption).foregroundStyle(.secondary)
                     }
+                    if let parameter = approval.provider.queryParameter {
+                        Text(L10n.tr("이 서비스는 HTTPS 주소의 \(parameter) 쿼리로 인증합니다. Cellar가 전송 직전에 키를 넣으며, 여기 표시된 주소·승인 기록·AI 결과에는 키를 포함하지 않습니다. 서비스 측 서버 기록에는 인증 주소가 남을 수 있습니다.", "This service authenticates through the \(parameter) query parameter in its HTTPS URL. Cellar adds the key just before sending; the displayed URL, approval records, and AI results omit it. The provider may retain the authenticated URL in its server logs."))
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
                     Text("\(approval.request.method) \(approval.request.url)").font(.system(.callout, design: .monospaced)).textSelection(.enabled)
                         .padding(12).background(Theme.canvas, in: RoundedRectangle(cornerRadius: 10))
                     Text(L10n.tr("JSON 본문 \(approval.request.body?.utf8.count ?? 0)바이트 · 요청 확인값 \(approval.request.fingerprint.prefix(12))", "JSON body: \(approval.request.body?.utf8.count ?? 0) bytes · Request fingerprint: \(approval.request.fingerprint.prefix(12))")).font(.caption)

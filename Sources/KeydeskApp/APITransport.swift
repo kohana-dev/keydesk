@@ -34,8 +34,20 @@ struct CurlAPITransport: APITransport {
         let c = try request.validated()
         guard provider.hosts.contains(c.host ?? ""), PublicIPv4.allowed(address), !secret.isEmpty, secret.utf8.count <= 32768,
               !secret.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }) else { throw VaultError.accessDenied }
-        var lines = ["url = \(quoted(request.url))", "request = \(quoted(request.method))", "resolve = \(quoted("\(c.host!):443:\(address)"))",
-                     "header = \(quoted("\(provider.header): \(provider.prefix)\(secret)"))", "header = \(quoted("Accept: application/json"))", "user-agent = \(quoted("Keydesk/0.7"))"]
+        try provider.validate(request, components: c)
+        var authenticated = c
+        if let parameter = provider.queryParameter {
+            // RFC 3986 unreserved bytes only: +, &, =, quotes and Unicode cannot become
+            // another query parameter or a curl option. This URL exists only in stdin.
+            let safe = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
+            guard let encoded = secret.addingPercentEncoding(withAllowedCharacters: safe) else { throw VaultError.accessDenied }
+            let existing = authenticated.percentEncodedQuery ?? ""
+            authenticated.percentEncodedQuery = (existing.isEmpty ? "" : existing + "&") + parameter + "=" + encoded
+        }
+        guard let authenticatedURL = authenticated.url?.absoluteString else { throw VaultError.accessDenied }
+        var lines = ["url = \(quoted(authenticatedURL))", "request = \(quoted(request.method))", "resolve = \(quoted("\(c.host!):443:\(address)"))",
+                     "header = \(quoted("Accept: application/json"))", "user-agent = \(quoted("Keydesk/0.7"))"]
+        if provider.queryParameter == nil { lines.append("header = \(quoted("\(provider.header): \(provider.prefix)\(secret)"))") }
         for (key, value) in provider.extraHeaders.sorted(by: { $0.key < $1.key }) { lines.append("header = \(quoted("\(key): \(value)"))") }
         if let body = request.body { lines += ["header = \(quoted("Content-Type: application/json"))", "data-raw = \(quoted(body))"] }
         if request.method == "HEAD" { lines.append("head") }

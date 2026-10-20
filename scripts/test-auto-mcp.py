@@ -40,6 +40,25 @@ class RouterTests(unittest.TestCase):
   result=m.resolve(str(self.repo),home=self.home)
   self.assertEqual(result['bindings'],self.config['bindings'])
   self.assertNotIn('fields',result);self.assertNotIn('contents',result)
+ def test_weather_document_providers_forward_names_and_public_target_only(self):
+  self.config['bindings']['dev']['WEATHER_CONFIG']='json';(self.repo/'keydesk.project.json').write_text(json.dumps(self.config))
+  cli=self.home/'.local/bin/keydesk';cli.parent.mkdir(parents=True);cli.touch()
+  targets={
+   'OpenWeather':'https://api.openweathermap.org/data/2.5/weather?lat=37.5665&lon=126.9780',
+   'WeatherAPI':'https://api.weatherapi.com/v1/current.json?q=Seoul',
+   'Tomorrow.io':'https://api.tomorrow.io/v4/weather/realtime?location=Seoul',
+   'Visual Crossing':'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/Seoul?contentType=json',
+   'Weatherbit':'https://api.weatherbit.io/v2.0/current?city=Seoul',
+   'AccuWeather':'https://dataservice.accuweather.com/locations/v1/cities/search?q=Seoul',
+  }
+  for provider,url in targets.items():
+   with self.subTest(provider=provider):
+    args={'repository':str(self.repo),'environment':'dev','key':'WEATHER_CONFIG','field':'/token','provider':provider,'method':'GET','url':url}
+    runner=Mock(return_value=subprocess.CompletedProcess([],0,json.dumps({'status':200,'credentialDelivery':'broker_only','body':'{}'}),''))
+    self.assertEqual(m.execute(args,runner,self.home)['status'],200)
+    self.assertEqual(runner.call_args.args[0],[str(cli),'request','--project','Example','--env','dev','--key','WEATHER_CONFIG','--method','GET','--url',url,'--field','/token','--provider',provider])
+    self.assertEqual(runner.call_count,1)
+  with self.assertRaises(ValueError):m.validate_request({**args,'provider':'OpenWheater'},self.home)
  def test_missing_manifest_does_not_pick_available_prod_key(self):
   (self.repo/'keydesk.project.json').unlink();p=self.home/'.config/keydesk/mcp-connections.json';p.parent.mkdir(parents=True);p.write_text(json.dumps([{'project':'Other','environment':'prod','knownBindings':{'TOKEN':'value'}}]))
   self.assertEqual(m.resolve(str(self.repo),home=self.home)['state'],'unconfigured')
@@ -73,4 +92,7 @@ class RouterTests(unittest.TestCase):
   p=subprocess.run(['python3',str(pathlib.Path(m.__file__))],input='\n'.join(json.dumps(x) for x in messages)+'\n',capture_output=True,text=True,timeout=5)
   responses=[json.loads(l) for l in p.stdout.splitlines()];self.assertEqual(p.returncode,0);self.assertEqual(responses[-1]['result']['structuredContent']['project'],'Example')
   self.assertEqual([t['name'] for t in responses[1]['result']['tools']],['project_context','request_http'])
+  weather={'OpenWeather','WeatherAPI','Tomorrow.io','Visual Crossing','Weatherbit','AccuWeather'}
+  self.assertTrue(weather.issubset(responses[1]['result']['tools'][1]['inputSchema']['properties']['provider']['enum']))
+  self.assertEqual(responses[0]['result']['serverInfo']['version'],'0.7.21-project-router-1')
 unittest.main()

@@ -37,6 +37,14 @@ Manifests and local metadata recognize `apiKey`, `keyValue`, `json`, `text`, `fi
 
 Use Cellar 0.7.20 with its matching helper and rerun `install-ai-skills.py --update`. Reload existing MCP sessions once to load the updated `field`/`provider` schema; project mappings still do not require registration. Existing `cellar` skill aliases are refreshed alongside canonical `keydesk` skills, with their invocation names preserved.
 
+Cellar 0.7.21 expands `provider` to OpenWeather, WeatherAPI, Tomorrow.io, Visual Crossing, Weatherbit and AccuWeather. Each weather provider accepts GET without a body on its fixed official host. For an Other-classified JSON document with an already known `/weather/token` field:
+
+```json
+{"repository":"/absolute/path/my-app","environment":"dev","key":"WEATHER_CONFIG","field":"/weather/token","provider":"OpenWeather","method":"GET","url":"https://api.openweathermap.org/data/2.5/weather?lat=37.5665&lon=126.9780&units=metric"}
+```
+
+Only location/options belong in this URL. Do not supply authentication query parameters or key placeholders; the app injects query/header authentication internally. The selected value is never returned to MCP. Upgrade to Cellar 0.7.21, rerun `install-ai-skills.py --update` and reload existing MCP sessions for the weather provider enum. See [API broker](local-api-broker.md) for exact hosts and authentication rules.
+
 Vaults and backups containing these document formats, including historical versions, require Cellar 0.7.19 or later. Update the app and use its bundled helper before continuing an existing MCP connection. The server name and registration remain `keydesk`; older vaults still open in the updated app.
 
 The previous `install-mcp.py` and `keydesk-connect` remain available for explicitly project-pinned native MCP setups. Prefer the single router for normal multi-project development.

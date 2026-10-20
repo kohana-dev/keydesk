@@ -89,5 +89,24 @@ class ProjectCLI(unittest.TestCase):
         for extra in [['--key','CONFIG'],['--key','NOTE','--field','/a'],['--key','TOKEN','--provider','OpenAI'],['--key','CONFIG','--field','/~bad']]:
             with patch.object(sys,'argv',['keydesk-project','request','--env','prod','--url','https://api.openai.com/v1/models',*extra]),patch.object(m,'load_config',return_value=(Path('/tmp'),self.config)),patch.object(m.subprocess,'call') as call:
                 self.assertEqual(m.main(),2);call.assert_not_called()
+    def test_weather_document_requests_forward_only_provider_and_public_target(self):
+        self.config['bindings']['prod']['WEATHER_CONFIG']='json'
+        targets={
+            'OpenWeather':'https://api.openweathermap.org/data/2.5/weather?lat=37.5665&lon=126.9780&units=metric',
+            'WeatherAPI':'https://api.weatherapi.com/v1/current.json?q=Seoul',
+            'Tomorrow.io':'https://api.tomorrow.io/v4/weather/realtime?location=Seoul',
+            'Visual Crossing':'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/Seoul?contentType=json',
+            'Weatherbit':'https://api.weatherbit.io/v2.0/current?city=Seoul',
+            'AccuWeather':'https://dataservice.accuweather.com/locations/v1/cities/search?q=Seoul',
+        }
+        with tempfile.TemporaryDirectory() as d:
+            cli=Path(d)/'.local/bin/keydesk';cli.parent.mkdir(parents=True);cli.touch()
+            for provider,url in targets.items():
+                with self.subTest(provider=provider):
+                    argv=['keydesk-project','request','--env','prod','--key','WEATHER_CONFIG','--field','/token','--provider',provider,'--url',url]
+                    with patch.object(sys,'argv',argv),patch.object(m.Path,'home',return_value=Path(d)),patch.object(m,'load_config',return_value=(Path(d),self.config)),patch.object(m.subprocess,'call',return_value=0) as call:
+                        self.assertEqual(m.main(),0)
+                        self.assertEqual(call.call_args.args[0],[str(cli),'request','--project','Example App','--env','prod','--key','WEATHER_CONFIG','--method','GET','--url',url,'--field','/token','--provider',provider])
+                        self.assertEqual(call.call_count,1)
 
 unittest.main()

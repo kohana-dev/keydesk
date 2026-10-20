@@ -1,4 +1,4 @@
-# Local API broker (0.7.20)
+# Local API broker (0.7.21)
 
 Use `keydesk request` for direct JSON HTTP calls without delivering authentication values to the AI's calling process. Existing `run`, `--only`, `--stdin-key`, `--interactive` and `--files` remain available for SDKs and development tools.
 
@@ -30,6 +30,21 @@ Supported fixed origins:
 | Resend | api.resend.com | Bearer |
 | Vercel | api.vercel.com | Bearer |
 | Sentry | sentry.io | Bearer; custom self-hosted origins unsupported |
+| [OpenWeather](https://openweathermap.org/api/current) | api.openweathermap.org | `appid` query, inserted internally |
+| [WeatherAPI](https://www.weatherapi.com/docs/) | api.weatherapi.com | `key` query, inserted internally |
+| [Tomorrow.io](https://docs.tomorrow.io/reference/api-authentication) | api.tomorrow.io | `apikey` header |
+| [Visual Crossing](https://www.visualcrossing.com/resources/documentation/weather-api/timeline-weather-api/) | weather.visualcrossing.com | `key` query, inserted internally |
+| [Weatherbit](https://www.weatherbit.io/api/weather-current) | api.weatherbit.io | `key` query, inserted internally |
+| [AccuWeather](https://developer.accuweather.com/documentation/authentication) | dataservice.accuweather.com | Bearer |
+
+The six weather providers require Cellar 0.7.21 with its matching CLI/adapters and accept **GET without a body**. Select the correct service when saving an API-key item, or select a known document string with `--field` and the exact provider name above. Supply the endpoint and non-secret location/options only:
+
+```sh
+keydesk request --project my-app --env dev --key OPENWEATHER_API_KEY --method GET --url 'https://api.openweathermap.org/data/2.5/weather?lat=37.5665&lon=126.9780&units=metric'
+keydesk request --project my-app --env dev --key WEATHER_CONFIG --field /weatherapi/token --provider WeatherAPI --method GET --url 'https://api.weatherapi.com/v1/current.json?q=Seoul'
+```
+
+Do not copy authentication query parameters or key placeholders from provider examples. The app inserts the selected credential into its internal transport configuration. Caller URLs containing `appid`, `key`, `apikey`, `api_key`, `api-key`, `authorization`, `auth`, `access_token` or `token` are rejected for weather providers, including case and percent-encoded variants. Caller-visible approval URLs and grant fingerprints use the original URL without authentication. The request still sends the credential to the selected provider using its documented query/header mechanism. HTTPS and the exact hosts above are required; redirects and custom proxy hosts remain blocked. API access, available endpoints, billing and quotas depend on the provider account; adding a service does not create an account or grant a plan.
 
 The request uses the same signed local CLI and private Unix socket as existing commands. No listening TCP port, new account or remote Keydesk server is added. Provider secrets remain in the vault. The app invokes the macOS system TLS client, `/usr/bin/curl`; the selected authentication value goes to its stdin configuration, never its command arguments, environment or a temporary file. This trusted app-managed subprocess receives the value. This is not a guarantee against malware running as the same user.
 

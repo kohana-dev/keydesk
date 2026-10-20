@@ -51,7 +51,8 @@ extension VaultModel {
                 try? await Task.sleep(for: .seconds(60))
                 if self?.apiApproval?.id == pending.id { self?.rejectAPI() }
             }
-        } catch { apiFailure(channel, code: snapshot == nil ? "vault_locked" : "api_request_denied") }
+        } catch let error as APIProviderError { apiFailure(channel, code: error.code) }
+        catch { apiFailure(channel, code: snapshot == nil ? "vault_locked" : "api_request_denied") }
     }
     func rejectAPI() {
         if let pending = apiApproval { apiFailure(pending.channel, code: "api_approval_denied_or_timeout") }

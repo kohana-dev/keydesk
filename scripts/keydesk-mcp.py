@@ -5,7 +5,7 @@ import concurrent.futures, importlib.util, json, os, pathlib, re, subprocess, sy
 ENVIRONMENTS={'dev','staging','prod'}
 VARIABLE=re.compile(r'[A-Za-z_][A-Za-z0-9_]{0,127}')
 BINDING_KINDS={'value','apiKey','keyValue','json','text','file'}
-PROVIDERS={'OpenAI','Anthropic','Gemini','GitHub','Cloudflare','Paddle','RevenueCat','Stripe','Resend','Vercel','Sentry'}
+PROVIDERS={'OpenAI','Anthropic','Gemini','GitHub','Cloudflare','Paddle','RevenueCat','Stripe','Resend','Vercel','Sentry','OpenWeather','WeatherAPI','Tomorrow.io','Visual Crossing','Weatherbit','AccuWeather'}
 MAX_INPUT=300000
 
 def valid_pointer(pointer):
@@ -91,7 +91,7 @@ def schema(properties,required):return {'type':'object','properties':properties,
 STRING={'type':'string'}
 TOOLS=[
  {'name':'project_context','description':'Find this session repository\'s Keydesk project and variable names from names-only local metadata. Supply the actual absolute repository path; do not use the MCP process cwd. No vault values or live vault listing. An unconfigured result needs a repository mapping, never a per-project MCP installation.','inputSchema':schema({'repository':STRING,'project':STRING},['repository'])},
- {'name':'request_http','description':'Call a supported official API using a configured API key or a string field selected by RFC 6901 pointer from a key-value/JSON document. Supply field only when its path is already established; no leaf listing or credential reads. Other-classified documents require provider; a classified document must match it. Signed Cellar enforces provider hosts and approval. Returns provider data, never the selected credential. File/SDK execution uses keydesk run.','inputSchema':schema({'repository':STRING,'project':STRING,'environment':{'type':'string','enum':sorted(ENVIRONMENTS)},'key':STRING,'field':{'type':'string','maxLength':2048,'description':'RFC 6901 JSON Pointer; empty string selects a scalar root. Use known field names only.'},'provider':{'type':'string','enum':sorted(PROVIDERS)},'method':{'type':'string','enum':['GET','HEAD','POST','PUT','PATCH','DELETE']},'url':STRING,'body':{'type':'string','maxLength':262144}},['repository','environment','key','method','url'])}
+ {'name':'request_http','description':'Call a supported official API, including weather providers, using a configured API key or a string field selected by RFC 6901 pointer from a key-value/JSON document. Supply field only when its path is already established; no leaf listing or credential reads. Other-classified documents require provider; a classified document must match it. Signed Cellar enforces provider hosts and approval and inserts authentication internally. Supply weather locations/options in the URL, never authentication query parameters or key placeholders. Returns provider data, never the selected credential. File/SDK execution uses keydesk run.','inputSchema':schema({'repository':STRING,'project':STRING,'environment':{'type':'string','enum':sorted(ENVIRONMENTS)},'key':STRING,'field':{'type':'string','maxLength':2048,'description':'RFC 6901 JSON Pointer; empty string selects a scalar root. Use known field names only.'},'provider':{'type':'string','enum':sorted(PROVIDERS)},'method':{'type':'string','enum':['GET','HEAD','POST','PUT','PATCH','DELETE']},'url':STRING,'body':{'type':'string','maxLength':262144}},['repository','environment','key','method','url'])}
 ]
 
 def serve():
@@ -139,7 +139,7 @@ def serve():
                 if not isinstance(identifier,(int,str)) or isinstance(identifier,bool):raise ValueError('Invalid ID')
                 if method=='initialize' and not initialized:
                     initialized=True
-                    send({'jsonrpc':'2.0','id':identifier,'result':{'protocolVersion':'2025-11-25','capabilities':{'tools':{}},'serverInfo':{'name':'keydesk','version':'0.7.20-project-router-2'},'instructions':'One connection serves multiple projects. Resolve project_context using the actual session repository path, then call request_http with that repository, environment and key name. A known key-value/JSON string field can be selected using field and provider. Missing mappings need clarification; do not borrow another project\'s key or enumerate document contents. Keydesk human approval remains required.'}})
+                    send({'jsonrpc':'2.0','id':identifier,'result':{'protocolVersion':'2025-11-25','capabilities':{'tools':{}},'serverInfo':{'name':'keydesk','version':'0.7.21-project-router-1'},'instructions':'One connection serves multiple projects. Resolve project_context using the actual session repository path, then call request_http with that repository, environment and key name. A known key-value/JSON string field can be selected using field and provider. Weather authentication is inserted internally; never put auth parameters or key placeholders in the supplied URL or body. Missing mappings need clarification; do not borrow another project\'s key or enumerate document contents. Keydesk human approval remains required.'}})
                 elif method=='ping':send({'jsonrpc':'2.0','id':identifier,'result':{}})
                 elif method=='tools/list' and ready:send({'jsonrpc':'2.0','id':identifier,'result':{'tools':TOOLS}})
                 elif method=='tools/call' and ready:

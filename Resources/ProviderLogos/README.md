@@ -1,1 +1,1 @@
-56 reviewed-source brand assets; Postmark and Amplitude use text initials. See THIRD_PARTY_NOTICES.md. No network downloads at runtime.
+56 reviewed-source brand assets; Postmark and Amplitude use text initials. OpenWeather, WeatherAPI, Tomorrow.io, Visual Crossing, Weatherbit and AccuWeather share the cloud.sun.fill SF Symbol, a weather category symbol rather than brand artwork. See THIRD_PARTY_NOTICES.md. No network downloads at runtime.

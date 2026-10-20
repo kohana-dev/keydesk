@@ -17,7 +17,7 @@ struct FieldUsageView: View {
         self.model = model; self.binding = binding; self.storedProvider = storedProvider
         let name = APIProvider.supported.first { $0.name == ProviderName.canonical(storedProvider) }?.name ?? "OpenAI"
         _provider = State(initialValue: name)
-        _url = State(initialValue: "https://\(APIProvider.supported.first { $0.name == name }?.hosts.sorted().first ?? "api.openai.com")/")
+        _url = State(initialValue: APIProvider.supported.first { $0.name == name }?.defaultURL ?? "https://api.openai.com/")
     }
 
     private var selection: SecretFieldSelection? {
@@ -85,7 +85,7 @@ struct FieldUsageView: View {
             }
         }.frame(width: 650, height: DialogSizing.height(preferred: 720))
         .onChange(of: provider) {
-            url = "https://\(APIProvider.supported.first { $0.name == provider }?.hosts.sorted().first ?? "api.openai.com")/"
+            url = APIProvider.supported.first { $0.name == provider }?.defaultURL ?? "https://api.openai.com/"
         }
     }
 

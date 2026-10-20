@@ -42,6 +42,11 @@ public struct APIRequest: Codable, Sendable, Equatable {
             guard body.utf8.count <= 262_144, !body.contains("\0"),
                   (try? JSONSerialization.jsonObject(with: Data(body.utf8), options: [.fragmentsAllowed])) != nil else { throw VaultError.invalidData }
         }
+        // Apply fixed weather-host rules even before project/provider lookup, including in CLI
+        // and MCP validation. Never accept an authentication value supplied in a URL.
+        if let weather = APIProvider.supported.first(where: { $0.isWeather && $0.hosts.contains(host) }) {
+            try weather.validate(self, components: c)
+        }
         return c
     }
     public var fingerprint: String {
