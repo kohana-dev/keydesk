@@ -1,6 +1,6 @@
 # Install Cellar / Cellar 설치 안내
 
-Cellar 0.7.17 adds a fixed upper-right X to dialogs. It stays visible while the body scrolls, alongside the existing fixed footer and Escape shortcut. In request approval dialogs, X denies the request. / 0.7.17은 팝업 오른쪽 위에 스크롤과 무관하게 보이는 X 버튼을 추가합니다. 기존 하단 버튼과 Esc도 유지하며, 승인 창에서 X를 누르면 요청을 거절합니다.
+Cellar 0.7.18 gives projects more space in the sidebar. Open **Manage** at the bottom for AI connections, activity, encrypted backup export, recovery verification, and settings. Lock stays one click away. Routine backup status lives in the menu; warnings remain visible. / 0.7.18은 사이드바를 프로젝트 탐색 중심으로 정리합니다. 하단 **관리**에서 AI 연결, 활동 기록, 암호화 백업 내보내기, 복구 검증, 설정을 열 수 있으며 잠금 버튼은 바로 사용할 수 있습니다. 일반 백업 상태는 메뉴에서 확인하고, 주의가 필요한 상태는 계속 표시합니다.
 
 The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` CLI, MCP server and companion skill names stay compatible with earlier installations.
 
@@ -103,8 +103,8 @@ privacy policy to the report composer and review screen.
    Continue only when the ZIP reports `OK`.
 3. Unzip and move **Cellar.app** into your user Applications folder, **`~/Applications`**. In Finder, choose **Go → Go to Folder** and enter `~/Applications`; create the folder if needed. The AI installers currently expect this location. `/Applications` can run the app, but is not the path used by these setup scripts.
 4. Open Cellar normally. On first launch, choose to create a new vault or restore a backup; if an iCloud backup is found, choose that copy or a newer file from another location. Follow macOS authentication when prompted. Do not bypass Gatekeeper warnings.
-5. Check the sidebar backup indicator. If cloud backup is unavailable, choose an encrypted backup location and keep the recovery key independently. A local backup is not an uploaded backup.
-6. Open **백업·CLI 설정** and connect the bundled CLI to `~/.local/bin/keydesk`. Confirm the connection without exposing credentials:
+5. Open **Manage** to check the backup status; warnings also appear in the sidebar. If cloud backup is unavailable, choose an encrypted backup location and keep the recovery key independently. A local backup is not an uploaded backup.
+6. Open **관리 → 설정** and connect the bundled CLI to `~/.local/bin/keydesk`. Confirm the connection without exposing credentials:
 
    ```sh
    ~/.local/bin/keydesk status
@@ -118,7 +118,7 @@ Cellar creates the initial vault through its first-run flow. After unlocking, cr
 
 ## Backup location and recovery / 백업 위치와 복원
 
-Open **Backup & CLI → Choose backup location** and choose **iCloud Drive**,
+Open **Manage → Settings → Choose backup location** and choose **iCloud Drive**,
 **Google Drive**, or **Other folder / external disk…**. Your existing iCloud backup setting stays
 in place until you select a different location.
 
@@ -127,7 +127,7 @@ For Google Drive:
 1. Install Drive for desktop and sign in before choosing the backup location.
    On macOS, enable Google Drive in Finder if prompted. See Google's
    [macOS instructions](https://support.google.com/drive/answer/12178485?hl=en).
-2. In Cellar, choose **Backup & CLI → Choose backup location → Google Drive**.
+2. In Cellar, choose **Manage → Settings → Choose backup location → Google Drive**.
    Select a folder that Drive for desktop actually syncs. A private folder such
    as **My Drive/CellarBackups** keeps backups separate from other files. A folder
    named “Google Drive” is not automatically synced; mirrored folders can also
@@ -141,7 +141,7 @@ For Google Drive:
    see Google's [offline instructions](https://support.google.com/drive/answer/2375012?hl=en).
 
 The recovery key is still stored in **iCloud Keychain**, when available, and can
-be viewed from **Backup & CLI → Show recovery key** after authentication. Keep a
+be viewed from **Manage → Settings → Show recovery key** after authentication. Keep a
 separate safe copy when iCloud Keychain is unavailable or for an independent
 recovery route. Cellar does not put a plaintext recovery key in Google Drive.
 
@@ -151,11 +151,11 @@ existing Cellar vault, use **Restore encrypted backup file**, choose that downlo
 file, and enter the recovery key. An existing vault is preserved; use **Verify
 backup recovery** there to check the file and key without replacing it. After
 restoring a Google Drive backup, automatic backup is unconfigured until you
-select this Mac's sync folder again in **Backup & CLI**. The old Mac's saved path
+select this Mac's sync folder again in **Manage → Settings**. The old Mac's saved path
 and folder access are not reused. Actual Google account sync and recovery on a
 separate Mac have not been verified by the local tests.
 
-**백업·CLI 설정 → 백업 위치 선택**에서 **iCloud Drive**, **Google Drive** 또는
+**관리 → 설정 → 백업 위치 선택**에서 **iCloud Drive**, **Google Drive** 또는
 **다른 폴더 / 외장 디스크…**를 선택하세요. Google Drive를 쓰려면 먼저 Drive for desktop을
 설치하고 로그인한 뒤 실제 동기화되는 폴더를 선택하세요. 예를 들어 내 드라이브의
 비공유 **CellarBackups** 폴더를 사용할 수 있습니다. 앱의 저장·검증 성공은
@@ -280,7 +280,7 @@ Existing vault locations, project manifests and Keychain access identity remain 
 
 ## Troubleshooting
 
-- **CLI cannot connect:** open `~/Applications/Cellar.app`; check the CLI link in **백업·CLI 설정**. Unlock only when the operation needs an existing credential.
+- **CLI cannot connect:** open `~/Applications/Cellar.app`; check the CLI link in **관리 → 설정**. Unlock only when the operation needs an existing credential.
 - **AI cannot see MCP tools:** reload the session after setup and check the client's `keydesk` MCP connection. Do not fall back to reading `.env` or private key contents.
 - **Project is unconfigured:** fix the repository's names-only manifest. Do not select another project's production credential based on its provider.
 - **Approval expired or was rejected:** stop that attempt. Start a new request only when the user is ready; do not automatically retry.
