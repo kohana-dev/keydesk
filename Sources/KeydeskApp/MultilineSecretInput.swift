@@ -10,7 +10,6 @@ struct MultilineSecretInput: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var visible = true
     @State private var formattingError: String?
-    @FocusState private var editorFocused: Bool
 
     private var byteCount: Int { value.utf8.count }
     private var isValidJSON: Bool {
@@ -25,22 +24,14 @@ struct MultilineSecretInput: View {
                     .font(.callout.weight(.semibold))
                 Spacer()
                 Button(visible ? L10n.tr("숨기기", "Hide") : L10n.tr("보기 및 편집", "Show and edit"), systemImage: visible ? "eye.slash" : "eye") {
-                    editorFocused = false
                     visible.toggle()
                 }
                 .accessibilityIdentifier("secret-editor-visibility")
             }
             Group {
                 if visible {
-                    TextEditor(text: $value)
-                        .font(format == .json ? .system(.body, design: .monospaced) : .body)
-                        .disableAutocorrection(true)
-                        .scrollContentBackground(.hidden)
-                        .focused($editorFocused)
-                        .padding(8)
+                    SecretTextEditor(text: $value, format: format)
                         .privacySensitive()
-                        .accessibilityLabel(format == .json ? L10n.tr("JSON 내용", "JSON content") : L10n.tr("텍스트 내용", "Text content"))
-                        .accessibilityIdentifier("secret-content-input")
                 } else {
                     VStack(spacing: 10) {
                         Image(systemName: "lock.doc").font(.title2)
@@ -111,7 +102,6 @@ struct MultilineSecretInput: View {
     }
 
     private func hide() {
-        editorFocused = false
         visible = false
     }
 }
