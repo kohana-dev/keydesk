@@ -18,19 +18,19 @@ struct RunnerTests {
         }
         return (CLIChannel(fd: fds[0]), fds[1])
     }
-    @Test func promptAndInputAreDeliveredBeforeExitForPipeAndPTY() throws {
+    @Test func promptAndInputAreDeliveredBeforeExitForPipeAndPTY() async throws {
         for interactive in [false, true] {
             let (channel, client) = try sockets(); defer { close(client) }
             let request = CLIRequest(project: "fixture", environment: .development, command: ["/bin/sh", "-c", "printf 'prompt: '; read value; printf '%s\\n' \"$value\"; printf '%s\\n' \"$KEY\"; exit 7"], directory: "/tmp", stdinKey: nil, variables: ["KEY"], interactive: interactive)
-            let running = try CommandRunner.start(request, secrets: ["KEY": "SENTINEL_SECRET"], channel: channel, completion: {})
+            let running = try await BlockingRunnerTestSupport.start(request, secrets: ["KEY": "SENTINEL_SECRET"], channel: channel)
             defer { running.terminate(); channel.finish() }
-            let first = try JSONDecoder().decode(CLIEvent.self, from: #require(try SocketTransport.readLine(from: client)))
+            let first = try JSONDecoder().decode(CLIEvent.self, from: #require(try await BlockingRunnerTestSupport.readLine(from: client)))
             #expect(first.kind == "started")
-            let prompt = try JSONDecoder().decode(CLIEvent.self, from: #require(try SocketTransport.readLine(from: client)))
+            let prompt = try JSONDecoder().decode(CLIEvent.self, from: #require(try await BlockingRunnerTestSupport.readLine(from: client)))
             #expect(String(decoding: prompt.data ?? Data(), as: UTF8.self).contains("prompt: "))
             try SocketTransport.send(CLIInput(kind: "stdin", data: Data("hello\n".utf8)), to: client)
             var output = Data(), exitCode: Int32?
-            while let line = try SocketTransport.readLine(from: client) {
+            while let line = try await BlockingRunnerTestSupport.readLine(from: client) {
                 let event = try JSONDecoder().decode(CLIEvent.self, from: line)
                 if let data = event.data { output += data }
                 if event.kind == "exit" { exitCode = event.exitCode; break }
@@ -149,13 +149,13 @@ struct RunnerTests {
         #expect(response["error"] != nil)
     }
 
-    @Test func stdinSecretIsNotAlsoInjectedIntoEnvironment() throws {
+    @Test func stdinSecretIsNotAlsoInjectedIntoEnvironment() async throws {
         let (channel, client) = try sockets(); defer { close(client) }
         let request = CLIRequest(project: "fixture", environment: .development, command: ["/bin/sh", "-c", "if [ -n \"${TOKEN+x}\" ]; then exit 91; fi; read value; printf '%s\\n' \"$value\"; printf '%s\\n' \"$OTHER\""], directory: "/tmp", stdinKey: "TOKEN", variables: ["TOKEN", "OTHER"])
-        let running = try CommandRunner.start(request, secrets: ["TOKEN": "FAKE_STDIN_SECRET", "OTHER": "FAKE_ENV_SECRET"], channel: channel, completion: {})
+        let running = try await BlockingRunnerTestSupport.start(request, secrets: ["TOKEN": "FAKE_STDIN_SECRET", "OTHER": "FAKE_ENV_SECRET"], channel: channel)
         defer { running.terminate(); channel.finish() }
         var output = Data(), exitCode: Int32?
-        while let line = try SocketTransport.readLine(from: client) {
+        while let line = try await BlockingRunnerTestSupport.readLine(from: client) {
             let event = try JSONDecoder().decode(CLIEvent.self, from: line)
             if let data = event.data { output += data }
             if event.kind == "exit" { exitCode = event.exitCode; break }
@@ -179,20 +179,25 @@ struct RunnerTests {
         #expect(!FileManager.default.fileExists(atPath: marker.path))
     }
 
-    @Test func socketPeerMustMatchExpectedSignedExecutable() throws {
-        let process = Process(), input = Pipe()
-        process.executableURL = URL(fileURLWithPath: "/bin/cat")
-        process.standardInput = input; process.standardOutput = FileHandle.nullDevice
-        try process.run()
-        defer { try? input.fileHandleForWriting.close(); if process.isRunning { process.terminate() }; process.waitUntilExit() }
-        let cat = try PeerVerifier.requirement(for: URL(fileURLWithPath: "/bin/cat"))
-        let shell = try PeerVerifier.requirement(for: URL(fileURLWithPath: "/bin/sh"))
-        #expect(PeerVerifier.matches(pid: process.processIdentifier, requirement: cat))
-        #expect(!PeerVerifier.matches(pid: process.processIdentifier, requirement: shell))
-        #expect(!PeerVerifier.matches(pid: -1, requirement: cat))
+    @Test func socketPeerMustMatchExpectedSignedExecutable() async throws {
+        let matches = try await BlockingRunnerTestSupport.run {
+            let process = Process(), input = Pipe()
+            process.executableURL = URL(fileURLWithPath: "/bin/cat")
+            process.standardInput = input; process.standardOutput = FileHandle.nullDevice
+            try process.run()
+            defer { try? input.fileHandleForWriting.close(); if process.isRunning { process.terminate() }; process.waitUntilExit() }
+            let cat = try PeerVerifier.requirement(for: URL(fileURLWithPath: "/bin/cat"))
+            let shell = try PeerVerifier.requirement(for: URL(fileURLWithPath: "/bin/sh"))
+            return (PeerVerifier.matches(pid: process.processIdentifier, requirement: cat),
+                    PeerVerifier.matches(pid: process.processIdentifier, requirement: shell),
+                    PeerVerifier.matches(pid: -1, requirement: cat))
+        }
+        #expect(matches.0)
+        #expect(!matches.1)
+        #expect(!matches.2)
     }
 
-    @Test func secureSocketRejectsUntrustedPeerBeforeDecodingRequest() throws {
+    @Test func secureSocketRejectsUntrustedPeerBeforeDecodingRequest() async throws {
         let root = URL(fileURLWithPath: "/tmp").appendingPathComponent("kdp-\(UUID().uuidString.prefix(8))")
         defer { try? FileManager.default.removeItem(at: root) }
         let path = root.appendingPathComponent("cli.sock").path
@@ -206,7 +211,7 @@ struct RunnerTests {
         let connected = withUnsafePointer(to: &address) { pointer in pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { connect(client, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) } }
         #expect(connected == 0)
         // This test process shares the uid but has a different signing identity than cat.
-        #expect(try SocketTransport.readLine(from: client) == nil)
+        #expect(try await BlockingRunnerTestSupport.readLine(from: client) == nil)
     }
 
 }

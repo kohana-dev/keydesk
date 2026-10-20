@@ -15,7 +15,7 @@ struct FieldSelectionRunnerTests {
         return (snapshot, project.id)
     }
 
-    @Test func pipeAndPTYReceiveOnlySelectedFieldsAndMaskTheirOutput() throws {
+    @Test func pipeAndPTYReceiveOnlySelectedFieldsAndMaskTheirOutput() async throws {
         let (snapshot, project) = fixture()
         for interactive in [false, true] {
             let selections = [try SecretFieldSelection.parse("TOKEN=CONFIG#/token"), try SecretFieldSelection.parse("PORT=CONFIG#/nested/port")]
@@ -23,10 +23,10 @@ struct FieldSelectionRunnerTests {
             let request = CLIRequest(project: project.uuidString, environment: .development, command: ["/bin/sh", "-c", command], directory: "/tmp", stdinKey: nil, interactive: interactive, selections: selections)
             let available = try snapshot.environment(projectID: project, environment: .development, selections: selections)
             let (channel, client) = try RunnerTests().sockets(); defer { close(client); channel.finish() }
-            let running = try CommandRunner.start(request, secrets: available, channel: channel, completion: {})
+            let running = try await BlockingRunnerTestSupport.start(request, secrets: available, channel: channel)
             defer { running.terminate() }
             var output = Data(), exit: Int32?
-            while let line = try SocketTransport.readLine(from: client) {
+            while let line = try await BlockingRunnerTestSupport.readLine(from: client) {
                 let event = try JSONDecoder().decode(CLIEvent.self, from: line)
                 if let data = event.data { output += data }
                 if event.kind == "exit" { exit = event.exitCode; break }
@@ -37,14 +37,14 @@ struct FieldSelectionRunnerTests {
         }
     }
 
-    @Test func selectedDocumentStringCanUseStdinWithoutEnvironmentCopy() throws {
+    @Test func selectedDocumentStringCanUseStdinWithoutEnvironmentCopy() async throws {
         let (snapshot, project) = fixture(), selection = try SecretFieldSelection.parse("TOKEN=CONFIG#/token")
         let request = CLIRequest(project: project.uuidString, environment: .development, command: ["/bin/sh", "-c", "test -z \"${TOKEN+x}\" && test -z \"${CONFIG+x}\" && test -z \"${UNRELATED_KEY+x}\" || exit 91; read value; test \"$value\" = FICTIONAL_SELECTED_TOKEN || exit 92; printf 'SELECTED_STDIN_OK\\n'"], directory: "/tmp", stdinKey: "TOKEN", selections: [selection])
         let (channel, client) = try RunnerTests().sockets(); defer { close(client); channel.finish() }
-        let running = try CommandRunner.start(request, secrets: snapshot.environment(projectID: project, environment: .development, selections: [selection]), channel: channel, completion: {})
+        let running = try await BlockingRunnerTestSupport.start(request, secrets: snapshot.environment(projectID: project, environment: .development, selections: [selection]), channel: channel)
         defer { running.terminate() }
         var output = Data(), exit: Int32?
-        while let line = try SocketTransport.readLine(from: client) {
+        while let line = try await BlockingRunnerTestSupport.readLine(from: client) {
             let event = try JSONDecoder().decode(CLIEvent.self, from: line)
             if let data = event.data { output += data }
             if event.kind == "exit" { exit = event.exitCode; break }

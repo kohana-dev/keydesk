@@ -4,6 +4,7 @@ import KeydeskCore
 
 enum PTYRunner {
     static func start(executable: String, arguments: [String], environment: [String: String], directory: String, keepRunning: Bool, secrets: [Data], channel: CLIChannel, cleanup: @escaping @Sendable () -> Void = {}, completion: @escaping @Sendable () -> Void) throws -> RunningCommand {
+        let inputHandle = try channel.makeInputHandle()
         var master: Int32 = -1, slave: Int32 = -1
         var name = [CChar](repeating: 0, count: 128)
         guard openpty(&master, &slave, &name, nil, nil) == 0 else { throw POSIXError(.EIO) }
@@ -49,9 +50,9 @@ enum PTYRunner {
             channel.send(CLIEvent(kind: "exit", exitCode: exitCode)); channel.finish(); inputFinished.wait(); completion()
         }
         DispatchQueue.global().async {
-            defer { inputFinished.leave() }
+            defer { try? inputHandle.close(); inputFinished.leave() }
             do {
-                while let line = try SocketTransport.readLine(from: channel.fd, maximum: 16_384) {
+                while let line = try SocketTransport.readLine(from: inputHandle.fileDescriptor, maximum: 16_384) {
                     let input = try JSONDecoder().decode(CLIInput.self, from: line)
                     if input.kind == "cancel" { break }
                     if input.kind == "resize", let rows = input.rows, let cols = input.columns {

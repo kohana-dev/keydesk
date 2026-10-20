@@ -6,7 +6,7 @@ import KeydeskCore
 
 @Suite(.serialized)
 struct FileRunnerTests {
-    @Test func approvedFilePathContainsOriginalBytesThenDisappearsForPipeAndTTY() throws {
+    @Test func approvedFilePathContainsOriginalBytesThenDisappearsForPipeAndTTY() async throws {
         for interactive in [false, true] {
             let (channel, client) = try RunnerTests().sockets(); defer { close(client) }
             let output = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -14,10 +14,10 @@ struct FileRunnerTests {
             let file = try SecretFile(name: "fixture.p12", data: Data([0,255,13,10,10]))
             let program = "import os,pathlib; p=pathlib.Path(os.environ['FILE']); pathlib.Path(\"\(output.path)\").write_text(str(p)); print('MATCH='+str(p.read_bytes()==bytes([0,255,13,10,10]))); print('EXTRA='+str('UNSELECTED' in os.environ))"
             let request = CLIRequest(project: "fixture", environment: .development, command: ["/usr/bin/python3","-c",program], directory: "/tmp", stdinKey: nil, interactive: interactive, fileVariables: ["FILE"])
-            let running = try CommandRunner.start(request, secrets: [:], channel: channel, files: ["FILE":file,"UNSELECTED":file], completion: {})
+            let running = try await BlockingRunnerTestSupport.start(request, secrets: [:], channel: channel, files: ["FILE":file,"UNSELECTED":file])
             defer { running.terminate(); channel.finish() }
             var bytes = Data(), exit: Int32?
-            while let line = try SocketTransport.readLine(from: client) {
+            while let line = try await BlockingRunnerTestSupport.readLine(from: client) {
                 let event = try JSONDecoder().decode(CLIEvent.self, from: line)
                 if let data = event.data { bytes += data }
                 if event.kind == "exit" { exit = event.exitCode; break }
@@ -29,14 +29,14 @@ struct FileRunnerTests {
             #expect(!FileManager.default.fileExists(atPath: path))
         }
     }
-    @Test func terminationRemovesFileImmediately() throws {
+    @Test func terminationRemovesFileImmediately() async throws {
         let (channel, client) = try RunnerTests().sockets(); defer { close(client) }
         let file = try SecretFile(name: "fixture.pem", data: Data("FAKE_FILE_SECRET".utf8))
         let request = CLIRequest(project: "fixture", environment: .development, command: ["/bin/sh","-c","printf '%s\\n' \"$FILE\"; exec sleep 30"], directory: "/tmp", stdinKey: nil, fileVariables: ["FILE"])
-        let running = try CommandRunner.start(request, secrets: [:], channel: channel, files: ["FILE":file], completion: {})
+        let running = try await BlockingRunnerTestSupport.start(request, secrets: [:], channel: channel, files: ["FILE":file])
         defer { running.terminate(); channel.finish() }
         var path: String?
-        while let line = try SocketTransport.readLine(from: client) {
+        while let line = try await BlockingRunnerTestSupport.readLine(from: client) {
             let event = try JSONDecoder().decode(CLIEvent.self, from: line)
             if let data = event.data { path = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines); break }
         }

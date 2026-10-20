@@ -31,6 +31,7 @@ enum CommandRunner {
         process.currentDirectoryURL = URL(fileURLWithPath: request.directory, isDirectory: true)
         let stdout = Pipe(), stderr = Pipe(), stdin = Pipe()
         process.standardOutput = stdout; process.standardError = stderr; process.standardInput = stdin
+        let inputHandle = try channel.makeInputHandle()
         try process.run()
         let running = RunningCommand(process: process, keepRunning: request.keepRunning == true, cleanup: { temporary?.cleanup() })
         channel.send(CLIEvent(kind: "started"))
@@ -64,9 +65,9 @@ enum CommandRunner {
             }
         }
         DispatchQueue.global().async {
-            defer { try? stdin.fileHandleForWriting.close(); running.terminate() }
+            defer { try? inputHandle.close(); try? stdin.fileHandleForWriting.close(); running.terminate() }
             do {
-                while let line = try SocketTransport.readLine(from: channel.fd, maximum: 16_384) {
+                while let line = try SocketTransport.readLine(from: inputHandle.fileDescriptor, maximum: 16_384) {
                     let input = try JSONDecoder().decode(CLIInput.self, from: line)
                     if input.kind == "cancel" { break }
                     if input.kind == "stdin", request.stdinKey == nil, let data = input.data, data.count <= 4096 { try stdin.fileHandleForWriting.write(contentsOf: data) }
