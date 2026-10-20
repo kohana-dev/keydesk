@@ -25,6 +25,10 @@ Only these two MCP tools are preauthorized at the AI-client layer. By default, K
 
 Storage and original files continue through `keydesk store`, `store-file` and `run --only/--files`; the MCP adapter does not read private key files or implement secret export. There is no public listener, system proxy, system CA or cloud server. Cloud/remote clients cannot use the Mac's private local socket just by installing these settings.
 
+Cellar 0.7.19 also stores key-value, JSON and text documents in the app. Project context can describe their names/types, but `request_http` accepts API-key items only and never selects a field from a document. Document content is not returned through MCP or injected through CLI environment/stdin; original-file injection is unchanged. A manifest entry marked `value` does not override the actual saved format. Create, authenticate to edit, reveal and copy these documents in Cellar; key-value copy includes the complete JSON object.
+
+Vaults and backups containing these document formats, including historical versions, require Cellar 0.7.19 or later. Update the app and use its bundled helper before continuing an existing MCP connection. The server name and registration remain `keydesk`; older vaults still open in the updated app.
+
 The previous `install-mcp.py` and `keydesk-connect` remain available for explicitly project-pinned native MCP setups. Prefer the single router for normal multi-project development.
 
 References: [Codex MCP configuration](https://developers.openai.com/codex/mcp), [Claude MCP user scope](https://code.claude.com/docs/en/mcp#user-scope).

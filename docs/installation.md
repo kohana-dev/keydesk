@@ -2,6 +2,8 @@
 
 Cellar 0.7.18 gives projects more space in the sidebar. Open **Manage** at the bottom for AI connections, activity, encrypted backup export, recovery verification, and settings. Lock stays one click away. Routine backup status lives in the menu; warnings remain visible. / 0.7.18은 사이드바를 프로젝트 탐색 중심으로 정리합니다. 하단 **관리**에서 AI 연결, 활동 기록, 암호화 백업 내보내기, 복구 검증, 설정을 열 수 있으며 잠금 버튼은 바로 사용할 수 있습니다. 일반 백업 상태는 메뉴에서 확인하고, 주의가 필요한 상태는 계속 표시합니다.
 
+Cellar 0.7.19 adds API key, key-value pairs, JSON document, plain text and original file formats. Existing vaults still open. After saving key-value, JSON or text content, the vault and its backups require Cellar 0.7.19 or later, even if that content remains only in version history. Older versions refuse the updated format. / 0.7.19는 API 키·키값 묶음·JSON·일반 텍스트·파일 형식을 지원합니다. 기존 금고도 열 수 있습니다. 키값 묶음·JSON·텍스트를 저장하면 이력이 남아 있는 경우까지 금고와 백업에 0.7.19 이상이 필요하며 이전 버전은 열기를 거부합니다.
+
 The official app is **Cellar.app**, with a **Cellar** executable. The `keydesk` CLI, MCP server and companion skill names stay compatible with earlier installations.
 
 ## Requirements
@@ -110,7 +112,13 @@ privacy policy to the report composer and review screen.
    ~/.local/bin/keydesk status
    ```
 
-Cellar creates the initial vault through its first-run flow. After unlocking, create a project and choose Development, Staging or Production. Register a string key, or select **파일 원본 보관** and choose/drop an original key file. The service field offers inline search suggestions.
+Cellar creates the initial vault through its first-run flow. After unlocking, add a secret and choose **API key**, **Key-value**, **JSON**, **Text** or **File**. Key-value rows support adding/removing fields and reject duplicate names. JSON is validated while editing; **Format JSON** changes formatting only when explicitly clicked. JSON and text otherwise retain the original whitespace and line breaks. Text content is limited to 64 KiB in UTF-8, and original files to 1 MiB. The service field offers inline suggestions and is optional for document/file formats. Account and notes are under the optional details disclosure.
+
+To organize an item by project, choose a project and Development, Staging or Production, then enter its variable/reference name. You can also connect an existing item. API-key references support CLI environment/stdin injection and broker authentication; file references retain original-file injection. Key-value, JSON and text references are names-only metadata for tools: their content is available for reveal/copy in the app, but is not injected into CLI/API calls. Selecting one field from a key-value document through CLI/MCP is not supported. Copying key-value content copies the complete JSON object.
+
+Editing an existing document first requires Mac authentication. Revealed saved content hides after 15 seconds and when focus is lost; copies use 30-second clipboard cleanup. JSON/text draft editors also hide when the app loses focus; choose **Show and edit** to continue. Cancelling or closing the form discards its drafts.
+
+**비밀 항목 추가**에서 API 키·키값·JSON·텍스트·파일 형식을 고르세요. 키값은 행 단위로 추가·삭제하고 중복 이름을 검사합니다. JSON은 문법을 검사하며 **JSON 정렬**을 눌러야 서식이 바뀝니다. JSON·텍스트의 공백과 줄바꿈은 그대로 보관합니다. 텍스트 내용은 UTF-8 기준 64 KiB, 원본 파일은 1 MiB까지 지원합니다. 기존 문서 편집에는 Mac 인증이 필요합니다. 키값·JSON·텍스트는 앱에서 보기·복사할 수 있으며 CLI·API에 자동 전달되지 않습니다. 키값 복사는 전체 JSON이며 CLI에서 개별 필드 선택은 지원하지 않습니다.
 
 ![Cellar 0.7.5 demo vault](images/cellar-vault.png)
 
@@ -234,7 +242,7 @@ No MCP registration is required for each project. In the repository you are deve
 
 Create this file in the root of your actual development repository, replacing `my-app` and the example variables with the exact project and variable names you registered in Cellar. `dev`, `staging` and `prod` are environment identifiers; `Development` is the UI label for `dev`.
 
-This file contains names and types only. It does not create, copy or expose keys. The AI should call `project_context` with its repository's absolute path, then `request_http` with the intended environment and existing value binding. Original files, SDKs and build tools use `keydesk run --files/--only`; they are not exposed as MCP file-reading tools. See [MCP setup](mcp-setup.md), [local API broker](local-api-broker.md) and [project CLI](project-cli.md).
+This file contains names and types only. It does not create, copy or expose keys. The AI should call `project_context` with its repository's absolute path, then `request_http` with the intended environment and an existing API-key binding. Original files, SDKs and build tools use `keydesk run --files/--only`; they are not exposed as MCP file-reading tools. A key-value, JSON or text reference is not an API-key binding, even if its manifest entry says `value`. See [MCP setup](mcp-setup.md), [local API broker](local-api-broker.md) and [project CLI](project-cli.md).
 
 Approve the first use in Cellar yourself. If you choose exact-request reuse, identical production requests can share the grant across Codex and Claude for five minutes and ten additional requests. The app never gives the authentication value to the MCP caller. Approved CLI/SDK processes do receive their selected credentials and require trusted tools.
 

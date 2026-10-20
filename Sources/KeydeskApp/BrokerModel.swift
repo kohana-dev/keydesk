@@ -61,11 +61,13 @@ extension VaultModel {
                 }
                 let variables = snapshot.bindings.filter { $0.projectID == projectID && $0.environment == request.environment }.sorted { $0.variable < $1.variable }.compactMap { binding -> JSONValue? in
                     guard let credential = snapshot.credentials.first(where: { $0.id == binding.credentialID }) else { return nil }
-                    return .object(["variable": .string(binding.variable), "provider": .string(ProviderName.canonical(credential.provider)), "kind": .string(credential.currentFile == nil ? "value" : "file")])
+                    let format = credential.currentFormat
+                    let kind = format == .apiKey ? "value" : (format == .file ? "file" : format.rawValue)
+                    return .object(["variable": .string(binding.variable), "provider": .string(ProviderName.canonical(credential.provider)), "kind": .string(kind), "format": .string(format.rawValue)])
                 }
                 let usage = "keydesk run --project \(projectID.uuidString) --env \(request.environment.rawValue) --only VARIABLE -- <command>"
                 if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
-                brokerResult(channel, .object(["variables": .array(variables), "usage": .string(usage), "fileUsage": .string("keydesk run --project \(projectID.uuidString) --env \(request.environment.rawValue) --files FILE_VARIABLE -- <command>"), "note": .string("Initial runs require approval; exact runs can reuse a limited grant. API requests can use keydesk request. Values are never returned here.")]))
+                brokerResult(channel, .object(["variables": .array(variables), "usage": .string(usage), "fileUsage": .string("keydesk run --project \(projectID.uuidString) --env \(request.environment.rawValue) --files FILE_VARIABLE -- <command>"), "note": .string("Only API keys are available to --only, --stdin-key, and keydesk request. Files use --files. JSON, text, and key-value documents are stored content and are not passed to commands or API authentication. Initial runs require approval; exact runs can reuse a limited grant. Values are never returned here.")]))
             case "request_access":
                 guard Set(a.keys).isSubset(of: ["operation", "duration", "maximumCalls"]), a["operation"] == nil || a["operation"]?.string == "metadata",
                       brokerApproval == nil, approval == nil, apiApproval == nil, grants.count < 32 else { throw VaultError.accessDenied }

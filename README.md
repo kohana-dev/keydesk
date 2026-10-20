@@ -1,10 +1,10 @@
 # Cellar
 
-A local macOS vault for developers and their AI tools. Keep API keys and original key files organized by project, and let Codex, Claude and CLI tools use selected credentials through an approved local broker.
+A local macOS vault for developers and their AI tools. Keep API keys, key-value pairs, JSON, text and original files organized by project, and let Codex, Claude and CLI tools use selected API keys and files through an approved local broker.
 
-개인 개발자를 위한 macOS 로컬 키 금고입니다. API 키와 키 파일을 암호화해 보관하고, Codex·Claude가 키 값을 채팅에 노출하지 않고 사용할 수 있습니다.
+개인 개발자를 위한 macOS 로컬 비밀정보 금고입니다. API 키·키값 묶음·JSON·텍스트·파일을 암호화해 보관하고, Codex·Claude가 선택한 API 키를 채팅에 노출하지 않고 사용할 수 있습니다.
 
-**[Download Cellar 0.7.18 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.18/Cellar-0.7.18-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
+**[Download Cellar 0.7.19 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.19/Cellar-0.7.19-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
 Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
@@ -21,7 +21,8 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 - Choose English, 한국어, or the system language in **Cellar → Settings → App language**. The app applies changes immediately and remembers the choice; existing key names and project data stay unchanged.
 - Organize credentials by project and Development / Staging / Production environment. Add your own project images.
 - Find services with inline search recommendations and recognizable provider logos.
-- Store string keys and original `.p8`, `.pem`, service-account JSON, `.p12` and `.jks` files. Choose a file or drag it into the registration form.
+- Choose API key, key-value pairs, JSON document, plain text or original file when adding an item. Key-value pairs have editable named fields; JSON is validated and formatted only when you choose to. JSON and text preserve the entered whitespace and line breaks. Text content is limited to 64 KiB in UTF-8; original files such as `.p8`, `.pem`, service-account JSON, `.p12` and `.jks` are limited to 1 MiB.
+- Reveal and copy complete JSON, text or key-value content in the app. Editing an existing document requires Mac authentication. CLI environment/stdin injection and broker authentication accept API keys only; file injection remains available. Named document references do not automatically deliver their content to tools, and selecting individual key-value fields through CLI/MCP is not supported.
 - Deposit a new key or file while locked; it is merged into the vault and backed up after unlocking.
 - Use the macOS menu bar to reopen Cellar, lock/unlock, add a key or view pending approvals.
 - Copy values with 30-second clipboard cleanup; revealed values hide after 15 seconds.
@@ -33,13 +34,15 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 
 ## Get started
 
-1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.18), and verify the checksum.
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.19), and verify the checksum.
 2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
 3. Open Cellar normally. Follow macOS authentication and check your encrypted backup status. For Google Drive, install and sign in to Drive for desktop first, then open **Manage → Settings → Choose backup location → Google Drive** and select its actual sync folder. Check upload completion in Google Drive.
-4. In **Manage → Settings / 관리 → 설정**, connect the bundled CLI. Add a project and register a key or original file.
+4. In **Manage → Settings / 관리 → 설정**, connect the bundled CLI. Add an item and choose its format; select a project if you want to give it a project reference.
 5. For Codex and Claude, follow the [AI connection steps](docs/installation.md#connect-codex-and-claude). One global MCP connection routes requests using each repository's names-only project manifest.
 
 The app bundle and executable are **Cellar.app** and **Cellar**. The compatible CLI, MCP server and skill remain named **`keydesk`**. Existing vault paths and Keychain identity are unchanged. Upgrading from `Keydesk.app`? See the [migration steps](docs/installation.md#upgrade-from-keydeskapp).
+
+Cellar 0.7.19 opens existing vaults. Saving key-value, JSON or text content uses vault format 3, including when that content remains only in version history. These vaults and their backups require Cellar 0.7.19 or later; older versions refuse to open them. Update every Mac and use the matching bundled helper before sharing an updated backup.
 
 Google Drive backups use the same encrypted `.keydesk` format; Cellar does not upload a plaintext recovery key or connect to your Google account. Keep the recovery key separately. See [backup selection and recovery](docs/installation.md#backup-location-and-recovery--백업-위치와-복원) for setup and manual recovery.
 
@@ -57,7 +60,7 @@ keydesk store-file --project my-app --env dev --name GOOGLE_APPLICATION_CREDENTI
 keydesk run --project my-app --env dev --files GOOGLE_APPLICATION_CREDENTIALS -- /absolute/path/to/tool
 ```
 
-For direct API calls, the local broker injects authentication internally. MCP exposes `project_context` and `request_http` through the global router; there is no credential-reading tool. Supported provider requests include Gemini, OpenAI, Anthropic, Cloudflare, Paddle and RevenueCat. See [API broker](docs/local-api-broker.md), [MCP setup](docs/mcp-setup.md) and [project CLI](docs/project-cli.md).
+For direct API calls, the local broker injects an API-key item's authentication internally. JSON, text and key-value documents cannot be used as an authentication value or injected environment/stdin value. MCP exposes `project_context` and `request_http` through the global router; there is no credential-reading tool. Supported provider requests include Gemini, OpenAI, Anthropic, Cloudflare, Paddle and RevenueCat. See [API broker](docs/local-api-broker.md), [MCP setup](docs/mcp-setup.md) and [project CLI](docs/project-cli.md).
 
 By default, initial use requires human approval. Exact development commands can be remembered for 30 minutes. Production reuse is optional, lasts five minutes and allows ten additional starts/requests. Requests must match exactly; lock, key changes and quitting revoke remembered approvals. API requests in dev/staging have a separate 30-minute / 100-repeat limit. An explicitly started temporary all-request session replaces these per-request prompts until it ends. It does not bypass project/key matching, supported API targets or executable validation, and cannot be started by the CLI or AI.
 

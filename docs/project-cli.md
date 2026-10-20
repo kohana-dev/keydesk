@@ -21,6 +21,10 @@ From the root or a child directory:
 
 The descriptor records the intended bindings, not proof they currently exist in the vault. Each run selects names explicitly; no environment or secret list is selected automatically. A file variable contains an owner-only temporary path and is removed when the process exits. Tools that use custom flags can read the variable internally and pass the path to their API client; never read file contents into an AI tool response. The working directory is preserved.
 
+Cellar 0.7.19 adds app-managed key-value, JSON and text documents. Their project references may appear in names-only metadata, but `run --only`, `--stdin-key` and API authentication accept API-key content only. A manifest's `value` label does not convert a document into an API key. `store` continues to store a single API-key value and `store-file`/`run --files` keep their existing file behavior. Create, edit, reveal and copy documents in the app; key-value copy returns the entire JSON object, and selecting an individual field through CLI/MCP is not supported.
+
+Use Cellar 0.7.19 or later and its matching bundled helper for vaults containing key-value, JSON or text content, including content kept only in version history. These vaults use format 3; older apps/helpers refuse them. Existing vaults remain readable in 0.7.19.
+
 `keydesk status` (0.6.1+) returns `locked`, `busy`, `pendingDeposits`, `backup` and `cloudUpload`. Locked status reports backup/upload as `unknown_locked`; it does not unlock or expose project, key or filename metadata. A successful store may still be queued; merge after unlock and check backup status before removing an original.
 
 Keydesk 0.7.0 MCP exposes `request_http` through the local API broker without delivering the selected authentication value to the AI client. Prefer MCP for supported direct APIs, and use CLI for storage, SDKs, builds and files. Metadata listing still requires its separate grant. See [MCP setup](mcp-setup.md).

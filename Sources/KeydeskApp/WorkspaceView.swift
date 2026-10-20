@@ -12,6 +12,7 @@ struct WorkspaceView: View {
     @State private var activitySheet = false
     @State private var settingsSheet = false
     @State private var aiSheet = false
+    @State private var selectedFormat: SecretFormat?
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
@@ -39,6 +40,9 @@ struct WorkspaceView: View {
         .onChange(of: model.selectedCredential) { model.hideValue() }
         .onChange(of: model.selectedProject) { model.selectedCredential = nil; model.hideValue() }
         .onChange(of: model.environment) { model.selectedCredential = nil; model.hideValue() }
+        .onChange(of: selectedFormat) { clearFilteredSelection() }
+        .onChange(of: model.search) { clearFilteredSelection() }
+        .onChange(of: visibleCredentials.map(\.id)) { clearFilteredSelection() }
     }
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -47,7 +51,7 @@ struct WorkspaceView: View {
                 Text("Cellar").font(.system(size: 20, weight: .semibold)).foregroundStyle(Theme.ink)
             }.padding(.top, 6).padding(.bottom, 4)
             VStack(spacing: 6) {
-                nav(L10n.tr("모든 키", "All keys"), symbol: "square.grid.2x2", color: Theme.ink, selected: model.selectedProject == nil && !model.favoritesOnly) { model.selectedProject = nil; model.favoritesOnly = false }
+                nav(L10n.tr("모든 항목", "All items"), symbol: "square.grid.2x2", color: Theme.ink, selected: model.selectedProject == nil && !model.favoritesOnly) { model.selectedProject = nil; model.favoritesOnly = false }
                 nav(L10n.tr("즐겨찾기", "Favorites"), symbol: "star", color: .orange, selected: model.favoritesOnly) { model.selectedProject = nil; model.favoritesOnly = true }
             }
             HStack {
@@ -115,7 +119,7 @@ struct WorkspaceView: View {
                     Spacer()
                     Button(L10n.tr("프로젝트 편집", "Edit project"), systemImage: "ellipsis") { editingProject = project }.labelStyle(.iconOnly).buttonStyle(.plain).help(L10n.tr("이름 및 이미지 변경", "Change name and image"))
                 } else {
-                    Text(model.favoritesOnly ? L10n.tr("즐겨찾기", "Favorites") : L10n.tr("모든 키", "All keys")).font(.system(size: 21, weight: .semibold))
+                    Text(model.favoritesOnly ? L10n.tr("즐겨찾기", "Favorites") : L10n.tr("모든 항목", "All items")).font(.system(size: 21, weight: .semibold))
                     Spacer()
                 }
             }
@@ -132,18 +136,24 @@ struct WorkspaceView: View {
                 if model.environment == .production { Label(L10n.tr("Production · 최초 승인 시 재인증", "Production · Re-authenticate on first approval"), systemImage: "exclamationmark.triangle").font(.caption).foregroundStyle(.orange) }
             }
             HStack {
-                Text(L10n.tr("\(model.credentials.count)개 키", model.credentials.count == 1 ? "1 key" : "\(model.credentials.count) keys")).font(.caption).foregroundStyle(.secondary)
+                Picker(L10n.tr("저장 형식", "Format"), selection: $selectedFormat) {
+                    Text(L10n.tr("모든 형식", "All formats")).tag(SecretFormat?.none)
+                    ForEach(SecretFormat.allCases) { format in Text(format.shortTitle).tag(Optional(format)) }
+                }
+                .labelsHidden().fixedSize()
+                .accessibilityIdentifier("secret-list-format")
                 Spacer()
                 if model.selectedProject != nil { Button(L10n.tr(".env 가져오기", "Import .env"), systemImage: "square.and.arrow.down") { importSheet = true }.labelStyle(.iconOnly).help(L10n.tr(".env 가져오기", "Import .env")) }
-                Button(L10n.tr("키 추가", "Add key"), systemImage: "plus") { addSheet = true }.buttonStyle(.borderedProminent)
+                Button(L10n.tr("항목 추가", "Add item"), systemImage: "plus") { selectedFormat = nil; model.search = ""; model.favoritesOnly = false; addSheet = true }.buttonStyle(.borderedProminent).accessibilityIdentifier("secret-add-item")
             }
+            Text(L10n.tr("\(visibleCredentials.count)개 항목", visibleCredentials.count == 1 ? "1 item" : "\(visibleCredentials.count) items")).font(.caption).foregroundStyle(.secondary)
             ScrollView {
                 LazyVStack(spacing: 7) {
-                    ForEach(model.credentials) { credential in
+                    ForEach(visibleCredentials) { credential in
                         Button { model.selectedCredential = credential.id; model.activity() } label: {
                             HStack(spacing: 12) {
-                                ProviderIcon(provider: credential.provider)
-                                VStack(alignment: .leading, spacing: 5) { Text(credential.name).font(.system(size: 13, weight: .semibold)).lineLimit(1); Text(credential.provider + (credential.currentFile == nil ? L10n.tr(" · API 키", " · API key") : L10n.tr(" · 파일", " · File"))).font(.caption).foregroundStyle(.secondary) }
+                                SecretItemIcon(credential: credential)
+                                VStack(alignment: .leading, spacing: 5) { Text(credential.name).font(.system(size: 13, weight: .semibold)).lineLimit(1); Text((credential.provider == "Other" ? "" : credential.provider + " · ") + credential.currentFormat.shortTitle).font(.caption).foregroundStyle(.secondary) }
                                 Spacer()
                                 if credential.favorite { Image(systemName: "star.fill").foregroundStyle(.orange).font(.caption) }
                             }.padding(.horizontal, 12).padding(.vertical, 11).contentShape(Rectangle())
@@ -151,13 +161,24 @@ struct WorkspaceView: View {
                                 .overlay(RoundedRectangle(cornerRadius: 12).strokeBorder(model.selectedCredential == credential.id ? Theme.accent.opacity(0.25) : Theme.border.opacity(0.65), lineWidth: 0.7))
                         }.buttonStyle(.plain)
                     }
-                    if model.credentials.isEmpty { ContentUnavailableView(L10n.tr("키가 없습니다", "No keys"), systemImage: "key", description: Text(model.search.isEmpty ? L10n.tr("키를 등록하거나 기존 키를 연결하세요.", "Add a key or connect an existing one.") : L10n.tr("다른 검색어를 입력하세요.", "Try a different search."))) }
+                    if visibleCredentials.isEmpty {
+                        ContentUnavailableView(L10n.tr("항목이 없습니다", "No items"), systemImage: selectedFormat?.symbol ?? "tray", description: Text(model.search.isEmpty && selectedFormat == nil ? L10n.tr("키, JSON, 텍스트 또는 파일을 추가하세요.", "Add a key, JSON, text, or a file.") : L10n.tr("다른 검색어나 저장 형식을 선택하세요.", "Try a different search or format.")))
+                    }
                 }
             }
             if model.isDemo {
                 Text(L10n.tr("데모 변경은 임시 금고에만 저장됩니다.", "Demo changes are saved only to a temporary vault.")).font(.caption).foregroundStyle(.secondary)
             }
         }.padding(20).background(Theme.surface)
+    }
+    private var visibleCredentials: [Credential] {
+        model.credentials.filter { selectedFormat == nil || $0.currentFormat == selectedFormat }
+    }
+    private func clearFilteredSelection() {
+        if let id = model.selectedCredential, !visibleCredentials.contains(where: { $0.id == id }) {
+            model.selectedCredential = nil
+            model.hideValue()
+        }
     }
     private func saveBackup() {
         let panel = NSSavePanel(); panel.nameFieldStringValue = "Cellar-backup-\(Date().formatted(.iso8601.year().month().day())).keydesk"

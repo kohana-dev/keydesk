@@ -7,7 +7,7 @@ keydesk request --project my-app --env dev --key CLOUDFLARE_API_TOKEN --method G
 keydesk request --project my-app --env prod --key PADDLE_API_KEY --method POST --url https://api.paddle.com/customers --body-file request.json
 ```
 
-The second example creates an external resource and requires task authorization and human approval. Authentication values must not appear in the URL, JSON body, command arguments or chat. The referenced key must be a value key, correctly classified in the vault. File keys are not converted into JWTs: Apple .p8 and service-account files continue to use `run --files`.
+The second example creates an external resource and requires task authorization and human approval. Authentication values must not appear in the URL, JSON body, command arguments or chat. The referenced item must have **API key** content and be correctly classified in the vault. Cellar 0.7.19 key-value, JSON and text documents are rejected as authentication values; a names-only project reference does not permit content delivery or individual field selection. File keys are not converted into JWTs: Apple .p8 and service-account files continue to use `run --files`.
 
 Supported fixed origins:
 

@@ -27,8 +27,7 @@ public struct VaultSnapshot: Codable, Sendable {
         for credential in credentials {
             guard !credential.name.isEmpty, !credential.versions.isEmpty,
                   credential.versions.allSatisfy({ version in
-                      if let file = version.file { return version.value.isEmpty && (try? file.validated()) != nil }
-                      return version.value.utf8.count <= 65_536 && !version.value.contains("\0")
+                      (try? version.validated()) != nil
                   }),
                   credential.versions.contains(where: { $0.id == credential.currentVersionID }),
                   Set(credential.versions.map(\.id)).count == credential.versions.count else { throw VaultError.invalidData }
@@ -54,10 +53,10 @@ public struct VaultSnapshot: Codable, Sendable {
         guard projects.contains(where: { $0.id == projectID }) else { throw VaultError.invalidData }
         var result = [String: String]()
         for binding in bindings where binding.projectID == projectID && binding.environment == environment {
-            if credentials.first(where: { $0.id == binding.credentialID })?.currentFile != nil { continue }
+            guard let credential = credentials.first(where: { $0.id == binding.credentialID }) else { throw VaultError.unsafeEnvironment }
+            if credential.currentFormat != .apiKey { continue }
             guard !Self.blockedVariable(binding.variable),
-                  let credential = credentials.first(where: { $0.id == binding.credentialID }),
-                  let value = credential.currentValue, !value.contains("\0") else { throw VaultError.unsafeEnvironment }
+                  let value = credential.currentAPIKey, !value.contains("\0") else { throw VaultError.unsafeEnvironment }
             result[binding.variable] = value
         }
         return result

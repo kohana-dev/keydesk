@@ -21,11 +21,13 @@ struct SecretFileReplacement: View {
 }
 extension VaultModel {
     func restoreVersion(_ id: UUID, version: SecretVersion) throws {
+        _ = try version.validated()
         try mutate { next in
             guard let index = next.credentials.firstIndex(where: { $0.id == id }) else { throw VaultError.invalidData }
             if let file = version.file { next.credentials[index].rotate(to: try file.validated()) }
-            else { next.credentials[index].rotate(to: version.value) }
-            next.record("키 또는 파일 새 버전 저장")
+            else { next.credentials[index].rotate(to: version.value, format: version.format) }
+            next.record("항목 버전 복원")
         }
+        hideValue()
     }
 }

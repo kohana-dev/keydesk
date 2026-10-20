@@ -27,17 +27,19 @@ struct MetadataView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     HStack(spacing: 12) {
-                        ProviderIcon(provider: provider)
+                        SecretItemIcon(credential: credential)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(L10n.tr("키 정보 편집", "Edit key details")).font(.title2.weight(.semibold)).foregroundStyle(Theme.ink)
+                            Text(L10n.tr("항목 정보 편집", "Edit item details")).font(.title2.weight(.semibold)).foregroundStyle(Theme.ink)
                             Text(L10n.tr("이름, 서비스와 보관 정보를 수정하세요.", "Update the name, service, and stored details.")).font(.callout).foregroundStyle(.secondary)
                         }
                     }
                     Divider()
                     TextField(L10n.tr("이름", "Name"), text: $name).textFieldStyle(.roundedBorder).focused($nameFocused)
                     ProviderPicker(provider: $provider)
-                    if credential.currentFile == nil { SecretInput(title: L10n.tr("새 키 값 (선택)", "New key value (optional)"), value: $value) }
-                    Text(L10n.tr("비워두면 기존 키 값을 유지합니다. 입력하면 새 버전으로 저장합니다.", "Leave blank to keep the current key value. Enter a value to save a new version.")).font(.caption).foregroundStyle(.secondary)
+                    if credential.currentFormat == .apiKey {
+                        SecretInput(title: L10n.tr("새 키 값 (선택)", "New key value (optional)"), value: $value)
+                        Text(L10n.tr("비워두면 기존 키 값을 유지합니다. 입력하면 새 버전으로 저장합니다.", "Leave blank to keep the current key value. Enter a value to save a new version.")).font(.caption).foregroundStyle(.secondary)
+                    }
                     TextField(L10n.tr("계정", "Account"), text: $account).textFieldStyle(.roundedBorder)
                     TextField(L10n.tr("메모", "Note"), text: $note).textFieldStyle(.roundedBorder)
                     if let error { Text(error).foregroundStyle(.red) }
@@ -47,16 +49,17 @@ struct MetadataView: View {
                 do {
                     try model.mutate { next in
                         guard let i = next.credentials.firstIndex(where: { $0.id == credential.id }) else { throw VaultError.invalidData }
-                        next.credentials[i].name = name; next.credentials[i].provider = provider
+                        next.credentials[i].name = name.trimmingCharacters(in: .whitespacesAndNewlines); next.credentials[i].provider = provider
                         next.credentials[i].account = account; next.credentials[i].note = note
                         if !value.isEmpty {
-                            guard value.utf8.count <= 65_536, !value.contains("\0") else { throw VaultError.invalidData }
-                            next.credentials[i].rotate(to: value)
+                            guard next.credentials[i].currentFormat == .apiKey else { throw VaultError.invalidData }
+                            try SecretContent.validate(value, format: .apiKey)
+                            next.credentials[i].rotate(to: value, format: .apiKey)
                         }
-                        next.credentials[i].updatedAt = Date(); next.record("키 정보 편집")
-                    }; dismiss()
+                        next.credentials[i].updatedAt = Date(); next.record("항목 정보 편집")
+                    }; model.hideValue(); dismiss()
                 } catch { self.error = error.localizedDescription }
-            }.buttonStyle(.borderedProminent).disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) }
+            }.buttonStyle(.borderedProminent).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) }
         }.frame(width: 540, height: DialogSizing.height(preferred: 522)).controlSize(.large).background(Theme.surface)
         .task { nameFocused = true }
         .onDisappear { value = "" }

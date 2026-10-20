@@ -8,7 +8,7 @@ extension VaultModel {
         guard matches.count == 1,
               let binding = snapshot.bindings.first(where: { $0.projectID == matches[0].id && $0.environment == request.environment && $0.variable == request.variable }),
               let credential = snapshot.credentials.first(where: { $0.id == binding.credentialID }),
-              credential.currentFile == nil, let secret = credential.currentValue, !secret.isEmpty else { throw VaultError.accessDenied }
+              let secret = credential.currentAPIKey, !secret.isEmpty else { throw VaultError.accessDenied }
         let canonical = APIRequest(project: matches[0].id.uuidString, environment: request.environment, variable: request.variable, method: request.method, url: request.url, body: request.body)
         let provider = try APIProvider.resolve(provider: credential.provider, request: canonical)
         return APIApproval(request: canonical, projectName: matches[0].name, credentialID: credential.id,
@@ -64,7 +64,7 @@ extension VaultModel {
     }
     private func startAPI(_ pending: APIApproval, reused: Bool, timedSessionID: UUID? = nil) {
         if let timedSessionID, !timedApprovalAllows(timedSessionID) { apiFailure(pending.channel, code: "api_approval_expired_or_revoked"); return }
-        guard let secret = snapshot?.credentials.first(where: { $0.id == pending.credentialID && $0.currentVersionID == pending.versionID })?.currentValue,
+        guard let secret = snapshot?.credentials.first(where: { $0.id == pending.credentialID && $0.currentVersionID == pending.versionID })?.currentAPIKey,
               pending.channel.isConnected, apiTasks.count < 4 else { apiFailure(pending.channel, code: "api_request_denied"); return }
         let token = generation, id = pending.id, transport = apiTransport
         apiRunning[id] = pending.request

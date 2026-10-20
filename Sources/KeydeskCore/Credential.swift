@@ -12,10 +12,14 @@ public struct Credential: Identifiable, Codable, Sendable {
     public var updatedAt: Date
     public var currentValue: String? { versions.first(where: { $0.id == currentVersionID }).flatMap { $0.file == nil ? $0.value : nil } }
 
+    public var currentFormat: SecretFormat { versions.first(where: { $0.id == currentVersionID })?.format ?? .apiKey }
+    public var currentText: String? { currentValue }
+    public var currentAPIKey: String? { currentFormat == .apiKey ? currentValue : nil }
+
     public var currentFile: SecretFile? { versions.first(where: { $0.id == currentVersionID })?.file }
 
-    public init(id: UUID = UUID(), name: String, value: String, provider: String = "Other", account: String = "", note: String = "") {
-        let version = SecretVersion(value: value)
+    public init(id: UUID = UUID(), name: String, value: String, format: SecretFormat = .apiKey, provider: String = "Other", account: String = "", note: String = "") {
+        let version = SecretVersion(value: value, format: format)
         self.id = id; self.name = name; self.provider = provider; self.account = account; self.note = note
         self.favorite = false; self.versions = [version]; self.currentVersionID = version.id; self.updatedAt = Date()
     }
@@ -27,8 +31,9 @@ public struct Credential: Identifiable, Codable, Sendable {
     public mutating func rotate(to file: SecretFile) {
         let version = SecretVersion(file: file); versions.insert(version, at: 0); currentVersionID = version.id; updatedAt = Date()
     }
-    public mutating func rotate(to value: String) {
-        let version = SecretVersion(value: value)
+    public mutating func rotate(to value: String, format: SecretFormat? = nil) {
+        let nextFormat = format ?? (currentFormat == .file ? .apiKey : currentFormat)
+        let version = SecretVersion(value: value, format: nextFormat)
         versions.insert(version, at: 0); currentVersionID = version.id; updatedAt = Date()
     }
 }

@@ -370,9 +370,13 @@ final class VaultModel {
             next.record("프로젝트 정보 수정")
         }
     }
-    func addCredential(name: String, value: String, provider: String, account: String, note: String, variable: String, existingID: UUID? = nil, file: SecretFile? = nil) throws {
-        guard !name.trimmingCharacters(in: .whitespaces).isEmpty, !value.isEmpty || existingID != nil || file != nil, value.utf8.count <= 65_536, !value.contains("\0") else { throw VaultError.invalidData }
-        let credential = try file.map { Credential(name: name, file: try $0.validated(), provider: provider, account: account, note: note) } ?? Credential(name: name, value: value, provider: provider, account: account, note: note)
+    func addCredential(name: String, value: String, provider: String, account: String, note: String, variable: String, existingID: UUID? = nil, file: SecretFile? = nil, format: SecretFormat = .apiKey) throws {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw VaultError.invalidData }
+        if existingID == nil, file == nil {
+            guard format != .apiKey || !value.isEmpty else { throw VaultError.invalidData }
+            try SecretContent.validate(value, format: format)
+        }
+        let credential = try file.map { Credential(name: name, file: try $0.validated(), provider: provider, account: account, note: note) } ?? Credential(name: name, value: value, format: format, provider: provider, account: account, note: note)
         let id = existingID ?? credential.id
         try mutate { next in
             if existingID == nil { next.credentials.append(credential) }
@@ -380,7 +384,7 @@ final class VaultModel {
                 guard VaultSnapshot.validVariable(variable) else { throw VaultError.invalidData }
                 next.bindings.append(BindingRecord(projectID: project, environment: environment, variable: variable, credentialID: id))
             } else if existingID != nil { throw VaultError.invalidData }
-            next.record(existingID == nil ? "키 등록" : "기존 키 연결")
+            next.record(existingID == nil ? "항목 등록" : "기존 항목 연결")
         }
         selectedCredential = id; notify(L10n.tr("저장했습니다.", "Saved."))
     }
@@ -388,11 +392,15 @@ final class VaultModel {
         do { try mutate { next in if let i = next.credentials.firstIndex(where: { $0.id == id }) { next.credentials[i].favorite.toggle() } } }
         catch { self.error = error.localizedDescription }
     }
-    func rotate(_ id: UUID, value: String) throws {
-        guard !value.isEmpty, value.utf8.count <= 65_536, !value.contains("\0") else { throw VaultError.invalidData }
+    func rotate(_ id: UUID, value: String, format: SecretFormat? = nil, expectedVersionID: UUID? = nil) throws {
+        guard let credential = snapshot?.credentials.first(where: { $0.id == id }) else { throw VaultError.locked }
+        let nextFormat = format ?? (credential.currentFormat == .file ? .apiKey : credential.currentFormat)
+        guard nextFormat != .apiKey || !value.isEmpty else { throw VaultError.invalidData }
+        try SecretContent.validate(value, format: nextFormat)
         try mutate { next in
             guard let i = next.credentials.firstIndex(where: { $0.id == id }) else { throw VaultError.invalidData }
-            next.credentials[i].rotate(to: value); next.record("키 버전 교체 · 제공사 폐기는 별도")
+            if let expectedVersionID, next.credentials[i].currentVersionID != expectedVersionID { throw VaultError.staleRevision }
+            next.credentials[i].rotate(to: value, format: nextFormat); next.record("항목 새 버전 저장")
         }
         hideValue(); notify(L10n.tr("새 버전을 저장했습니다. 실행 중인 앱과 외부 배포 반영은 별도입니다.", "The new version has been saved. Updating running apps and external deployments is separate."))
     }
@@ -413,17 +421,31 @@ final class VaultModel {
         }
         guard token == generation, snapshot != nil else { throw VaultError.locked }
     }
+    /// Loading stored content into an editor exposes it, so every real-vault edit starts with OS authentication.
+    func authenticatedContentForEditing(_ id: UUID, versionID: UUID) async throws -> String {
+        try Task.checkCancellation()
+        guard let credential = snapshot?.credentials.first(where: { $0.id == id }), credential.currentVersionID == versionID,
+              credential.currentFormat != .file else { throw VaultError.accessDenied }
+        let token = generation
+        if !isDemo { _ = try await keys.authenticate(reason: L10n.tr("저장된 내용을 편집하기 위해 인증합니다.", "Authenticate to edit stored content.")) }
+        try Task.checkCancellation()
+        guard token == generation, snapshot != nil else { throw VaultError.locked }
+        guard let current = snapshot?.credentials.first(where: { $0.id == id }), current.currentVersionID == versionID,
+              let value = current.currentText else { throw VaultError.staleRevision }
+        activity()
+        return value
+    }
     func copyValue(_ id: UUID) async {
         do {
             try await sensitiveAccess(id)
-            guard let value = snapshot?.credentials.first(where: { $0.id == id })?.currentValue else { throw VaultError.invalidData }
-            clipboard.copy(value, secret: true); notify(L10n.tr("키를 복사했습니다. 30초 후 자동 삭제됩니다.", "The key has been copied. It will be cleared from the clipboard automatically after 30 seconds."))
+            guard let value = snapshot?.credentials.first(where: { $0.id == id })?.currentText else { throw VaultError.invalidData }
+            clipboard.copy(value, secret: true); notify(L10n.tr("내용을 복사했습니다. 30초 후 자동 삭제됩니다.", "The content has been copied. It will be cleared from the clipboard automatically after 30 seconds."))
         } catch { self.error = error.localizedDescription }
     }
     func reveal(_ id: UUID) async {
         do {
             try await sensitiveAccess(id)
-            guard selectedCredential == id, let value = snapshot?.credentials.first(where: { $0.id == id })?.currentValue else { return }
+            guard selectedCredential == id, let value = snapshot?.credentials.first(where: { $0.id == id })?.currentText else { return }
             hideValue(); revealID = id; revealedValue = value; activity()
             revealTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: false) { [weak self] _ in MainActor.assumeIsolated { self?.hideValue() } }
         } catch { self.error = error.localizedDescription }
@@ -507,7 +529,7 @@ final class VaultModel {
                     next.credentials.append(credential)
                     next.bindings[i] = BindingRecord(projectID: project, environment: environment, variable: row.name, credentialID: credential.id)
                 } else {
-                    let match = next.credentials.first(where: { $0.currentValue == row.value && !row.value.isEmpty })
+                    let match = next.credentials.first(where: { $0.currentAPIKey == row.value && !row.value.isEmpty })
                     let credential = match ?? Credential(name: row.name, value: row.value, provider: ProviderCatalog.inferredProvider(for: row.name))
                     if match == nil { next.credentials.append(credential) }
                     next.bindings.append(BindingRecord(projectID: project, environment: environment, variable: row.name, credentialID: credential.id))

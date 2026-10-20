@@ -11,7 +11,9 @@ public enum VaultCrypto {
         let checked = try snapshot.validated()
         guard checked.revision == header.revision else { throw VaultError.invalidData }
         var header = header
-        if checked.credentials.contains(where: { $0.versions.contains(where: { $0.file != nil }) }) { header.format = 2 }
+        guard [1, 2, 3].contains(header.format) else { throw VaultError.unsupportedFormat }
+        if checked.credentials.contains(where: { $0.versions.contains(where: { $0.format.requiresTypedVault }) }) { header.format = 3 }
+        else if checked.credentials.contains(where: { $0.versions.contains(where: { $0.file != nil }) }) { header.format = max(2, header.format) }
         let encoder = JSONEncoder(); encoder.outputFormatting = [.withoutEscapingSlashes]
         let bytes = try encoder.encode(checked)
         guard bytes.count <= 16 * 1024 * 1024 else { throw VaultError.invalidData }
@@ -21,10 +23,12 @@ public enum VaultCrypto {
     }
     public static func open(_ envelope: VaultEnvelope, key: SymmetricKey) throws -> VaultSnapshot {
         guard key.bitCount == 256 else { throw VaultError.invalidData }
-        guard [1, 2].contains(envelope.header.format), envelope.header.algorithm == "AES-256-GCM" else { throw VaultError.unsupportedFormat }
+        guard [1, 2, 3].contains(envelope.header.format), envelope.header.algorithm == "AES-256-GCM" else { throw VaultError.unsupportedFormat }
         let bytes = try AES.GCM.open(AES.GCM.SealedBox(combined: envelope.ciphertext), using: key, authenticating: headerData(envelope.header) + envelope.recoveryWrappedKey)
         let snapshot = try JSONDecoder().decode(VaultSnapshot.self, from: bytes).validated()
         guard snapshot.revision == envelope.header.revision else { throw VaultError.invalidData }
+        if envelope.header.format < 3,
+           snapshot.credentials.contains(where: { $0.versions.contains(where: { $0.format.requiresTypedVault }) }) { throw VaultError.unsupportedFormat }
         return snapshot
     }
     public static func wrap(_ key: SymmetricKey, recoveryKey: SymmetricKey, vaultID: UUID, keyEpoch: UUID) throws -> Data {
