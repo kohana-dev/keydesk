@@ -22,7 +22,14 @@ public struct APIProvider: Sendable {
     ]
     public static func resolve(provider: String, request: APIRequest) throws -> APIProvider {
         let c = try request.validated()
-        guard let result = supported.first(where: { $0.name == ProviderName.canonical(provider) }),
+        let stored = ProviderName.canonical(provider)
+        let selected: String
+        if let override = request.provider {
+            let canonical = ProviderName.canonical(override)
+            guard request.field != nil, stored == "Other" || stored == canonical else { throw VaultError.accessDenied }
+            selected = canonical
+        } else { selected = stored }
+        guard let result = supported.first(where: { $0.name == selected }),
               result.hosts.contains(c.host ?? "") else { throw VaultError.accessDenied }
         return result
     }

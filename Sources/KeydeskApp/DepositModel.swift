@@ -66,6 +66,7 @@ extension VaultModel {
                 let pending = (try? FileManager.default.contentsOfDirectory(at: depositDirectory, includingPropertiesForKeys: nil).filter { $0.pathExtension == "deposit" }.count) ?? 0
                 let report: JSONValue = .object([
                     "locked": .bool(snapshot == nil), "busy": .bool(busy),
+                    "capabilities": .array([.string("field-selection-v1")]),
                     "pendingDeposits": .number(Double(pending)),
                     "backup": .string(snapshot == nil ? "unknown_locked" : (backupFailure != nil ? "failed" : (hasUnbackedChanges ? "pending" : "verified"))),
                     "cloudUpload": .string(snapshot == nil ? "unknown_locked" : String(describing: cloudUpload))

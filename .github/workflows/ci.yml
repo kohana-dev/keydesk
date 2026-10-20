@@ -27,4 +27,6 @@ jobs:
           KEYDESK_SIGNING_MODE: adhoc
         run: ./scripts/build-app.sh
       - name: Distribution negative checks
-        run: python3 scripts/test-release-tools.py
+        run: |
+          python3 scripts/test-release-tools.py
+          python3 scripts/test-field-cli.py --exe dist/bin/keydesk

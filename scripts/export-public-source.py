@@ -7,6 +7,7 @@ FILES += ['docs/images/cellar-vault-en.jpg','docs/images/cellar-service-search-e
 DIRS=['Sources','Tests','Resources/en.lproj','Resources/ko.lproj']
 SCRIPTS=['installer_support.py','test-installers.py','migrate-cellar-paths.py','test-cellar-migration.py','keydesk-project.py','test-project-cli.py','build-app.sh','prepare-release.sh','notarize.sh','verify-profile.py','verify-release.py','test-release-tools.py','install-ai-skills.py','install-mcp.py','install-auto-mcp.py','keydesk-mcp.py','test-auto-mcp.py','test-mcp-setup.py','export-public-source.py','verify-provider-logos.py','test-public-source.py','verify-protocol.py','verify-terminal-signals.py','verify-cli.py','verify-deposits.py','verify-storage.py','verify-mcp.py','verify-ai-client.py']
 EXCLUDED_BRANDS={'Postmark','Amplitude'}
+SCRIPTS += ['test-field-cli.py', 'verify-skills.py']
 PATTERNS=[re.compile(rb'/Users/[A-Za-z0-9_.-]+/'),re.compile(rb'[A-Za-z0-9._%+-]+@(?:gmail|icloud|outlook)\.com',re.I),re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),re.compile(rb'\bAKIA[0-9A-Z]{16}\b'),re.compile(rb'\bgh[pousr]_[A-Za-z0-9]{30,}\b')]
 def scan(tree):
  bad=[]

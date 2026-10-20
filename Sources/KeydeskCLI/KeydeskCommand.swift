@@ -5,8 +5,8 @@ import KeydeskCore
 @main
 enum KeydeskCommand {
     static let help = """
-    keydesk run --project <이름|UUID> --env <dev|staging|prod> [--only <VAR,VAR>] [--stdin-key <VAR>] [--interactive] [--keep-running] -- <명령> [인자...]
-    keydesk request --project <이름|UUID> --env <dev|staging|prod> --key <VAR> --method <GET|POST|PUT|PATCH|DELETE> --url <공식 HTTPS API 주소> [--body-file <JSON 경로>]
+    keydesk run --project <이름|UUID> --env <dev|staging|prod> [--only <VAR,VAR>] [--select <OUTPUT=SOURCE#/JSON/Pointer>] [--stdin-key <VAR>] [--interactive] [--keep-running] -- <명령> [인자...]
+    keydesk request --project <이름|UUID> --env <dev|staging|prod> --key <VAR> [--field </JSON/Pointer>] [--provider <제공사>] --method <GET|POST|PUT|PATCH|DELETE> --url <공식 HTTPS API 주소> [--body-file <JSON 경로>]
     keydesk mcp --project <UUID> --env <dev|staging|prod>
     keydesk store-file --project <이름> --env <dev|staging|prod> --name <PATH_VAR> --from-file <경로>
     keydesk run --project <이름|UUID> --env dev --files <PATH_VAR,...> -- <명령> [인자...]
@@ -24,6 +24,8 @@ enum KeydeskCommand {
     앱에서 금고를 열고 승인해야 합니다. 실행 코드는 전달된 키를 읽을 수 있습니다.
     delete-project: 잠금 해제된 금고에서 프로젝트와 전용 키 삭제. 공유 키는 보존. 과거 백업·제공사 키는 별도.
     --only: 환경변수로 전달할 이름을 명시해야 합니다. 생략 시 모든 키를 전달하지 않습니다.
+    --select: 키·값/JSON의 지정 필드만 전달합니다. 예: --select 'DB_PASSWORD=DB_CONFIG#/password'. 여러 번 지정할 수 있습니다.
+    --field: API 인증에 사용할 키·값/JSON 문자열 필드. 제공사가 Other인 문서는 --provider도 지정하세요.
     --stdin-key: 이 키는 표준입력에만 전달하며 환경변수에는 넣지 않습니다.
     --interactive: 실제 터미널에서 대화형 CLI 실행. --stdin-key와 함께 사용하지 않습니다.
     --keep-running: 금고가 잠겨도 승인된 개발 프로세스 유지. CLI 연결 종료/앱 종료 시 종료 요청.
@@ -122,6 +124,7 @@ enum KeydeskCommand {
         guard args.first == "run", let separator = args.firstIndex(of: "--"), separator + 1 < args.count else { throw VaultError.invalidData }
         var project: String?, environment = EnvironmentName.development, stdinKey: String?, variables: [String]?
         var fileVariables: [String]?
+        var selections = [SecretFieldSelection]()
         var interactive = false, keepRunning = false, index = 1
         while index < separator {
             if args[index] == "--interactive" { interactive = true; index += 1; continue }
@@ -133,17 +136,20 @@ enum KeydeskCommand {
             case "--stdin-key": stdinKey = args[index + 1]
             case "--files": fileVariables = args[index + 1].split(separator: ",").map(String.init)
             case "--only": variables = args[index + 1].split(separator: ",").map(String.init)
+            case "--select": selections.append(try SecretFieldSelection.parse(args[index + 1]))
             default: throw VaultError.invalidData
             }
             index += 2
         }
         guard let project, !project.isEmpty, !(interactive && stdinKey != nil), !interactive || isatty(STDIN_FILENO) == 1 else { throw VaultError.invalidData }
-        guard variables?.isEmpty == false || stdinKey != nil || fileVariables?.isEmpty == false else {
+        try SecretFieldSelection.validate(selections)
+        guard variables?.isEmpty == false || stdinKey != nil || fileVariables?.isEmpty == false || !selections.isEmpty else {
             throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: "--only로 전달할 변수를 지정하거나 --stdin-key를 사용하세요. 전체 키를 자동으로 전달하지 않습니다."])
         }
+        if !selections.isEmpty { try BrokerCapabilities.requireFieldSelection() }
         let connection = try ClientConnection(path: ProcessInfo.processInfo.environment["KEYDESK_SOCKET_PATH"] ?? SocketTransport.socketPath)
         defer { connection.closeConnection() }
-        try connection.send(CLIRequest(project: project, environment: environment, command: Array(args[(separator + 1)...]), directory: FileManager.default.currentDirectoryPath, stdinKey: stdinKey, variables: variables, interactive: interactive, keepRunning: keepRunning, fileVariables: fileVariables))
+        try connection.send(CLIRequest(project: project, environment: environment, command: Array(args[(separator + 1)...]), directory: FileManager.default.currentDirectoryPath, stdinKey: stdinKey, variables: variables, interactive: interactive, keepRunning: keepRunning, fileVariables: fileVariables, selections: selections.isEmpty ? nil : selections))
         var resizing: DispatchSourceSignal?
         var terminationSources: [DispatchSourceSignal] = []
         defer { resizing?.cancel(); terminationSources.forEach { $0.cancel() } }

@@ -21,6 +21,9 @@ struct ApprovalStatusView: View {
                                 Text(grant.invocation.command.joined(separator: " ")).font(.system(.caption, design: .monospaced)).lineLimit(3)
                                 Text(L10n.tr("작업 폴더: \(grant.invocation.directory)", "Working directory: \(grant.invocation.directory)")).font(.caption).foregroundStyle(.secondary)
                                 Text(L10n.tr("키/파일: \(((grant.invocation.variables ?? []) + (grant.invocation.fileVariables ?? []) + (grant.invocation.stdinKey.map { [$0] } ?? [])).joined(separator: ", "))", "Keys/files: \(((grant.invocation.variables ?? []) + (grant.invocation.fileVariables ?? []) + (grant.invocation.stdinKey.map { [$0] } ?? [])).joined(separator: ", "))")).font(.caption)
+                                ForEach(grant.invocation.selections ?? [], id: \.variable) { field in
+                                    Text("\(field.variable) ← \(field.source)#\(field.pointer)").font(.system(.caption, design: .monospaced))
+                                }
                                 Text("\(lifetime(grant.expiresAt, now: context.date)) · \(grant.invocation.environment != .production ? L10n.tr("기간 내 재실행", "Reruns during this period") : L10n.tr("재실행 \(grant.remainingUses)회 남음", "\(grant.remainingUses) reruns remaining"))").font(.caption).foregroundStyle(.secondary)
                             }
                             Spacer(); Button(L10n.tr("철회", "Revoke")) { model.revokeRun(grant.id) }.accessibilityLabel(L10n.tr("이 명령의 반복 실행 허가 철회", "Revoke permission to repeat this command"))
@@ -34,6 +37,9 @@ struct ApprovalStatusView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("\(model.snapshot?.projects.first(where: { $0.id.uuidString == grant.request.project })?.name ?? grant.request.project) · \(grant.request.environment.title) · \(grant.request.variable)").font(.headline)
                                 let url = URLComponents(string: grant.request.url)
+                                if let field = grant.request.field {
+                                    Text("\(grant.request.variable)#\(field) · \(grant.request.provider ?? "")").font(.system(.caption, design: .monospaced))
+                                }
                                 Text("\(grant.request.method) \(url?.host ?? "")\(url?.path ?? "")").font(.system(.caption, design: .monospaced))
                                 Text(L10n.tr("쿼리·본문 포함 확인값 \(grant.request.fingerprint.prefix(12))", "Fingerprint including query and body: \(grant.request.fingerprint.prefix(12))")).font(.caption)
                                 Text(L10n.tr("\(lifetime(grant.expiresAt, now: context.date)) · 재실행 \(grant.remainingUses)회 남음", "\(lifetime(grant.expiresAt, now: context.date)) · \(grant.remainingUses) repeats remaining")).font(.caption).foregroundStyle(.secondary)

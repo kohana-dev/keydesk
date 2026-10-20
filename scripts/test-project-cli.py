@@ -26,6 +26,29 @@ class ProjectCLI(unittest.TestCase):
     def test_cross_environment_wrong_type_and_empty_rejected(self):
         for env, only, files in [('dev',None,'GOOGLE_APPLICATION_CREDENTIALS'),('prod','GOOGLE_APPLICATION_CREDENTIALS',None),('prod',None,'TOKEN'),('prod',None,None),('prod',None,'GOOGLE_APPLICATION_CREDENTIALS,GOOGLE_APPLICATION_CREDENTIALS')]:
             with self.assertRaises(ValueError): m.run_arguments(self.config,env,only,files,['true'])
+    def test_document_fields_forwarded_without_reading_values(self):
+        self.config['bindings']['prod'].update({'DOCUMENT':'json','FIELDS':'keyValue'})
+        selectors=['AUTH_TOKEN=DOCUMENT#/services/0/token','REGION=FIELDS#/a~1b/~0name','ROOT=DOCUMENT#']
+        args=m.run_arguments(self.config,'prod','TOKEN','GOOGLE_APPLICATION_CREDENTIALS',['--','tool','$(literal)'],selectors,'AUTH_TOKEN')
+        self.assertEqual(args,['run','--project','Example App','--env','prod','--only','TOKEN','--files','GOOGLE_APPLICATION_CREDENTIALS','--select',selectors[0],'--select',selectors[1],'--select',selectors[2],'--stdin-key','AUTH_TOKEN','--','tool','$(literal)'])
+        self.assertEqual(args.count('--select'),3)
+    def test_document_selectors_accept_legacy_metadata_but_reject_wrong_sources_and_collisions(self):
+        self.config['bindings']['prod'].update({'DOCUMENT':'json','FIELDS':'keyValue','NOTE':'text','API':'apiKey'})
+        self.assertIn('CHILD=TOKEN#/known',m.run_arguments(self.config,'prod',None,None,['true'],['CHILD=TOKEN#/known']))
+        for selectors in [['TOKEN=DOCUMENT#/a'],['GOOGLE_APPLICATION_CREDENTIALS=DOCUMENT#/a'],['DUP=DOCUMENT#/a','DUP=FIELDS#/b'],['OUT=NOTE#/a'],['OUT=API#/a'],['OUT=GOOGLE_APPLICATION_CREDENTIALS#/a'],['OUT=MISSING#/a'],['PATH=DOCUMENT#/a'],['ld_preload=DOCUMENT#/a'],['BAD-NAME=DOCUMENT#/a'],['OUT=DOCUMENT#bad'],['OUT=DOCUMENT#/~2'],['OUT=DOCUMENT#/'+('x'*2048)],['OUT=DOCUMENT#'+'/x'*65]]:
+            with self.assertRaises(ValueError):m.run_arguments(self.config,'prod','TOKEN','GOOGLE_APPLICATION_CREDENTIALS',['true'],selectors)
+        for stdin in ['MISSING','GOOGLE_APPLICATION_CREDENTIALS']:
+            with self.assertRaises(ValueError):m.run_arguments(self.config,'prod',None,'GOOGLE_APPLICATION_CREDENTIALS',['true'],['OUT=DOCUMENT#/a'],stdin)
+    def test_new_binding_kinds_are_names_only_and_invalid_types_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            path=Path(d)/m.CONFIG_NAME
+            kinds=['value','apiKey','keyValue','json','text','file']
+            self.config['bindings']['dev']={f'ITEM_{i}':kind for i,kind in enumerate(kinds)}
+            path.write_text(json.dumps(self.config))
+            self.assertEqual(m.load_config(d)[1]['bindings']['dev'],self.config['bindings']['dev'])
+            self.config['bindings']['dev']['BAD']='unknown'
+            path.write_text(json.dumps(self.config))
+            with self.assertRaises(ValueError):m.load_config(d)
     def test_imports_filters_unexpected_fields_and_needs_no_vault(self):
         with tempfile.TemporaryDirectory() as d:
             registry=Path(d)/'.config/keydesk/imported-files.json'; registry.parent.mkdir(parents=True)
@@ -53,5 +76,18 @@ class ProjectCLI(unittest.TestCase):
             with patch.object(sys, 'argv', ['keydesk-project','request','--env','prod','--key',key,'--url','https://api.cloudflare.com/']), patch.object(m, 'load_config', return_value=(Path('/tmp'),self.config)), patch.object(m.subprocess, 'call') as call:
                 self.assertEqual(m.main(), 2)
                 call.assert_not_called()
+    def test_request_document_field_and_provider_forward_exact_empty_root(self):
+        self.config['bindings']['prod']['CONFIG']='json'
+        with tempfile.TemporaryDirectory() as d:
+            cli=Path(d)/'.local/bin/keydesk';cli.parent.mkdir(parents=True);cli.touch()
+            argv=['keydesk-project','request','--env','prod','--key','CONFIG','--field','','--provider','OpenAI','--url','https://api.openai.com/v1/models']
+            with patch.object(sys,'argv',argv),patch.object(m.Path,'home',return_value=Path(d)),patch.object(m,'load_config',return_value=(Path(d),self.config)),patch.object(m.subprocess,'call',return_value=0) as call:
+                self.assertEqual(m.main(),0)
+                self.assertEqual(call.call_args.args[0][-4:],['--field','','--provider','OpenAI'])
+    def test_request_invalid_document_arguments_never_start_helper(self):
+        self.config['bindings']['prod'].update({'CONFIG':'json','NOTE':'text'})
+        for extra in [['--key','CONFIG'],['--key','NOTE','--field','/a'],['--key','TOKEN','--provider','OpenAI'],['--key','CONFIG','--field','/~bad']]:
+            with patch.object(sys,'argv',['keydesk-project','request','--env','prod','--url','https://api.openai.com/v1/models',*extra]),patch.object(m,'load_config',return_value=(Path('/tmp'),self.config)),patch.object(m.subprocess,'call') as call:
+                self.assertEqual(m.main(),2);call.assert_not_called()
 
 unittest.main()

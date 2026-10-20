@@ -599,7 +599,7 @@ final class VaultModel {
             let matches = snapshot.projects.filter { $0.name == approval.request.project || $0.id.uuidString.lowercased() == approval.request.project.lowercased() }
             guard matches.count == 1 else { throw NSError(domain: "Keydesk", code: 1, userInfo: [NSLocalizedDescriptionKey: L10n.tr("프로젝트가 없거나 이름이 중복됩니다. 프로젝트 UUID를 사용하세요.", "The project is missing or its name is duplicated. Use the project UUID.")]) }
             let files = try approval.request.selectedFiles(from: snapshot.files(projectID: matches[0].id, environment: approval.request.environment))
-            let secrets = try approval.request.selectedSecrets(from: snapshot.environment(projectID: matches[0].id, environment: approval.request.environment))
+            let secrets = try approval.request.selectedSecrets(from: snapshot.environment(projectID: matches[0].id, environment: approval.request.environment, selections: approval.request.selections ?? []))
             try mutate(invalidateGrants: false) { $0.record("CLI 실행 승인 · \(approval.request.environment.title) · \(timed ? "시간 지정 자동 허용" : (reuse ? "기억한 승인" : "새 승인"))") }
             let id = approval.id
             if remember && !timed { try? developmentApprovals.remember(approval.request, executable: approval.executable) }

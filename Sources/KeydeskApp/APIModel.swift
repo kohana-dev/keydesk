@@ -2,16 +2,32 @@ import Foundation
 import KeydeskCore
 
 extension VaultModel {
+    private func apiSecret(_ credential: Credential, request: APIRequest) throws -> String {
+        let secret: String
+        if let field = request.field {
+            secret = try SecretValueSelector.value(in: credential, pointer: field, allowNonStringScalar: false)
+        } else {
+            guard let value = credential.currentAPIKey else { throw VaultError.accessDenied }
+            secret = value
+        }
+        // Validate before approval as well as in the transport. A selected field cannot inject headers.
+        guard !secret.isEmpty, secret.utf8.count <= 32_768,
+              !secret.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }) else { throw VaultError.accessDenied }
+        return secret
+    }
     private func resolveAPI(_ request: APIRequest, channel: CLIChannel) throws -> APIApproval {
         guard let snapshot else { throw VaultError.locked }
         let matches = snapshot.projects.filter { $0.name == request.project || $0.id.uuidString.lowercased() == request.project.lowercased() }
         guard matches.count == 1,
               let binding = snapshot.bindings.first(where: { $0.projectID == matches[0].id && $0.environment == request.environment && $0.variable == request.variable }),
-              let credential = snapshot.credentials.first(where: { $0.id == binding.credentialID }),
-              let secret = credential.currentAPIKey, !secret.isEmpty else { throw VaultError.accessDenied }
-        let canonical = APIRequest(project: matches[0].id.uuidString, environment: request.environment, variable: request.variable, method: request.method, url: request.url, body: request.body)
-        let provider = try APIProvider.resolve(provider: credential.provider, request: canonical)
-        return APIApproval(request: canonical, projectName: matches[0].name, credentialID: credential.id,
+              let credential = snapshot.credentials.first(where: { $0.id == binding.credentialID }) else { throw VaultError.accessDenied }
+        _ = try apiSecret(credential, request: request)
+        let provider = try APIProvider.resolve(provider: credential.provider, request: request)
+        let canonical = APIRequest(project: matches[0].id.uuidString, environment: request.environment, variable: request.variable,
+                                   method: request.method, url: request.url, body: request.body, field: request.field,
+                                   provider: request.field == nil ? nil : provider.name)
+        return APIApproval(request: canonical, projectName: matches[0].name, credentialName: credential.name,
+                           format: credential.currentFormat, credentialID: credential.id,
                            versionID: credential.currentVersionID, provider: provider, channel: channel)
     }
     func receiveAPI(_ request: APIRequest, channel: CLIChannel) {
@@ -53,7 +69,8 @@ extension VaultModel {
             guard generation == token, apiApproval?.id == pending.id, pending.channel.isConnected else { throw VaultError.locked }
             if let timedSessionID, !timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
             let current = try resolveAPI(pending.request, channel: pending.channel)
-            guard current.credentialID == pending.credentialID, current.versionID == pending.versionID else { throw VaultError.accessDenied }
+            guard current.credentialID == pending.credentialID, current.versionID == pending.versionID,
+                  current.request == pending.request, current.provider.name == pending.provider.name else { throw VaultError.accessDenied }
             if remember && timedSessionID == nil { apiApprovals.remember(pending.request, credentialID: pending.credentialID, versionID: pending.versionID) }
             apiApproval = nil
             startAPI(pending, reused: false, timedSessionID: timedSessionID)
@@ -64,7 +81,7 @@ extension VaultModel {
     }
     private func startAPI(_ pending: APIApproval, reused: Bool, timedSessionID: UUID? = nil) {
         if let timedSessionID, !timedApprovalAllows(timedSessionID) { apiFailure(pending.channel, code: "api_approval_expired_or_revoked"); return }
-        guard let secret = snapshot?.credentials.first(where: { $0.id == pending.credentialID && $0.currentVersionID == pending.versionID })?.currentAPIKey,
+        guard snapshot?.credentials.contains(where: { $0.id == pending.credentialID && $0.currentVersionID == pending.versionID }) == true,
               pending.channel.isConnected, apiTasks.count < 4 else { apiFailure(pending.channel, code: "api_request_denied"); return }
         let token = generation, id = pending.id, transport = apiTransport
         apiRunning[id] = pending.request
@@ -82,10 +99,13 @@ extension VaultModel {
                 guard token == self.generation, self.snapshot != nil, pending.channel.isConnected else { throw VaultError.locked }
                 if let timedSessionID, !self.timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
                 let current = try self.resolveAPI(pending.request, channel: pending.channel)
-                guard current.credentialID == pending.credentialID, current.versionID == pending.versionID else { throw VaultError.accessDenied }
+                guard current.credentialID == pending.credentialID, current.versionID == pending.versionID,
+                      current.request == pending.request, current.provider.name == pending.provider.name,
+                      let credential = self.snapshot?.credentials.first(where: { $0.id == current.credentialID }) else { throw VaultError.accessDenied }
+                let secret = try self.apiSecret(credential, request: current.request)
                 try self.mutate(invalidateGrants: false) { $0.record("API 시작 · \(id.uuidString) · \(pending.request.environment.title) · \(timedSessionID != nil ? "시간 지정 자동 허용" : (reused ? "승인 재사용" : "새 승인"))") }
                 if let timedSessionID, !self.timedApprovalAllows(timedSessionID) { throw VaultError.accessDenied }
-                let response = try await transport.execute(pending.request, provider: pending.provider, secret: secret).validated(secret: secret)
+                let response = try await transport.execute(current.request, provider: current.provider, secret: secret).validated(secret: secret)
                 try Task.checkCancellation()
                 guard token == self.generation, self.snapshot != nil, pending.channel.isConnected else { throw VaultError.locked }
                 try self.mutate(invalidateGrants: false) { $0.record("API 완료 · \(id.uuidString) · HTTP \(response.status)") }

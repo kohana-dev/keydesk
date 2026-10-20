@@ -17,6 +17,29 @@ class RouterTests(unittest.TestCase):
  def test_no_environment_or_provider_fallback(self):
   for overrides in [{'environment':'prod'},{'key':'KEYFILE'},{'key':'MISSING'},{'project':'Other'},{'environment':None}]:
    with self.assertRaises(ValueError):m.validate_request({**self.args,**overrides},self.home)
+ def test_document_fields_require_known_binding_and_valid_selector(self):
+  self.config['bindings']['dev'].update({'CONFIG':'json','FIELDS':'keyValue','NOTE':'text','API':'apiKey'})
+  (self.repo/'keydesk.project.json').write_text(json.dumps(self.config))
+  for key,field in [('CONFIG','/auth/token'),('FIELDS','/a~1b/~0name'),('TOKEN',''),('CONFIG','/hash#name')]:
+   context=m.validate_request({**self.args,'key':key,'field':field,'provider':'OpenAI'},self.home)
+   self.assertEqual(context['project'],'Example')
+  for overrides in [{'key':'CONFIG'},{'key':'NOTE','field':'/a'},{'key':'API','field':'/a'},{'field':None},{'field':'/~2'},{'field':'not/pointer'},{'field':'/'+'a'*2048},{'field':'/a'*65},{'provider':'OpenAI'},{'field':'/a','provider':'Other'},{'field':'/a','provider':None},{'field':'/a','unknown':'x'}]:
+   with self.assertRaises(ValueError):m.validate_request({**self.args,**overrides},self.home)
+ def test_document_request_forwards_only_pointer_and_provider_once(self):
+  self.config['bindings']['dev']['CONFIG']='json';(self.repo/'keydesk.project.json').write_text(json.dumps(self.config))
+  cli=self.home/'.local/bin/keydesk';cli.parent.mkdir(parents=True);cli.touch()
+  args={k:v for k,v in self.args.items() if k!='body'};args.update(key='CONFIG',field='',provider='OpenAI')
+  runner=Mock(return_value=subprocess.CompletedProcess([],0,json.dumps({'status':200,'credentialDelivery':'broker_only','body':'{}'}),''))
+  m.execute(args,runner,self.home)
+  argv=runner.call_args.args[0]
+  self.assertEqual(argv[-4:],['--field','','--provider','OpenAI']);self.assertEqual(runner.call_count,1)
+  self.assertNotIn('--body-file',argv)
+ def test_context_returns_document_kinds_without_field_enumeration(self):
+  self.config['bindings']['dev'].update({'CONFIG':'json','FIELDS':'keyValue','NOTE':'text','API':'apiKey'})
+  (self.repo/'keydesk.project.json').write_text(json.dumps(self.config))
+  result=m.resolve(str(self.repo),home=self.home)
+  self.assertEqual(result['bindings'],self.config['bindings'])
+  self.assertNotIn('fields',result);self.assertNotIn('contents',result)
  def test_missing_manifest_does_not_pick_available_prod_key(self):
   (self.repo/'keydesk.project.json').unlink();p=self.home/'.config/keydesk/mcp-connections.json';p.parent.mkdir(parents=True);p.write_text(json.dumps([{'project':'Other','environment':'prod','knownBindings':{'TOKEN':'value'}}]))
   self.assertEqual(m.resolve(str(self.repo),home=self.home)['state'],'unconfigured')

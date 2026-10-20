@@ -8,6 +8,7 @@ struct DetailView: View {
     @State private var editing = false
     @State private var deleting = false
     @State private var unlinking = false
+    @State private var fieldBinding: BindingRecord?
     var body: some View {
         let _ = interfaceLanguage
         if let credential = model.detail {
@@ -49,7 +50,9 @@ struct DetailView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Label(L10n.tr("사용하는 프로젝트", "Connected projects"), systemImage: "folder").font(.headline)
                         if credential.currentFormat != .apiKey, credential.currentFormat != .file {
-                            Text(L10n.tr("프로젝트별로 정리하고 참조할 수 있습니다. 이 내용은 CLI 실행이나 API 요청에 자동으로 전달되지 않습니다.", "Organize and reference this item by project. These contents are not passed automatically to CLI commands or API requests."))
+                            Text(credential.currentFormat == .keyValue || credential.currentFormat == .json
+                                 ? L10n.tr("필드 사용에서 필요한 경로만 지정해 CLI 또는 API 명령을 만들 수 있습니다. 문서 전체는 자동으로 전달하지 않습니다.", "Use a field to build a CLI or API command for a specific path. The full document is never passed automatically.")
+                                 : L10n.tr("프로젝트별로 정리하고 참조할 수 있습니다. 텍스트 전체는 CLI 실행이나 API 요청에 자동으로 전달되지 않습니다.", "Organize and reference this item by project. Full text is not passed automatically to CLI commands or API requests."))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                         let bindings = model.snapshot?.bindings.filter { $0.credentialID == credential.id } ?? []
@@ -62,6 +65,9 @@ struct DetailView: View {
                                     Button(L10n.tr("참조 복사", "Copy reference")) { model.copyText("keydesk://\(binding.projectID.uuidString)/\(binding.environment.rawValue)/\(binding.variable)") }
                                     if credential.currentFormat == .apiKey || credential.currentFormat == .file {
                                         Button(L10n.tr("실행 명령 복사", "Copy run command")) { model.copyText("keydesk run --project \(binding.projectID.uuidString) --env \(binding.environment.rawValue) \(credential.currentFile == nil ? "--only" : "--files") \(binding.variable) -- npm run dev") }
+                                    } else if credential.currentFormat == .keyValue || credential.currentFormat == .json {
+                                        Button(L10n.tr("필드 사용…", "Use a field…")) { fieldBinding = binding }
+                                            .accessibilityIdentifier("secret-use-field-\(binding.id.uuidString)")
                                     }
                                 }.font(.caption)
                             }.padding(16).cellarCard()
@@ -99,6 +105,7 @@ struct DetailView: View {
             .id(credential.id)
             .sheet(isPresented: $rotating) { RotateView(model: model, credential: credential) }
             .sheet(isPresented: $editing) { MetadataView(model: model, credential: credential) }
+            .sheet(item: $fieldBinding) { binding in FieldUsageView(model: model, binding: binding, storedProvider: credential.provider) }
             .confirmationDialog(L10n.tr("금고에서 삭제할까요? 연결된 모든 프로젝트에서도 이 항목이 제거됩니다.", "Delete from the vault? This removes the item from every connected project."), isPresented: $deleting, titleVisibility: .visible) {
                 Button(L10n.tr("금고에서 삭제", "Delete from vault"), role: .destructive) { do { try model.delete(credential.id) } catch { model.error = error.localizedDescription } }
             }

@@ -18,6 +18,7 @@ def load(name):
 
 mcp = load('install-auto-mcp')
 skills = load('install-ai-skills')
+verification = load('verify-skills')
 
 
 class InstallTests(unittest.TestCase):
@@ -145,6 +146,34 @@ class InstallTests(unittest.TestCase):
             with self.assertRaises(RuntimeError): skills.install(update=True, home=self.home)
         self.assertEqual(target.read_text(), 'old'); self.assertEqual(target.stat().st_mode & 0o777, 0o700)
         self.assertFalse(fresh.exists())
+
+    def test_existing_cellar_and_agents_aliases_update_without_touching_other_skills(self):
+        aliases=[self.home/'.codex/skills/cellar/SKILL.md',self.home/'.claude/skills/cellar/SKILL.md',self.home/'.agents/skills/cellar/SKILL.md',self.home/'.agents/skills/keydesk/SKILL.md']
+        for path in aliases:
+            path.parent.mkdir(parents=True,exist_ok=True);path.write_text('old cellar instructions')
+        unrelated=self.home/'.agents/skills/unrelated/SKILL.md';unrelated.parent.mkdir(parents=True);unrelated.write_text('retain')
+        skills.install(update=True,home=self.home)
+        for path in aliases:
+            self.assertIn('name: '+path.parent.name+'\n',path.read_text())
+            self.assertEqual(len(list(path.parent.glob('SKILL.md.cellar-backup-*'))),1)
+        self.assertEqual(unrelated.read_text(),'retain')
+        self.assertTrue(verification.verify(home=self.home)['allPassed'])
+        before={path:path.read_bytes() for path in aliases};skills.install(update=True,home=self.home)
+        self.assertEqual(before,{path:path.read_bytes() for path in aliases})
+
+    def test_symlink_cellar_alias_blocks_entire_install_before_writes(self):
+        alias=self.home/'.codex/skills/cellar/SKILL.md';alias.parent.mkdir(parents=True)
+        original=self.home/'unrelated.md';original.write_text('retain');alias.symlink_to(original)
+        canonical=self.home/'.codex/skills/keydesk/SKILL.md';canonical.write_text('old canonical')
+        with self.assertRaises(ValueError):skills.install(update=True,home=self.home)
+        self.assertEqual(canonical.read_text(),'old canonical');self.assertEqual(original.read_text(),'retain')
+
+    def test_symlink_alias_directory_never_overwrites_another_skill(self):
+        other=self.home/'.codex/skills/unrelated';other.mkdir(parents=True);(other/'SKILL.md').write_text('retain')
+        (self.home/'.codex/skills/cellar').symlink_to(other,target_is_directory=True)
+        canonical=self.home/'.codex/skills/keydesk/SKILL.md';canonical.write_text('old canonical')
+        with self.assertRaises(ValueError):skills.install(update=True,home=self.home)
+        self.assertEqual(canonical.read_text(),'old canonical');self.assertEqual((other/'SKILL.md').read_text(),'retain')
 
     def test_symlink_target_rejected(self):
         self.cp.unlink(); self.cp.symlink_to(self.lp); before = self.lp.read_bytes()

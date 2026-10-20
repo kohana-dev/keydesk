@@ -4,7 +4,12 @@ import concurrent.futures, importlib.util, json, os, pathlib, re, subprocess, sy
 
 ENVIRONMENTS={'dev','staging','prod'}
 VARIABLE=re.compile(r'[A-Za-z_][A-Za-z0-9_]{0,127}')
+BINDING_KINDS={'value','apiKey','keyValue','json','text','file'}
+PROVIDERS={'OpenAI','Anthropic','Gemini','GitHub','Cloudflare','Paddle','RevenueCat','Stripe','Resend','Vercel','Sentry'}
 MAX_INPUT=300000
+
+def valid_pointer(pointer):
+    return isinstance(pointer,str) and (pointer=='' or pointer.startswith('/')) and len(pointer.encode('utf-8'))<=2048 and pointer.count('/')<=64 and '\0' not in pointer and re.search(r'~(?![01])',pointer) is None
 
 def read_metadata(path):
     if not path.exists():return None
@@ -13,7 +18,7 @@ def read_metadata(path):
 
 def binding_map(value):
     if not isinstance(value,dict):raise ValueError('Invalid bindings')
-    return {n:k for n,k in value.items() if isinstance(n,str) and VARIABLE.fullmatch(n) and k in ('value','file')}
+    return {n:k for n,k in value.items() if isinstance(n,str) and VARIABLE.fullmatch(n) and k in BINDING_KINDS}
 
 def resolve(repository, project=None, home=None):
     home=home or pathlib.Path.home()
@@ -40,18 +45,23 @@ def resolve(repository, project=None, home=None):
     for row in receipts:
         if not isinstance(row,dict) or row.get('project')!=target:continue
         env=row.get('environment');name=row.get('variable');kind=row.get('kind')
-        if env in ENVIRONMENTS and isinstance(name,str) and VARIABLE.fullmatch(name) and kind in ('value','file'):
+        if env in ENVIRONMENTS and isinstance(name,str) and VARIABLE.fullmatch(name) and kind in BINDING_KINDS:
             bindings.setdefault(env,{})[name]=kind;sources.append('local_import_receipt')
     if bindings:return {'state':'resolved','source':sorted(set(sources)),'repository':str(directory),'project':target,'bindings':bindings,'inventory':'metadata only; may be stale'}
     return {'state':'unconfigured','repository':str(directory),'required':'Establish this repository\'s Keydesk project and variable names; add a names-only keydesk.project.json. Never infer prod from provider availability.'}
 
 def validate_request(arguments,home=None):
-    allowed={'repository','project','environment','key','method','url','body'}
+    allowed={'repository','project','environment','key','field','provider','method','url','body'}
     if not isinstance(arguments,dict) or not set(arguments).issubset(allowed):raise ValueError('Unsupported arguments')
     context=resolve(arguments.get('repository'),arguments.get('project'),home)
     if context['state']!='resolved':raise ValueError('Project context missing')
     env=arguments.get('environment');key=arguments.get('key')
-    if not isinstance(env,str) or env not in ENVIRONMENTS or not isinstance(key,str) or context['bindings'].get(env,{}).get(key)!='value':raise ValueError('Select an existing value binding in this environment')
+    if not isinstance(env,str) or env not in ENVIRONMENTS or not isinstance(key,str) or not VARIABLE.fullmatch(key):raise ValueError('Select an existing binding in this environment')
+    kind=context['bindings'].get(env,{}).get(key)
+    if 'field' in arguments:
+        if kind not in {'value','keyValue','json'} or not valid_pointer(arguments['field']):raise ValueError('Select a configured key-value/JSON field')
+    elif kind not in {'value','apiKey'}:raise ValueError('Select an existing API-key binding')
+    if 'provider' in arguments and ('field' not in arguments or not isinstance(arguments['provider'],str) or arguments['provider'] not in PROVIDERS):raise ValueError('Invalid field provider')
     if arguments.get('method') not in {'GET','HEAD','POST','PUT','PATCH','DELETE'} or not isinstance(arguments.get('url'),str):raise ValueError('Invalid request')
     body=arguments.get('body')
     if body is not None:
@@ -63,6 +73,8 @@ def execute(arguments,runner=None,home=None):
     context=validate_request(arguments,home);home=home or pathlib.Path.home();cli=home/'.local/bin/keydesk'
     if not cli.is_file():raise ValueError('Signed Keydesk CLI missing')
     argv=[str(cli),'request','--project',context['project'],'--env',arguments['environment'],'--key',arguments['key'],'--method',arguments['method'],'--url',arguments['url']]
+    if 'field' in arguments:argv+=['--field',arguments['field']]
+    if 'provider' in arguments:argv+=['--provider',arguments['provider']]
     with tempfile.TemporaryDirectory(prefix='keydesk-mcp-body-') as directory:
         if arguments.get('body') is not None:
             path=pathlib.Path(directory)/'body.json'
@@ -79,7 +91,7 @@ def schema(properties,required):return {'type':'object','properties':properties,
 STRING={'type':'string'}
 TOOLS=[
  {'name':'project_context','description':'Find this session repository\'s Keydesk project and variable names from names-only local metadata. Supply the actual absolute repository path; do not use the MCP process cwd. No vault values or live vault listing. An unconfigured result needs a repository mapping, never a per-project MCP installation.','inputSchema':schema({'repository':STRING,'project':STRING},['repository'])},
- {'name':'request_http','description':'Use the resolved repository project/environment to call a supported official API through Keydesk\'s signed local broker CLI. Returns provider data, never the selected credential. Human approval and bounded reuse remain in Keydesk. File/SDK execution uses keydesk run.','inputSchema':schema({'repository':STRING,'project':STRING,'environment':{'type':'string','enum':sorted(ENVIRONMENTS)},'key':STRING,'method':{'type':'string','enum':['GET','HEAD','POST','PUT','PATCH','DELETE']},'url':STRING,'body':{'type':'string','maxLength':262144}},['repository','environment','key','method','url'])}
+ {'name':'request_http','description':'Call a supported official API using a configured API key or a string field selected by RFC 6901 pointer from a key-value/JSON document. Supply field only when its path is already established; no leaf listing or credential reads. Other-classified documents require provider; a classified document must match it. Signed Cellar enforces provider hosts and approval. Returns provider data, never the selected credential. File/SDK execution uses keydesk run.','inputSchema':schema({'repository':STRING,'project':STRING,'environment':{'type':'string','enum':sorted(ENVIRONMENTS)},'key':STRING,'field':{'type':'string','maxLength':2048,'description':'RFC 6901 JSON Pointer; empty string selects a scalar root. Use known field names only.'},'provider':{'type':'string','enum':sorted(PROVIDERS)},'method':{'type':'string','enum':['GET','HEAD','POST','PUT','PATCH','DELETE']},'url':STRING,'body':{'type':'string','maxLength':262144}},['repository','environment','key','method','url'])}
 ]
 
 def serve():
@@ -127,7 +139,7 @@ def serve():
                 if not isinstance(identifier,(int,str)) or isinstance(identifier,bool):raise ValueError('Invalid ID')
                 if method=='initialize' and not initialized:
                     initialized=True
-                    send({'jsonrpc':'2.0','id':identifier,'result':{'protocolVersion':'2025-11-25','capabilities':{'tools':{}},'serverInfo':{'name':'keydesk','version':'0.7.0-project-router-1'},'instructions':'One connection serves multiple projects. Resolve project_context using the actual session repository path, then call request_http with that repository, environment and key name. Missing mappings need clarification; do not borrow another project\'s key. Keydesk human approval remains required.'}})
+                    send({'jsonrpc':'2.0','id':identifier,'result':{'protocolVersion':'2025-11-25','capabilities':{'tools':{}},'serverInfo':{'name':'keydesk','version':'0.7.20-project-router-2'},'instructions':'One connection serves multiple projects. Resolve project_context using the actual session repository path, then call request_http with that repository, environment and key name. A known key-value/JSON string field can be selected using field and provider. Missing mappings need clarification; do not borrow another project\'s key or enumerate document contents. Keydesk human approval remains required.'}})
                 elif method=='ping':send({'jsonrpc':'2.0','id':identifier,'result':{}})
                 elif method=='tools/list' and ready:send({'jsonrpc':'2.0','id':identifier,'result':{'tools':TOOLS}})
                 elif method=='tools/call' and ready:

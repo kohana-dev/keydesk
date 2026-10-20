@@ -46,11 +46,16 @@ public struct VaultSnapshot: Codable, Sendable {
     }
 
     public static func validVariable(_ value: String) -> Bool {
-        value.range(of: "^[A-Za-z_][A-Za-z0-9_]*$", options: .regularExpression) != nil
+        let bytes = Array(value.utf8)
+        func isLetterOrUnderscore(_ byte: UInt8) -> Bool { (65...90).contains(byte) || (97...122).contains(byte) || byte == 95 }
+        guard let first = bytes.first, isLetterOrUnderscore(first) else { return false }
+        return bytes.dropFirst().allSatisfy { isLetterOrUnderscore($0) || (48...57).contains($0) }
     }
 
-    public func environment(projectID: UUID, environment: EnvironmentName) throws -> [String: String] {
+    public func environment(projectID: UUID, environment: EnvironmentName, selections: [SecretFieldSelection] = []) throws -> [String: String] {
         guard projects.contains(where: { $0.id == projectID }) else { throw VaultError.invalidData }
+        do { try SecretFieldSelection.validate(selections) }
+        catch { throw VaultError.unsafeEnvironment }
         var result = [String: String]()
         for binding in bindings where binding.projectID == projectID && binding.environment == environment {
             guard let credential = credentials.first(where: { $0.id == binding.credentialID }) else { throw VaultError.unsafeEnvironment }
@@ -58,6 +63,16 @@ public struct VaultSnapshot: Codable, Sendable {
             guard !Self.blockedVariable(binding.variable),
                   let value = credential.currentAPIKey, !value.contains("\0") else { throw VaultError.unsafeEnvironment }
             result[binding.variable] = value
+        }
+        for selection in selections {
+            let matches = bindings.filter { $0.projectID == projectID && $0.environment == environment && $0.variable == selection.source }
+            guard matches.count == 1, let binding = matches.first, result[selection.variable] == nil else {
+                throw VaultError.unsafeEnvironment
+            }
+            let sources = credentials.filter { $0.id == binding.credentialID }
+            guard sources.count == 1, let credential = sources.first else { throw VaultError.unsafeEnvironment }
+            do { result[selection.variable] = try SecretValueSelector.value(in: credential, pointer: selection.pointer) }
+            catch { throw VaultError.unsafeEnvironment }
         }
         return result
     }

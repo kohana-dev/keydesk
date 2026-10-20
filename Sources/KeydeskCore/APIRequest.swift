@@ -10,9 +10,14 @@ public struct APIRequest: Codable, Sendable, Equatable {
     public let method: String
     public let url: String
     public let body: String?
-    public init(project: String, environment: EnvironmentName, variable: String, method: String, url: String, body: String? = nil) {
+    /// RFC 6901 pointer into a stored key-value or JSON document. Never contains its selected value.
+    public let field: String?
+    /// A fixed supported service, required for selected documents whose provider is Other.
+    public let provider: String?
+    public init(project: String, environment: EnvironmentName, variable: String, method: String, url: String, body: String? = nil, field: String? = nil, provider: String? = nil) {
         kind = "api-request"; self.project = project; self.environment = environment
         self.variable = variable; self.method = method; self.url = url; self.body = body
+        self.field = field; self.provider = provider
     }
     public func validated() throws -> URLComponents {
         guard kind == "api-request", !project.isEmpty, project.count <= 128,
@@ -27,6 +32,12 @@ public struct APIRequest: Codable, Sendable, Equatable {
               !c.percentEncodedPath.lowercased().contains("%2e"),
               !c.path.split(separator: "/").contains(".."),
               body == nil || (method != "GET" && method != "HEAD") else { throw VaultError.accessDenied }
+        if let field { _ = try SecretValueSelector.pointerTokens(field) }
+        if let provider {
+            guard field != nil, provider.utf8.count <= 64,
+                  !provider.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }),
+                  APIProvider.supported.contains(where: { $0.name == ProviderName.canonical(provider) }) else { throw VaultError.accessDenied }
+        }
         if let body {
             guard body.utf8.count <= 262_144, !body.contains("\0"),
                   (try? JSONSerialization.jsonObject(with: Data(body.utf8), options: [.fragmentsAllowed])) != nil else { throw VaultError.invalidData }

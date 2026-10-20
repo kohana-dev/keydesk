@@ -9,6 +9,7 @@ extension KeydeskCommand {
             guard data.count <= 262_144, let text = String(data: data, encoding: .utf8) else { throw VaultError.invalidData }
             return text
         }
+        if request.field != nil { try BrokerCapabilities.requireFieldSelection() }
         let connection = try ClientConnection(path: ProcessInfo.processInfo.environment["KEYDESK_SOCKET_PATH"] ?? SocketTransport.socketPath)
         defer { connection.closeConnection() }
         try connection.send(request)

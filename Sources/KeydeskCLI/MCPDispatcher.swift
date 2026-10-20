@@ -27,16 +27,20 @@ final class MCPDispatcher: @unchecked Sendable {
         DispatchQueue.global().async {
             defer { self.lock.lock(); self.reserved.remove(identifier); self.cancelled.remove(identifier); self.connections.removeValue(forKey: identifier)?.closeConnection(); self.lock.unlock(); self.group.leave() }
             do {
+                if name == "request_http", arguments["field"] != nil { try BrokerCapabilities.requireFieldSelection() }
                 let connection = try ClientConnection(path: ProcessInfo.processInfo.environment["KEYDESK_SOCKET_PATH"] ?? SocketTransport.socketPath)
                 self.lock.lock()
                 guard self.reserved.contains(identifier), !self.cancelled.contains(identifier) else { self.lock.unlock(); connection.closeConnection(); return }
                 self.connections[identifier] = connection; self.lock.unlock()
                 if name == "request_http" {
-                    guard Set(arguments.keys).isSubset(of: ["key", "method", "url", "body"]),
+                    guard Set(arguments.keys).isSubset(of: ["key", "method", "url", "body", "field", "provider"]),
                           let key = arguments["key"]?.string, let method = arguments["method"]?.string, let url = arguments["url"]?.string,
-                          arguments["body"] == nil || arguments["body"]?.string != nil else { throw VaultError.invalidData }
-                    let request = APIRequest(project: self.project, environment: self.environment, variable: key, method: method, url: url, body: arguments["body"]?.string)
-                    _ = try request.validated(); try connection.send(request)
+                          arguments["body"] == nil || arguments["body"]?.string != nil,
+                          arguments["field"] == nil || arguments["field"]?.string != nil,
+                          arguments["provider"] == nil || arguments["provider"]?.string != nil else { throw VaultError.invalidData }
+                    let request = APIRequest(project: self.project, environment: self.environment, variable: key, method: method, url: url, body: arguments["body"]?.string, field: arguments["field"]?.string, provider: arguments["provider"]?.string)
+                    _ = try request.validated()
+                    try connection.send(request)
                     var payload: JSONValue?, failure = false
                     while let data = try SocketTransport.readLine(from: connection.fd, maximum: 2_100_000) {
                         let event = try JSONDecoder().decode(CLIEvent.self, from: data)
