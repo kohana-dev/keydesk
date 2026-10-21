@@ -39,7 +39,9 @@ Open **Cellar → Settings → Allow all requests temporarily** after unlocking 
 
 In Cellar 0.7.15 or later, click the Cellar menu-bar icon and choose **Allow all requests temporarily** to start for 15, 30, 60 or 120 minutes directly. **Custom…** opens a compact control window where you can enter 1–480 minutes. Starting still requires one Mac authentication. The same menu shows the active session and **Stop automatic approval now**.
 
-Settings, **AI connections → Approval status** and the menu bar show the active session and remaining time. Use **Stop now** to end it immediately. Expiry, vault lock, screen lock, sleep or quitting also ends it. The session is kept only in memory and stays off after restarting or unlocking. Ending it clears remembered permissions and returns subsequent requests to individual approval; stopping or expiry does not cancel already accepted work. Vault lock and quitting retain their existing cancellation behavior, including CLI `--keep-running` when locking.
+Settings, **AI connections → Approval status** and the menu bar show the active session and remaining time. Use **Stop now** to end it immediately. Expiry, manual vault lock, screen lock, sleep, logging out or quitting also ends it. The session is kept only in memory and stays off after restarting or unlocking. Ending it clears remembered permissions and returns subsequent requests to individual approval.
+
+In Cellar 0.7.22 or later, an active session defers inactivity auto-lock for its selected duration. The saved auto-lock setting stays unchanged (30 minutes by default); manual vault lock, screen lock, sleep, logging out and quitting still lock the vault and end automatic approval. Stopping or expiry resumes the saved inactivity policy without resetting the last-activity time. If the idle threshold has already passed, the vault locks at the next idle check. Stopping or expiry alone does not cancel accepted work, but a resulting vault lock applies the existing cancellation behavior, including CLI `--keep-running` when locking. Choosing **When the screen locks** still disables only inactivity auto-lock.
 
 Project/key mappings, supported API hosts, request validation and executable identity checks still apply. Unsupported or invalid requests remain rejected. The CLI and AI cannot enable or extend this setting. Manual operations such as unlocking, showing a recovery key or rotating vault keys keep their existing authentication.
 
@@ -47,7 +49,9 @@ Project/key mappings, supported API hosts, request validation and executable ide
 
 0.7.15부터 메뉴 막대의 Cellar 아이콘에서 **일정 시간 모든 요청 허용**을 선택하면 15·30·60·120분 동안 바로 시작할 수 있습니다. **직접 입력…**은 1~480분을 입력할 수 있는 작은 제어 창을 엽니다. 시작할 때 Mac 인증은 한 번 필요합니다. 같은 메뉴의 **자동 허용 지금 중지**로 바로 끌 수 있습니다.
 
-설정, **AI 연결 → 승인 상태**, 메뉴 막대에서 활성 상태와 남은 시간을 확인하고 **지금 중지**로 즉시 끌 수 있습니다. 시간 만료·금고 잠금·화면 잠금·잠자기·앱 종료 시에도 해제됩니다. 메모리에만 유지하므로 다시 실행하거나 금고를 열어도 자동으로 켜지지 않습니다. 해제하면 기억한 허가도 지우고 이후 요청을 다시 개별 승인합니다. 중지나 시간 만료 전에 시작한 작업은 자동 취소하지 않습니다. 금고 잠금과 앱 종료의 기존 작업 종료 동작 및 잠금 시 CLI의 `--keep-running` 동작은 유지됩니다.
+설정, **AI 연결 → 승인 상태**, 메뉴 막대에서 활성 상태와 남은 시간을 확인하고 **지금 중지**로 즉시 끌 수 있습니다. 시간 만료·수동 금고 잠금·화면 잠금·잠자기·로그아웃·앱 종료 시에도 해제됩니다. 메모리에만 유지하므로 다시 실행하거나 금고를 열어도 자동으로 켜지지 않습니다. 해제하면 기억한 허가도 지우고 이후 요청을 다시 개별 승인합니다.
+
+0.7.22부터 활성 허용 시간 동안에는 비활동 자동잠금을 유예합니다. 저장된 자동잠금 설정(기본 30분)은 바뀌지 않으며, 수동 금고 잠금·화면 잠금·잠자기·로그아웃·앱 종료에는 계속 즉시 잠기고 허용도 끝납니다. 중지하거나 시간이 만료되면 마지막 활동 시각을 리셋하지 않고 기존 비활동 정책을 재개합니다. 이미 비활동 기준 시간이 지났다면 다음 자동잠금 검사에서 잠깁니다. 중지나 만료 자체는 이미 시작한 작업을 취소하지 않지만, 재개된 자동잠금으로 금고가 잠기면 기존 작업 종료 정책과 잠금 시 CLI의 `--keep-running` 동작을 적용합니다. **화면 잠금 시** 설정은 비활동 자동잠금만 끄며 그대로 유지됩니다.
 
 프로젝트·키 연결, 지원 API 주소, 요청 형식과 실행 파일 검증은 계속 적용됩니다. CLI나 AI는 이 설정을 켜거나 시간을 연장할 수 없습니다. 금고 열기·복구 키 보기·금고 키 교체 같은 직접 조작의 기존 인증은 유지됩니다.
 

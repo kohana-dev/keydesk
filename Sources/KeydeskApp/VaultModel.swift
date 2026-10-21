@@ -227,7 +227,7 @@ final class VaultModel {
                 guard self?.timedApprovalSession?.id == session.id else { return }
                 self?.stopTimedApproval()
             }
-            notify(L10n.tr("\(minutes)분 동안 모든 요청을 자동 허용합니다. 금고를 잠그면 즉시 종료됩니다.", "All requests are automatically allowed for \(minutes) minutes. Locking the vault ends this immediately."))
+            notify(L10n.tr("\(minutes)분 동안 모든 요청을 자동 허용하고 비활동 자동 잠금을 일시 중지합니다. 금고를 잠그면 즉시 종료됩니다.", "All requests are automatically allowed for \(minutes) minutes, with inactivity auto-lock paused. Locking the vault ends this immediately."))
             // Keep an already displayed request while clearing old grants, then fulfill it.
             if approval != nil { await acceptCLI(timedSessionID: session.id) }
             else if apiApproval != nil { await acceptAPI(remember: false, timedSessionID: session.id) }
@@ -236,7 +236,11 @@ final class VaultModel {
             if token == generation, timedApprovalAttemptID == attempt { self.error = error.localizedDescription }
         }
     }
-    func lockIfIdle(now: Date = Date()) {
+    func lockIfIdle(now: Date = Date(), instant: ContinuousClock.Instant = ContinuousClock().now) {
+        expireTimedApproval(now: now, instant: instant)
+        // Keep the vault available for the duration the user approved. Explicit and
+        // system locks still call lock() directly and end the approval window.
+        guard timedApprovalSession?.isActive(now: now, instant: instant) != true else { return }
         if autoLockMinutes > 0, snapshot != nil, now.timeIntervalSince(lastActivity) >= Double(autoLockMinutes * 60) { lock() }
     }
     func activity() { lastActivity = Date() }

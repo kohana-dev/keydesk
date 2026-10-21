@@ -4,7 +4,7 @@ A local macOS vault for developers and their AI tools. Keep API keys, key-value 
 
 개인 개발자를 위한 macOS 로컬 비밀정보 금고입니다. API 키·키값 묶음·JSON·텍스트·파일을 암호화해 보관하고, Codex·Claude가 선택한 API 키·문서 필드를 채팅에 노출하지 않고 사용할 수 있습니다.
 
-**[Download Cellar 0.7.21 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.21/Cellar-0.7.21-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
+**[Download Cellar 0.7.22 beta](https://github.com/kohana-dev/keydesk/releases/download/v0.7.22/Cellar-0.7.22-macOS-arm64.zip)** · [Latest release](https://github.com/kohana-dev/keydesk/releases/latest) · [Installation guide / 설치 안내](docs/installation.md)
 
 Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel builds are not currently provided. End users do not need an Apple Developer account.
 
@@ -34,7 +34,7 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 
 ## Get started
 
-1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.21), and verify the checksum.
+1. Download the ZIP and `SHA256SUMS.txt` from the [release](https://github.com/kohana-dev/keydesk/releases/tag/v0.7.22), and verify the checksum.
 2. Unzip and move **Cellar.app** to **`~/Applications`**. This is the installation path used by the AI connection scripts.
 3. Open Cellar normally. Follow macOS authentication and check your encrypted backup status. For Google Drive, install and sign in to Drive for desktop first, then open **Manage → Settings → Choose backup location → Google Drive** and select its actual sync folder. Check upload completion in Google Drive.
 4. In **Manage → Settings / 관리 → 설정**, connect the bundled CLI. Add an item and choose its format; select a project if you want to give it a project reference.
@@ -42,7 +42,9 @@ Apple Silicon · macOS 14+ · Developer ID signed and Apple notarized. Intel bui
 
 The app bundle and executable are **Cellar.app** and **Cellar**. The compatible CLI, MCP server and skill remain named **`keydesk`**. Existing vault paths and Keychain identity are unchanged. Upgrading from `Keydesk.app`? See the [migration steps](docs/installation.md#upgrade-from-keydeskapp).
 
-Cellar 0.7.21 opens existing vaults. Saving key-value, JSON or text content uses vault format 3, including when that content remains only in version history. These vaults and their backups require Cellar 0.7.19 or later; older versions refuse to open them. Update every Mac and use the matching bundled helper before sharing an updated backup. Field selection requires both Cellar and its bundled helper at version 0.7.20 or later; older apps are rejected before a selected-field request is sent.
+Cellar 0.7.22 keeps the vault available during an active temporary allow-all window by pausing inactivity auto-lock. Stopping or expiry resumes the configured idle policy from the last activity time. Manual vault lock, Mac screen lock, sleep, logout and app termination still end the window.
+
+Cellar 0.7.22 opens existing vaults. Saving key-value, JSON or text content uses vault format 3, including when that content remains only in version history. These vaults and their backups require Cellar 0.7.19 or later; older versions refuse to open them. Update every Mac and use the matching bundled helper before sharing an updated backup. Field selection requires both Cellar and its bundled helper at version 0.7.20 or later; older apps are rejected before a selected-field request is sent.
 
 Google Drive backups use the same encrypted `.keydesk` format; Cellar does not upload a plaintext recovery key or connect to your Google account. Keep the recovery key separately. See [backup selection and recovery](docs/installation.md#backup-location-and-recovery--백업-위치와-복원) for setup and manual recovery.
 

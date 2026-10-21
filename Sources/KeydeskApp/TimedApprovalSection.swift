@@ -96,7 +96,9 @@ struct TimedApprovalSection: View {
 
                 Text(L10n.tr("선택한 시간 동안 모든 프로젝트의 개발·스테이징·운영 환경에서 CLI·API·MCP 요청을 추가 승인 없이 허용합니다. 시작할 때 Mac 인증을 한 번 진행합니다.", "During this period, CLI, API, and MCP requests for all projects and development, staging, and production environments are allowed without further approval. Starting requires one Mac authentication."))
                     .font(.caption).foregroundStyle(.secondary)
-                Text(L10n.tr("시간이 만료되거나 금고를 잠그거나 앱을 종료하면 끝납니다. 중지해도 이미 시작한 작업은 계속됩니다.", "Ends when the time expires, the vault locks, or the app quits. Work already started continues after you stop."))
+                Text(L10n.tr("자동 허용 중에는 비활동 자동 잠금을 일시 중지합니다. 시간이 만료되거나 중지하면 마지막 활동 시각을 기준으로 기존 자동 잠금 설정이 다시 적용됩니다.", "Inactivity auto-lock is paused while automatic approval is active. After expiry or stopping, your usual auto-lock setting resumes based on the last activity time."))
+                    .font(.caption).foregroundStyle(.secondary)
+                Text(L10n.tr("직접 금고를 잠그거나 Mac 화면 잠금·잠자기·로그아웃·앱 종료 시 즉시 끝납니다. 허용 종료 자체는 시작한 작업을 중지하지 않지만, 이후 금고가 잠기면 기존 잠금 규칙이 적용됩니다.", "Locking the vault, locking the Mac screen, sleeping, logging out, or quitting the app ends approval immediately. Ending approval does not itself stop work already started; subsequent vault locks follow the usual rules."))
                     .font(.caption).foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

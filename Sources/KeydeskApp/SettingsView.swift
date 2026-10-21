@@ -47,7 +47,7 @@ struct SettingsView: View {
                     Picker(L10n.tr("자동 잠금", "Auto-lock"), selection: $model.autoLockMinutes) {
                         Text(L10n.tr("5분", "5 minutes")).tag(5); Text(L10n.tr("15분", "15 minutes")).tag(15); Text(L10n.tr("30분", "30 minutes")).tag(30); Text(L10n.tr("60분", "60 minutes")).tag(60); Text(L10n.tr("화면 잠금 시", "When the screen locks")).tag(0)
                     }
-                    Text(L10n.tr("Mac 화면 잠금·잠자기에는 항상 금고가 잠깁니다.", "The vault always locks when the Mac screen locks or the Mac sleeps.")).font(.caption).foregroundStyle(.secondary)
+                    Text(L10n.tr("일정 시간 모든 요청 허용 중에는 비활동 자동 잠금을 일시 중지합니다. Mac 화면 잠금·잠자기에는 항상 금고가 잠깁니다.", "Inactivity auto-lock is paused during a temporary allow-all session. The vault always locks when the Mac screen locks or the Mac sleeps.")).font(.caption).foregroundStyle(.secondary)
                     Button(L10n.tr("기억한 명령 승인 해제", "Clear remembered command approvals")) { model.clearDevelopmentApprovals(); model.notify(L10n.tr("기억한 명령 승인을 해제했습니다.", "Remembered command approvals have been cleared.")) }
                     Divider()
                     Text(L10n.tr("개발 CLI", "Developer CLI")).font(.headline)

@@ -69,6 +69,14 @@ struct TimedApprovalTests {
         model.shutdown()
         try? FileManager.default.removeItem(at: model.store.directory)
     }
+    private func idleFixture(autoLockMinutes: Int = 30) -> VaultModel {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent("timed-idle-\(UUID())")
+        let model = VaultModel(demo: true, directory: directory, defaultBackupDirectory: nil,
+                               keys: MemoryKeyStore(), serve: false, observeSystemEvents: false)
+        // Demo models keep this setting in memory, without changing user preferences.
+        model.autoLockMinutes = autoLockMinutes
+        return model
+    }
     private func cli(environment: EnvironmentName = .production, project: String = "fixture", variables: [String] = ["CLOUDFLARE_API_TOKEN"], command: [String] = ["/usr/bin/true"]) -> CLIRequest {
         CLIRequest(project: project, environment: environment, command: command, directory: "/tmp", stdinKey: nil, variables: variables)
     }
@@ -94,6 +102,87 @@ struct TimedApprovalTests {
         #expect(events.contains { $0.kind == "started" })
         #expect(events.contains { $0.kind == "exit" && $0.exitCode == 0 })
         #expect(!events.contains { $0.kind == "error" })
+    }
+
+    @Test func activeTimedApprovalKeepsTheVaultOpenBeyondTheIdleTimeout() async throws {
+        let model = idleFixture()
+        defer { cleanUp(model) }
+        try #require(model.snapshot != nil && model.autoLockMinutes == 30)
+        await model.startTimedApproval(minutes: 480)
+        let sessionID = try #require(model.currentTimedApprovalID())
+        let generation = model.generation
+
+        // Advance the idle check only; no timer, wall-clock change or real waiting is needed.
+        model.lockIfIdle(now: Date().addingTimeInterval(31 * 60))
+
+        #expect(model.snapshot != nil)
+        #expect(model.generation == generation)
+        #expect(model.currentTimedApprovalID() == sessionID)
+    }
+
+    @Test func stoppingTimedApprovalResumesTheExistingIdleDeadlineAndPreservesTheSetting() async throws {
+        for minutes in [5, 15, 30, 60] {
+            let model = idleFixture(autoLockMinutes: minutes)
+            defer { cleanUp(model) }
+            await model.startTimedApproval(minutes: 480)
+            try #require(model.timedApprovalIsActive)
+            let idleCheck = Date().addingTimeInterval(61 * 60)
+            model.lockIfIdle(now: idleCheck)
+            try #require(model.snapshot != nil)
+            #expect(model.autoLockMinutes == minutes)
+
+            model.stopTimedApproval()
+            #expect(model.snapshot != nil && model.timedApprovalExpiresAt == nil)
+            // Stopping consent must not reset lastActivity and silently add a new idle window.
+            model.lockIfIdle(now: idleCheck)
+            #expect(model.snapshot == nil)
+            #expect(model.autoLockMinutes == minutes)
+        }
+    }
+
+    @Test func wallClockExpiryAtTheBoundaryResumesIdleLockInTheSameCheck() async throws {
+        let model = idleFixture()
+        defer { cleanUp(model) }
+        await model.startTimedApproval(minutes: 480)
+        let expiresAt = try #require(model.timedApprovalExpiresAt)
+        let instant = ContinuousClock().now
+
+        model.lockIfIdle(now: expiresAt.addingTimeInterval(-1), instant: instant)
+        try #require(model.snapshot != nil && model.timedApprovalIsActive)
+        model.lockIfIdle(now: expiresAt, instant: instant)
+
+        #expect(model.snapshot == nil)
+        #expect(model.timedApprovalExpiresAt == nil && !model.timedApprovalIsActive)
+        #expect(model.autoLockMinutes == 30)
+    }
+
+    @Test func monotonicExpiryEndsIdleDeferralEvenWhenTheWallClockMovesBackward() async throws {
+        let model = idleFixture()
+        defer { cleanUp(model) }
+        await model.startTimedApproval(minutes: 480)
+        try #require(model.timedApprovalIsActive)
+        let expiredInstant = ContinuousClock().now.advanced(by: .seconds(481 * 60))
+
+        // The wall clock alone still permits consent, but the monotonic deadline has passed.
+        model.lockIfIdle(now: Date().addingTimeInterval(-3_600), instant: expiredInstant)
+        #expect(model.timedApprovalExpiresAt == nil && !model.timedApprovalIsActive)
+        #expect(model.snapshot != nil) // The original date-based idle policy is unchanged.
+        model.lockIfIdle(now: Date().addingTimeInterval(31 * 60), instant: expiredInstant)
+        #expect(model.snapshot == nil)
+    }
+
+    @Test func screenLockOnlySettingStaysDisabledAfterTimedApprovalStopsOrExpires() async throws {
+        for stopManually in [true, false] {
+            let model = idleFixture(autoLockMinutes: 0)
+            defer { cleanUp(model) }
+            await model.startTimedApproval(minutes: 1)
+            try #require(model.timedApprovalIsActive)
+            if stopManually { model.stopTimedApproval() }
+            model.lockIfIdle(now: Date().addingTimeInterval(86_400),
+                             instant: ContinuousClock().now.advanced(by: .seconds(86_400)))
+            #expect(model.timedApprovalExpiresAt == nil && !model.timedApprovalIsActive)
+            #expect(model.snapshot != nil && model.autoLockMinutes == 0)
+        }
     }
 
     @Test func wallClockAndMonotonicDeadlinesBothEndConsentAtTheBoundary() {

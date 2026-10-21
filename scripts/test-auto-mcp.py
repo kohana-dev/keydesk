@@ -94,5 +94,5 @@ class RouterTests(unittest.TestCase):
   self.assertEqual([t['name'] for t in responses[1]['result']['tools']],['project_context','request_http'])
   weather={'OpenWeather','WeatherAPI','Tomorrow.io','Visual Crossing','Weatherbit','AccuWeather'}
   self.assertTrue(weather.issubset(responses[1]['result']['tools'][1]['inputSchema']['properties']['provider']['enum']))
-  self.assertEqual(responses[0]['result']['serverInfo']['version'],'0.7.21-project-router-1')
+  self.assertEqual(responses[0]['result']['serverInfo']['version'],'0.7.22-project-router-1')
 unittest.main()
