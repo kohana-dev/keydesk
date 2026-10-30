@@ -46,6 +46,7 @@ final class VaultModel {
     var apiTasks: [UUID: Task<Void, Never>] = [:]
     var apiRunning: [UUID: APIRequest] = [:]
     let apiTransport: any APITransport
+    private let inspectBackup: @Sendable (URL?, URL, UUID) -> BackupInspection
     private var developmentApprovals = DevelopmentApprovalCache()
     @ObservationIgnored private(set) var reusingDevelopmentApproval = false
     var cliAvailable = false
@@ -94,8 +95,10 @@ final class VaultModel {
     }
 
     init(demo: Bool = false, demoSocket: String? = nil, directory: URL? = nil, defaultBackupDirectory: URL? = VaultModel.iCloudBackupDirectory,
-         keys: (any VaultKeyStore)? = nil, apiTransport: any APITransport = CurlAPITransport(), serve: Bool = true, observeSystemEvents: Bool = true) {
+         keys: (any VaultKeyStore)? = nil, apiTransport: any APITransport = CurlAPITransport(), serve: Bool = true, observeSystemEvents: Bool = true,
+         inspectBackup: @escaping @Sendable (URL?, URL, UUID) -> BackupInspection = BackupInspection.read) {
         self.apiTransport = apiTransport
+        self.inspectBackup = inspectBackup
         isDemo = demo
         let storedMinutes = UserDefaults.standard.object(forKey: "autoLockMinutes") as? Int
         autoLockMinutes = !demo && [0, 5, 15, 30, 60].contains(storedMinutes ?? -1) ? storedMinutes! : 30
@@ -275,8 +278,8 @@ final class VaultModel {
     }
     func unlock() async {
         guard !busy else { return }
-        busy = true; defer { busy = false }
         let token = generation
+        busy = true; defer { if token == generation { busy = false } }
         do {
             if isDemo { loadDemo(); try prepareDeposits(); return }
             let context = try await keys.authenticate(reason: L10n.tr("Cellar 금고를 열기 위해 인증합니다.", "Authenticate to unlock your Cellar vault."))
@@ -285,11 +288,12 @@ final class VaultModel {
             let key = try keys.loadDeviceKey(envelope: envelope, context: context)
             let snapshot = try VaultCrypto.open(envelope, key: key)
             self.envelope = envelope; self.key = key; self.snapshot = snapshot; activity()
-            loadBackupStatus()
+            await loadBackupStatus()
+            guard token == generation else { return }
             scheduleBackup()
             ensureRecoveryKeySaved()
             try prepareDeposits()
-        } catch { self.error = error.localizedDescription }
+        } catch { if token == generation { self.error = error.localizedDescription } }
     }
     /// Finds iCloud backups without replacing the choice to restore a newer Google Drive copy.
     /// Restore or creating a vault begins only after the user's choice.
@@ -472,8 +476,8 @@ final class VaultModel {
     }
     func recoverDeviceAccess(at url: URL, code: String) async throws {
         guard exists, !busy else { throw VaultError.invalidData }
-        busy = true; defer { busy = false }
         let token = generation
+        busy = true; defer { if token == generation { busy = false } }
         let backup = try VaultFileStore.read(at: url), current = try store.read()
         guard backup.header.vaultID == current.header.vaultID, backup.header.keyEpoch == current.header.keyEpoch else { throw VaultError.invalidData }
         let recovered = try VaultCrypto.recover(backup, code: code)
@@ -483,7 +487,9 @@ final class VaultModel {
         try keys.restoreDeviceKey(recovered, id: current.header.vaultID, epoch: current.header.keyEpoch, context: context)
         _ = try keys.loadDeviceKey(envelope: current, context: context)
         self.key = recovered; self.envelope = current; self.snapshot = snapshot; activity()
-        loadBackupStatus(); scheduleBackup(); ensureRecoveryKeySaved()
+        await loadBackupStatus()
+        guard token == generation else { throw VaultError.locked }
+        scheduleBackup(); ensureRecoveryKeySaved()
         notify(L10n.tr("기기 접근을 복구했습니다. 현재 금고 파일은 덮어쓰지 않았습니다.", "Device access has been restored. The current vault file has not been overwritten."))
     }
     func restore(at url: URL, code: String) async throws {
@@ -669,13 +675,19 @@ final class VaultModel {
         return backupDirectory == nil || backedUpRevision != envelope.header.revision
     }
     private var backupStatusURL: URL { store.directory.appendingPathComponent("backup-status.json") }
-    private func loadBackupStatus() {
-        lastBackupFile = backupDirectory.flatMap { BackupManager.latestBackup(in: $0)?.url }
-        refreshCloudUpload()
-        guard let envelope, let status = BackupStatus.read(at: backupStatusURL, vaultID: envelope.header.vaultID),
-              let lastBackupFile, let backup = try? VaultFileStore.read(at: lastBackupFile),
-              backup.header.vaultID == status.vaultID, backup.header.revision == status.revision else { backedUpRevision = nil; lastBackupAt = nil; return }
-        backedUpRevision = status.revision; lastBackupAt = status.date
+    private func loadBackupStatus() async {
+        guard let envelope else { return }
+        let token = generation, directory = backupDirectory, statusURL = backupStatusURL
+        let vaultID = envelope.header.vaultID, reader = inspectBackup
+        let result = await Task.detached(priority: .utility) {
+            reader(directory, statusURL, vaultID)
+        }.value
+        guard token == generation, directory == backupDirectory,
+              envelope.header.revision == self.envelope?.header.revision else { return }
+        lastBackupFile = result.file
+        backedUpRevision = result.status?.revision
+        lastBackupAt = result.status?.date
+        cloudUpload = backupDestination == .googleDrive ? .notCloud : result.cloudUpload
     }
     func refreshCloudUpload() {
         cloudUpload = backupDestination == .googleDrive ? .notCloud : (lastBackupFile.map(BackupLocation.cloudUpload(of:)) ?? .notCloud)
