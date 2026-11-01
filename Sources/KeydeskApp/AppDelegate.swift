@@ -5,6 +5,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     weak var model: VaultModel?
     var reopenMainWindow: (() -> Void)?
     private var eventMonitor: Any?
+    private var terminationRequested = false
+    private var terminationReplied = false
     func applicationDidFinishLaunching(_ notification: Notification) {
         signal(SIGPIPE, SIG_IGN)
         NSApp.setActivationPolicy(.regular)
@@ -24,5 +26,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         if let eventMonitor { NSEvent.removeMonitor(eventMonitor) }
         model?.shutdown()
+    }
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let model else { return .terminateNow }
+        guard !terminationRequested else { return .terminateLater }
+        terminationRequested = true
+        model.stopRunning()
+        model.lock()
+        Task { [weak self] in
+            await model.waitForBackups()
+            self?.finishTermination(sender)
+        }
+        // Local vault changes are already committed before backup starts. A disconnected
+        // cloud provider must not prevent Quit indefinitely; the next unlock retries backup.
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(5))
+            self?.finishTermination(sender)
+        }
+        return .terminateLater
+    }
+    private func finishTermination(_ sender: NSApplication) {
+        guard !terminationReplied else { return }
+        terminationReplied = true
+        sender.reply(toApplicationShouldTerminate: true)
     }
 }

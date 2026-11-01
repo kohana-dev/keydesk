@@ -19,14 +19,14 @@ struct BackupSettingsSection: View {
                 LabeledContent(L10n.tr("백업 위치", "Backup location"), value: destinationName)
                 Text(model.backupDirectory?.path ?? L10n.tr("설정되지 않음 · Mac을 잃으면 복구할 수 없습니다", "Not configured · Recovery is unavailable if you lose this Mac"))
                     .font(.caption).textSelection(.enabled)
-                Text(L10n.tr("변경할 때마다 몇 초 안에, 그리고 잠그거나 종료할 때 암호화 백업을 저장합니다. 최근 서로 다른 7개 날짜와 4개 주차의 최신 백업을 보존합니다.", "Encrypted backups are saved within a few seconds of each change, and when you lock or quit. The newest backups for the latest seven distinct dates and four distinct weeks are kept."))
+                Text(L10n.tr("변경 후, 그리고 잠그거나 종료할 때 암호화 백업을 백그라운드에서 시작합니다. 클라우드 폴더가 느려도 금고를 잠글 수 있습니다. 종료 전 저장·검증 상태를 확인하세요. 최근 서로 다른 7개 날짜와 4개 주차의 최신 백업을 보존합니다.", "Encrypted backups run in the background after changes and when you lock or quit. You can lock the vault while a cloud folder is slow. Check the save and verification status before quitting. The newest backups for the latest seven distinct dates and four distinct weeks are kept."))
                     .font(.caption).foregroundStyle(.secondary)
                 if model.backupDestination == .googleDrive {
                     Text(L10n.tr("데스크톱용 Google Drive가 동기화하는 폴더에 저장합니다. Cellar는 Google 계정에 로그인하지 않습니다. 실제 업로드 완료 여부는 Google Drive의 동기화 상태에서 확인하세요.", "Files are saved in a folder synced by Google Drive for desktop. Cellar does not sign in to your Google account. Check Google Drive’s sync status to confirm the upload has completed."))
                         .font(.caption).foregroundStyle(.secondary)
                     Link(L10n.tr("Google Drive 설치와 동기화 안내", "Google Drive setup and sync help"), destination: URL(string: "https://support.google.com/drive/answer/10838124")!)
                         .font(.caption)
-                } else if let directory = model.backupDirectory, BackupLocation.isOnlyOnThisMac(directory) {
+                } else if model.backupIsLocalOnly {
                     Label(L10n.tr("이 폴더는 이 Mac 안에만 있습니다. iCloud Drive, Google Drive 동기화 폴더 또는 외장 디스크를 선택하세요.", "This folder is only on this Mac. Choose iCloud Drive, a Google Drive sync folder, or an external disk."), systemImage: "exclamationmark.triangle.fill")
                         .font(.caption).foregroundStyle(.orange)
                 }
@@ -48,9 +48,10 @@ struct BackupSettingsSection: View {
                         Button(L10n.tr("다른 폴더 / 외장 디스크…", "Other folder / external disk…")) { chooseFolder(destination: .folder) }
                     }
                     Button(L10n.tr("지금 백업", "Back up now")) { model.flushBackup(force: true) }
-                        .disabled(model.backupDirectory == nil)
+                        .disabled(model.backupDirectory == nil || model.backupInProgress)
+                    if model.backupInProgress { ProgressView().controlSize(.small) }
                     Button(L10n.tr("자동 백업 해제", "Turn off automatic backup")) {
-                        do { try model.configureBackup(directory: nil) } catch { model.error = error.localizedDescription }
+                        Task { do { try await model.configureBackup(directory: nil) } catch { model.error = error.localizedDescription } }
                     }.disabled(model.snapshot?.backup == nil)
                 }
             }.frame(maxWidth: .infinity, alignment: .leading).padding(10)
@@ -73,7 +74,7 @@ struct BackupSettingsSection: View {
     }
 
     private func chooseICloud() {
-        do { try model.configureICloudBackup() } catch { model.error = error.localizedDescription }
+        Task { do { try await model.configureICloudBackup() } catch { model.error = error.localizedDescription } }
     }
 
     private func chooseFolder(destination: BackupDestination) {
@@ -92,11 +93,10 @@ struct BackupSettingsSection: View {
             panel.title = L10n.tr("백업 폴더 선택", "Choose backup folder")
         }
         guard panel.runModal() == .OK, let directory = panel.url else { return }
-        do {
+        Task { do {
             // A mirrored Google Drive folder can live anywhere; the user's explicit selection is
             // authoritative. Known cloud paths are still recognized for the general folder option.
-            let detected = BackupLocation.destination(of: directory)
-            try model.configureBackup(directory: directory, destination: destination == .googleDrive ? .googleDrive : detected)
-        } catch { model.error = error.localizedDescription }
+            try await model.configureBackup(directory: directory, destination: destination == .googleDrive ? .googleDrive : nil)
+        } catch { model.error = error.localizedDescription } }
     }
 }

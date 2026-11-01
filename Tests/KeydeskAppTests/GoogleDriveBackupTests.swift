@@ -33,13 +33,13 @@ struct GoogleDriveBackupTests {
         try folders.create(folders.drive)
         let app = model(directory: folders.vault)
         defer { app.shutdown() }
-        await app.prepareFirstRun(startNew: true)
+        await app.prepareFirstRun(startNew: true); await app.waitForBackups()
         try app.addProject("Synthetic Google Project 732")
         try app.addCredential(name: "Synthetic Credential 732", value: "synthetic-credential-value-732",
                               provider: "Synthetic Provider", account: "", note: "", variable: "TEST_TOKEN")
         let code = try #require(app.snapshot?.recoveryCode)
 
-        try app.configureBackup(directory: folders.drive, destination: .googleDrive)
+        try await app.configureBackup(directory: folders.drive, destination: .googleDrive)
 
         #expect(app.backupDestination == .googleDrive)
         #expect(app.snapshot?.backup?.destination == .googleDrive)
@@ -64,19 +64,19 @@ struct GoogleDriveBackupTests {
         try folders.create(folders.drive)
         let app = model(directory: folders.vault, keys: keys)
         defer { app.shutdown() }
-        await app.prepareFirstRun(startNew: true)
-        try app.configureBackup(directory: folders.drive, destination: .googleDrive)
+        await app.prepareFirstRun(startNew: true); await app.waitForBackups()
+        try await app.configureBackup(directory: folders.drive, destination: .googleDrive)
         let revision = app.snapshot?.revision
-        app.lock()
-        await app.unlock()
+        app.lock(); await app.waitForBackups()
+        await app.unlock(); await app.waitForBackups()
         #expect(app.backupDestination == .googleDrive)
         #expect(app.backupDirectory?.standardizedFileURL == folders.drive.standardizedFileURL)
         #expect(app.backedUpRevision == revision && !app.hasUnbackedChanges)
-        app.shutdown()
+        app.shutdown(); await app.waitForBackups()
 
         let reopened = model(directory: folders.vault, keys: keys)
         defer { reopened.shutdown() }
-        await reopened.unlock()
+        await reopened.unlock(); await reopened.waitForBackups()
         #expect(reopened.snapshot?.backup?.destination == .googleDrive)
         #expect(reopened.backupDirectory?.standardizedFileURL == folders.drive.standardizedFileURL)
         #expect(reopened.backedUpRevision == revision && !reopened.hasUnbackedChanges)
@@ -88,33 +88,33 @@ struct GoogleDriveBackupTests {
         try folders.create(folders.drive)
         let app = model(directory: folders.vault, keys: keys)
         defer { app.shutdown() }
-        await app.prepareFirstRun(startNew: true)
-        try app.configureBackup(directory: folders.drive, destination: .googleDrive)
+        await app.prepareFirstRun(startNew: true); await app.waitForBackups()
+        try await app.configureBackup(directory: folders.drive, destination: .googleDrive)
         let revision = try #require(app.snapshot?.revision)
         let deletedFile = try #require(app.lastBackupFile)
         try FileManager.default.removeItem(at: deletedFile)
 
         // The user's Back Up Now action must write again even when the vault has not changed.
-        app.flushBackup(force: true)
+        await app.flushBackupAndWait(force: true)
         let recreatedFile = try #require(app.lastBackupFile)
         #expect(recreatedFile != deletedFile && FileManager.default.fileExists(atPath: recreatedFile.path))
         #expect(try VaultFileStore.read(at: recreatedFile).header.revision == revision)
         #expect(app.snapshot?.revision == revision && app.backedUpRevision == revision)
         #expect(app.backupFailure == nil && !app.hasUnbackedChanges)
-        app.shutdown()
+        app.shutdown(); await app.waitForBackups()
         try FileManager.default.removeItem(at: recreatedFile)
         try FileManager.default.removeItem(at: folders.drive)
 
         let reopened = model(directory: folders.vault, keys: keys)
         defer { reopened.shutdown() }
-        await reopened.unlock()
+        await reopened.unlock(); await reopened.waitForBackups()
         // The old status record alone cannot prove that a removed backup still exists.
         #expect(reopened.snapshot?.revision == revision && reopened.backupDestination == .googleDrive)
         #expect(reopened.backedUpRevision == nil && reopened.lastBackupAt == nil)
         #expect(reopened.lastBackupFile == nil && reopened.hasUnbackedChanges)
         #expect(reopened.backupFailure != nil && !FileManager.default.fileExists(atPath: folders.drive.path))
         try folders.create(folders.drive)
-        reopened.flushBackup()
+        await reopened.flushBackupAndWait()
         #expect(reopened.backedUpRevision == revision && !reopened.hasUnbackedChanges)
         let latest = try #require(BackupManager.latestBackup(in: folders.drive))
         #expect(latest.envelope.header.revision == revision && reopened.cloudUpload == .notCloud)
@@ -125,8 +125,8 @@ struct GoogleDriveBackupTests {
         try folders.create(folders.drive)
         let app = model(directory: folders.vault)
         defer { app.shutdown() }
-        await app.prepareFirstRun(startNew: true)
-        try app.configureBackup(directory: folders.drive, destination: .googleDrive)
+        await app.prepareFirstRun(startNew: true); await app.waitForBackups()
+        try await app.configureBackup(directory: folders.drive, destination: .googleDrive)
         let baseline = try Data(contentsOf: app.store.vaultURL)
         let revision = app.snapshot?.revision, backedUpRevision = app.backedUpRevision
         let originalBackups = try Set(backups(in: folders.drive))
@@ -139,8 +139,8 @@ struct GoogleDriveBackupTests {
 
         for invalid in [folders.root.appendingPathComponent("missing-directory", isDirectory: true),
                         file, folders.vault, child, link] {
-            #expect(throws: (any Error).self) {
-                try app.configureBackup(directory: invalid, destination: .folder)
+            await #expect(throws: (any Error).self) {
+                try await app.configureBackup(directory: invalid, destination: .folder)
             }
             #expect(app.snapshot?.revision == revision && app.backedUpRevision == backedUpRevision)
             #expect(app.backupDestination == .googleDrive)
@@ -156,24 +156,24 @@ struct GoogleDriveBackupTests {
         try folders.create(folders.folder)
         let app = model(directory: folders.vault)
         defer { app.shutdown() }
-        await app.prepareFirstRun(startNew: true)
-        try app.configureBackup(directory: folders.drive, destination: .googleDrive)
+        await app.prepareFirstRun(startNew: true); await app.waitForBackups()
+        try await app.configureBackup(directory: folders.drive, destination: .googleDrive)
         let googleBackups = try Set(backups(in: folders.drive))
         #expect(!googleBackups.isEmpty)
 
-        try app.configureBackup(directory: folders.folder, destination: .folder)
+        try await app.configureBackup(directory: folders.folder, destination: .folder)
         #expect(app.backupDestination == .folder && !app.hasUnbackedChanges)
         #expect(try Set(backups(in: folders.drive)) == googleBackups)
         let folderBackups = try Set(backups(in: folders.folder))
         #expect(!folderBackups.isEmpty)
 
-        try app.configureBackup(directory: nil)
+        try await app.configureBackup(directory: nil)
         #expect(app.snapshot?.backup == nil && app.backupDestination == nil && app.backupDirectory == nil)
         #expect(app.backedUpRevision == nil && app.lastBackupAt == nil && app.hasUnbackedChanges)
         #expect(try Set(backups(in: folders.drive)) == googleBackups)
         #expect(try Set(backups(in: folders.folder)) == folderBackups)
         try app.addProject("Synthetic offline change")
-        app.flushBackup()
+        await app.flushBackupAndWait()
         #expect(try Set(backups(in: folders.drive)) == googleBackups)
         #expect(try Set(backups(in: folders.folder)) == folderBackups)
     }
@@ -184,15 +184,15 @@ struct GoogleDriveBackupTests {
         try folders.create(folders.drive)
         let app = model(directory: folders.vault)
         defer { app.shutdown() }
-        await app.prepareFirstRun(startNew: true)
-        try app.configureBackup(directory: folders.drive, destination: .googleDrive)
+        await app.prepareFirstRun(startNew: true); await app.waitForBackups()
+        try await app.configureBackup(directory: folders.drive, destination: .googleDrive)
         let successfulRevision = app.backedUpRevision
         try FileManager.default.removeItem(at: folders.drive)
         if replaceWithFile {
             try Data("synthetic unmounted-drive fixture".utf8).write(to: URL(fileURLWithPath: folders.drive.path))
         }
         try app.addProject("Synthetic change while Drive unavailable")
-        app.flushBackup()
+        await app.flushBackupAndWait()
 
         #expect(app.backupFailure != nil && app.hasUnbackedChanges)
         #expect(app.backedUpRevision == successfulRevision)
@@ -200,7 +200,7 @@ struct GoogleDriveBackupTests {
         if !replaceWithFile { #expect(!FileManager.default.fileExists(atPath: folders.drive.path)) }
         else { try FileManager.default.removeItem(at: folders.drive) }
         try folders.create(folders.drive)
-        app.flushBackup()
+        await app.flushBackupAndWait()
 
         #expect(app.backupFailure == nil && !app.hasUnbackedChanges)
         #expect(app.backedUpRevision == app.snapshot?.revision)
@@ -214,9 +214,9 @@ struct GoogleDriveBackupTests {
         try folders.create(folders.drive)
         let first = model(directory: folders.vault)
         defer { first.shutdown() }
-        await first.prepareFirstRun(startNew: true)
+        await first.prepareFirstRun(startNew: true); await first.waitForBackups()
         try first.addProject("Synthetic restored Google project")
-        try first.configureBackup(directory: folders.drive, destination: .googleDrive)
+        try await first.configureBackup(directory: folders.drive, destination: .googleDrive)
         let code = try #require(first.snapshot?.recoveryCode)
         let url = try #require(first.lastBackupFile)
         let originalBackups = try Set(backups(in: folders.drive))
@@ -226,9 +226,9 @@ struct GoogleDriveBackupTests {
         defer { restored.shutdown() }
 
         // A new Mac must keep the restore choice available instead of creating an empty vault first.
-        await restored.prepareFirstRun()
+        await restored.prepareFirstRun(); await restored.waitForBackups()
         #expect(!restored.exists && restored.snapshot == nil && restored.firstRun != nil)
-        try await restored.restore(at: url, code: code)
+        try await restored.restore(at: url, code: code); await restored.waitForBackups()
 
         #expect(restored.snapshot?.projects.map(\.name) == ["Synthetic restored Google project"])
         #expect(restored.snapshot?.backup == nil && restored.backupDestination == nil)
@@ -237,7 +237,7 @@ struct GoogleDriveBackupTests {
         #expect(try Set(backups(in: folders.drive)) == originalBackups)
         let newDrive = folders.root.appendingPathComponent("second-mac-google-drive", isDirectory: true)
         try folders.create(newDrive)
-        try restored.configureBackup(directory: newDrive, destination: .googleDrive)
+        try await restored.configureBackup(directory: newDrive, destination: .googleDrive)
         #expect(restored.backupDestination == .googleDrive && !restored.hasUnbackedChanges)
         #expect(restored.backupDirectory?.standardizedFileURL == newDrive.standardizedFileURL)
         #expect(try !backups(in: newDrive).isEmpty)

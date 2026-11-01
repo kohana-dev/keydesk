@@ -9,6 +9,7 @@ struct ImportView: View {
     @State private var replace = false
     @State private var filename: String?
     @State private var error: String?
+    @State private var loader = FileSelectionLoader<DotenvFileSelection>(read: DotenvFileSelection.read)
     var body: some View {
         let _ = interfaceLanguage
         let validRowCount = rows.filter { $0.error == nil }.count
@@ -21,12 +22,19 @@ struct ImportView: View {
                     Button(filename ?? L10n.tr(".env 파일 선택", "Choose .env file"), systemImage: "doc") {
                         let panel = NSOpenPanel(); panel.showsHiddenFiles = true; panel.allowsMultipleSelection = false; panel.canChooseDirectories = false
                         guard panel.runModal() == .OK, let url = panel.url else { return }
-                        do {
-                            let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
-                            guard let size = attributes[.size] as? NSNumber, size.intValue <= 1_048_576 else { throw VaultError.invalidData }
-                            rows = DotenvParser.parse(try String(contentsOf: url, encoding: .utf8)); filename = url.lastPathComponent; error = nil
-                        } catch { self.error = L10n.tr("파일을 읽지 못했습니다. UTF-8, 1MB 이하 파일을 선택하세요.", "Could not read the file. Choose a UTF-8 file no larger than 1 MiB.") }
+                        loader.cancel(); rows = []; filename = nil; error = nil
+                        loader.load(url) { selected in
+                            rows = selected.rows; filename = selected.name
+                        }
                     }
+                    if loader.isLoading {
+                        HStack {
+                            ProgressView().controlSize(.small)
+                            Text(L10n.tr("파일 읽는 중…", "Reading file…"))
+                            Button(L10n.tr("읽기 취소", "Cancel reading")) { loader.cancel(); rows = []; filename = nil }
+                        }
+                    }
+                    if loader.failed { Text(L10n.tr("파일을 읽지 못했습니다. UTF-8, 1 MiB 이하의 일반 파일을 선택하세요. 심볼릭 링크는 허용하지 않습니다.", "Could not read the file. Choose a regular UTF-8 file no larger than 1 MiB. Symbolic links are not allowed.")).foregroundStyle(.red) }
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 10) {
                             ForEach(rows) { row in
@@ -45,8 +53,8 @@ struct ImportView: View {
                     if let error { Text(error).foregroundStyle(.red) }
                 }.padding(28)
             }
-            DialogFooter { DialogDismissButton(L10n.tr("취소", "Cancel"), prominent: false) { dismiss() }; Spacer(); Button(L10n.tr("유효한 \(validRowCount)개 행 가져오기", validRowCount == 1 ? "Import 1 valid row" : "Import \(validRowCount) valid rows")) { do { try model.importRows(rows, replace: replace); dismiss() } catch { self.error = error.localizedDescription } }.buttonStyle(.borderedProminent).disabled(!rows.contains { $0.error == nil }) }
+            DialogFooter { DialogDismissButton(L10n.tr("취소", "Cancel"), prominent: false) { dismiss() }; Spacer(); Button(L10n.tr("유효한 \(validRowCount)개 행 가져오기", validRowCount == 1 ? "Import 1 valid row" : "Import \(validRowCount) valid rows")) { do { try model.importRows(rows, replace: replace); dismiss() } catch { self.error = error.localizedDescription } }.buttonStyle(.borderedProminent).disabled(loader.isLoading || !rows.contains { $0.error == nil }) }
         }.frame(width: 650, height: DialogSizing.height(preferred: 572))
-        .onDisappear { rows = [] }
+        .onDisappear { loader.cancel(); rows = [] }
     }
 }

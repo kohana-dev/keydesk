@@ -12,6 +12,7 @@ struct DepositView: View {
     @State private var file: SecretFile?
     @State private var environment = EnvironmentName.development
     @State private var result: String?
+    @State private var depositing = false
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
@@ -33,9 +34,17 @@ struct DepositView: View {
                 DialogDismissButton(prominent: false) { dismiss() }
                 Spacer()
                 Button(L10n.tr("암호화 접수", "Encrypt and deposit")) {
-                    do { result = try model.deposit(SecretDeposit(project: project, environment: environment, variable: variable, value: fileMode ? "" : value, file: fileMode ? file : nil)); value = ""; file = nil }
-                    catch { result = L10n.tr("접수하지 못했습니다. 금고를 한 번 열어 접수 키를 준비하거나 입력을 확인하세요.", "Could not accept the deposit. Unlock the vault once to prepare its deposit key, or check your input.") }
-                }.buttonStyle(.borderedProminent).disabled(project.isEmpty || variable.isEmpty || (fileMode ? file == nil : value.isEmpty))
+                    depositing = true
+                    let inputs = (project: project, environment: environment, variable: variable, value: fileMode ? "" : value, file: fileMode ? file : nil)
+                    Task {
+                        defer { depositing = false }
+                        do {
+                            let request = try SecretDeposit(project: inputs.project, environment: inputs.environment, variable: inputs.variable, value: inputs.value, file: inputs.file)
+                            result = try await model.deposit(request); value = ""; file = nil
+                        }
+                        catch { result = L10n.tr("접수하지 못했습니다. 금고를 한 번 열어 접수 키를 준비하거나 입력을 확인하세요.", "Could not accept the deposit. Unlock the vault once to prepare its deposit key, or check your input.") }
+                    }
+                }.buttonStyle(.borderedProminent).disabled(depositing || project.isEmpty || variable.isEmpty || (fileMode ? file == nil : value.isEmpty))
             }
         }.frame(width: 560, height: DialogSizing.height(preferred: 532)).textFieldStyle(.roundedBorder)
         .onDisappear { value = ""; file = nil }

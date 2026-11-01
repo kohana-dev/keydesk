@@ -14,7 +14,7 @@ struct DepositTests {
         model.lock()
         let payload = try SecretDeposit(project: "fixture", environment: .development, variable: "API_KEY", value: "DISPOSABLE_LOCKED_SENTINEL")
         let before = keyStore.authentications
-        let result = try model.deposit(payload)
+        let result = try await model.deposit(payload)
         #expect(result.hasPrefix("queued") && model.snapshot == nil)
         #expect(keyStore.authentications == before)
         let directory = root.appendingPathComponent("deposits")
@@ -29,7 +29,7 @@ struct DepositTests {
         #expect(!FileManager.default.fileExists(atPath: url.path))
         let duplicate = try SecretDeposit(project: "fixture", environment: .development, variable: "API_KEY", value: "OTHER")
         model.lock()
-        _ = try model.deposit(duplicate)
+        _ = try await model.deposit(duplicate)
         await model.unlock()
         #expect(model.snapshot?.credentials.first?.currentValue == payload.value)
         #expect(try FileManager.default.contentsOfDirectory(atPath: directory.path).count == 1)
@@ -40,7 +40,7 @@ struct DepositTests {
         let model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: keys, serve: false, observeSystemEvents: false)
         defer { model.shutdown(); try? FileManager.default.removeItem(at: root) }
         await model.prepareFirstRun(startNew: true)
-        _ = try model.deposit(SecretDeposit(project: "fixture", environment: .production, variable: "PROD_KEY", value: "FAKE_PRODUCTION_ONLY"))
+        _ = try await model.deposit(SecretDeposit(project: "fixture", environment: .production, variable: "PROD_KEY", value: "FAKE_PRODUCTION_ONLY"))
         let invocation = CLIRequest(project: "fixture", environment: .production, command: ["/usr/bin/true"], directory: "/tmp", stdinKey: nil, variables: ["PROD_KEY"])
         let baseline = keys.authentications
         keys.denyAuthentication = true

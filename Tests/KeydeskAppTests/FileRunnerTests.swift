@@ -53,8 +53,9 @@ struct FileRunnerTests {
         defer { model.shutdown(); try? FileManager.default.removeItem(at: root) }
         await model.prepareFirstRun(startNew: true); model.lock()
         let file = try SecretFile(name: "key.p12", data: Data([0,255,13,10]))
-        #expect(try model.deposit(SecretDeposit(project: "fixture", environment: .development, variable: "FILE", file: file)).hasPrefix("queued"))
+        #expect(try await model.deposit(SecretDeposit(project: "fixture", environment: .development, variable: "FILE", file: file)).hasPrefix("queued"))
         await model.unlock()
+        await model.waitForBackups()
         #expect(model.snapshot?.credentials.first?.currentFile == file)
         #expect(!model.hasUnbackedChanges)
         #expect(try model.store.read().header.format == 2)

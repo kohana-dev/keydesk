@@ -10,6 +10,7 @@ struct ProjectSheet: View {
     @State private var name = ""
     @State private var iconPNG: Data?
     @State private var error: String?
+    @State private var imageLoader = FileSelectionLoader<Data>(read: ProjectImage.load)
     var body: some View {
         let _ = interfaceLanguage
         VStack(spacing: 0) {
@@ -27,9 +28,11 @@ struct ProjectSheet: View {
                     TextField(L10n.tr("프로젝트 이름", "Project name"), text: $name).textFieldStyle(.roundedBorder)
                     HStack {
                         Button(iconPNG == nil ? L10n.tr("이미지 선택…", "Choose image…") : L10n.tr("이미지 변경…", "Change image…"), systemImage: "photo") { chooseImage() }
-                        if iconPNG != nil { Button(L10n.tr("이미지 제거", "Remove image")) { iconPNG = nil } }
+                        if iconPNG != nil || imageLoader.isLoading { Button(L10n.tr("이미지 제거", "Remove image")) { imageLoader.cancel(); iconPNG = nil; error = nil } }
+                        if imageLoader.isLoading { ProgressView().controlSize(.small).accessibilityLabel(L10n.tr("이미지 읽는 중", "Reading image")) }
                     }
                     Text(L10n.tr("PNG · JPEG · HEIC · ICNS. 이미지는 작은 썸네일로 보관되며 암호화 백업에 포함됩니다.", "PNG · JPEG · HEIC · ICNS. Images are stored as small thumbnails and included in encrypted backups.")).font(.caption).foregroundStyle(.secondary)
+                    if imageLoader.failed { Text(ProjectImageError.invalid.localizedDescription).foregroundStyle(.red) }
                     if let error { Text(error).foregroundStyle(.red) }
                 }.padding(28)
             }
@@ -42,17 +45,19 @@ struct ProjectSheet: View {
                         else { try model.addProject(name, iconPNG: iconPNG) }
                         dismiss()
                     } catch { self.error = error.localizedDescription }
-                }.buttonStyle(.borderedProminent).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }.buttonStyle(.borderedProminent).disabled(imageLoader.isLoading || name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }.frame(width: 480, height: DialogSizing.height(preferred: 420)).background(Theme.surface).foregroundStyle(Theme.ink)
             .onAppear { name = project?.name ?? ""; iconPNG = project?.iconPNG }
+            .onDisappear { imageLoader.cancel() }
     }
     private func chooseImage() {
+        imageLoader.cancel()
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.png, .jpeg, .heic, .icns]
         panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do { iconPNG = try ProjectImage.load(url); error = nil }
-        catch { self.error = error.localizedDescription }
+        error = nil
+        imageLoader.load(url) { selected in iconPNG = selected }
     }
 }

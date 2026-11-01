@@ -20,7 +20,7 @@ struct APIBrokerTests {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("api-model-\(UUID())")
         let model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: MemoryKeyStore(), apiTransport: transport, serve: false, observeSystemEvents: false)
         await model.prepareFirstRun(startNew: true)
-        _ = try model.deposit(SecretDeposit(project: "fixture", environment: .production, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_BROKER_ONLY_KEY"))
+        _ = try await model.deposit(SecretDeposit(project: "fixture", environment: .production, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_BROKER_ONLY_KEY"))
         return model
     }
     func request(method: String = "GET") -> APIRequest {
@@ -131,14 +131,14 @@ struct APICancellationTests {
 
 @Suite(.serialized) @MainActor
 struct APIDemoIsolationTests {
-    @Test func defaultDemoCanStoreValuesAndFilesWithoutSystemKeychain() throws {
+    @Test func defaultDemoCanStoreValuesAndFilesWithoutSystemKeychain() async throws {
         let model = VaultModel(demo: true, serve: false, observeSystemEvents: false)
         defer { model.shutdown() }
         #expect(model.keys is DemoKeyStore)
-        _ = try model.deposit(SecretDeposit(project: "demo-deposit", environment: .development, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_DEMO_VALUE"))
+        _ = try await model.deposit(SecretDeposit(project: "demo-deposit", environment: .development, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_DEMO_VALUE"))
         let file = try SecretFile(name: "fake.p8", data: Data([0, 255, 13, 10]))
-        _ = try model.deposit(SecretDeposit(project: "demo-deposit", environment: .development, variable: "APPLE_KEY_PATH", file: file))
+        _ = try await model.deposit(SecretDeposit(project: "demo-deposit", environment: .development, variable: "APPLE_KEY_PATH", file: file))
         #expect(model.snapshot?.credentials.contains { $0.currentFile?.data == file.data } == true)
-        #expect(model.keys.knownRecoveryVaults().isEmpty)
+        #expect((await model.keys.knownRecoveryVaults()).isEmpty)
     }
 }

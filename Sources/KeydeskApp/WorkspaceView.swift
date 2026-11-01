@@ -183,6 +183,6 @@ struct WorkspaceView: View {
     private func saveBackup() {
         let panel = NSSavePanel(); panel.nameFieldStringValue = "Cellar-backup-\(Date().formatted(.iso8601.year().month().day())).keydesk"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do { try model.backup(to: url) } catch { model.error = error.localizedDescription }
+        Task { do { try await model.backup(to: url) } catch { model.error = error.localizedDescription } }
     }
 }

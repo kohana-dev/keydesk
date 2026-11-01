@@ -101,7 +101,7 @@ struct RunnerTests {
         let root = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("keydesk-app-backup-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        try model.configureBackup(directory: root)
+        try await model.configureBackup(directory: root)
         #expect(model.lastBackupAt != nil && !model.hasUnbackedChanges)
         #expect(try FileManager.default.contentsOfDirectory(atPath: root.path).count == 1)
         // Several edits on the same day: the old once-a-day rule left these out of every backup.
@@ -109,6 +109,7 @@ struct RunnerTests {
         #expect(model.hasUnbackedChanges)
         let revision = try #require(model.snapshot?.revision)
         model.lock()
+        await model.waitForBackups()
         let newest = try FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: nil).map { try VaultFileStore.read(at: $0).header.revision }.max()
         #expect(newest == revision)
     }

@@ -36,7 +36,7 @@ struct ProjectImageTests {
         let project = try #require(model.snapshot?.projects.first)
         let backup = root.appendingPathComponent("image-backup.keydesk")
         let recovery = try #require(model.snapshot?.recoveryCode)
-        try model.backup(to: backup)
+        try await model.backup(to: backup)
         let envelope = try VaultFileStore.read(at: backup)
         let key = try VaultCrypto.recover(envelope, code: recovery)
         let restored = try VaultCrypto.open(envelope, key: key)

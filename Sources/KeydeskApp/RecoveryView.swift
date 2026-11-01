@@ -46,7 +46,7 @@ struct RecoveryView: View {
                     Task {
                         defer { busy = false }
                         do {
-                            if model.exists { let count = try model.validateRecovery(at: url, code: code); result = L10n.tr("복구 검증 성공 · 보관된 키 \(count)개. 기존 금고는 변경하지 않았습니다.", "Recovery verified · \(count) stored keys. Your existing vault was not changed.") }
+                            if model.exists { let count = try await model.validateRecovery(at: url, code: code); result = L10n.tr("복구 검증 성공 · 보관된 키 \(count)개. 기존 금고는 변경하지 않았습니다.", "Recovery verified · \(count) stored keys. Your existing vault was not changed.") }
                             else { try await model.restore(at: url, code: code); dismiss() }
                         } catch { result = error.localizedDescription }
                     }

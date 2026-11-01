@@ -40,7 +40,9 @@ public struct VaultFileStore: Sendable {
         let fd = Darwin.open(lockURL.path, O_CREAT | O_RDWR | O_NOFOLLOW, 0o600)
         guard fd >= 0 else { throw POSIXError(.EACCES) }
         defer { flock(fd, LOCK_UN); close(fd) }
-        guard flock(fd, LOCK_EX) == 0 else { throw POSIXError(.EIO) }
+        guard flock(fd, LOCK_EX | LOCK_NB) == 0 else {
+            throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
         if FileManager.default.fileExists(atPath: vaultURL.path) {
             let current = try read()
             guard expectedRevision == current.header.revision else { throw VaultError.staleRevision }

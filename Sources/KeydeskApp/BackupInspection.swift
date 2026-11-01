@@ -6,6 +6,14 @@ struct BackupInspection: Sendable {
     let file: URL?
     let status: BackupStatus?
     let cloudUpload: BackupLocation.CloudUpload
+    static func directory(for settings: BackupSettings?) -> URL? {
+        guard let settings, let path = settings.directory else { return nil }
+        if let bookmark = settings.bookmark {
+            var stale = false
+            if let resolved = try? URL(resolvingBookmarkData: bookmark, options: [.withoutUI], relativeTo: nil, bookmarkDataIsStale: &stale) { return resolved }
+        }
+        return URL(fileURLWithPath: path, isDirectory: true)
+    }
 
     static func read(directory: URL?, statusURL: URL, vaultID: UUID) -> Self {
         let latest = directory.flatMap { BackupManager.latestBackup(in: $0) }

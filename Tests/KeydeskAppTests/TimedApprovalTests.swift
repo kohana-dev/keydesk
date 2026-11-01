@@ -59,9 +59,9 @@ struct TimedApprovalTests {
             let root = FileManager.default.temporaryDirectory.appendingPathComponent("timed-approval-\(UUID())")
             model = VaultModel(directory: root, defaultBackupDirectory: nil, keys: keys, apiTransport: transport, serve: false, observeSystemEvents: false)
             await model.prepareFirstRun(startNew: true)
-            _ = try model.deposit(SecretDeposit(project: "fixture", environment: .production, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_TIMED_APPROVAL_KEY"))
+            _ = try await model.deposit(SecretDeposit(project: "fixture", environment: .production, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_TIMED_APPROVAL_KEY"))
         } else { model = try await api.fixture(transport) }
-        _ = try model.deposit(SecretDeposit(project: "fixture", environment: .development, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_TIMED_APPROVAL_DEVELOPMENT_KEY"))
+        _ = try await model.deposit(SecretDeposit(project: "fixture", environment: .development, variable: "CLOUDFLARE_API_TOKEN", value: "DISPOSABLE_TIMED_APPROVAL_DEVELOPMENT_KEY"))
         return model
     }
 

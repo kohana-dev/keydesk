@@ -6,7 +6,24 @@ extension VaultModel {
     private var depositPublicURL: URL { store.directory.appendingPathComponent("deposit-public.key") }
     private var depositDirectory: URL { store.directory.appendingPathComponent("deposits") }
 
-    func prepareDeposits() throws {
+    /// Demo initialization uses only its isolated local files and never touches Keychain.
+    func prepareDemoDeposits() throws {
+        guard isDemo else { throw VaultError.accessDenied }
+        try prepareDepositFiles()
+    }
+
+    func prepareDeposits() async throws {
+        try prepareDepositFiles()
+        let token = generation
+        flushBackup()
+        guard !isDemo, let raw = snapshot?.depositPrivateKey else { return }
+        let publicKey = try P256.KeyAgreement.PrivateKey(rawRepresentation: raw).publicKey.rawRepresentation
+        let vaultID = try store.read().header.vaultID
+        try await keys.saveDepositPublicKey(publicKey, vaultID: vaultID)
+        guard token == generation else { throw VaultError.locked }
+    }
+
+    private func prepareDepositFiles() throws {
         guard let snapshot else { throw VaultError.locked }
         if snapshot.depositPrivateKey == nil {
             let generated = P256.KeyAgreement.PrivateKey().rawRepresentation
@@ -14,8 +31,6 @@ extension VaultModel {
         }
         guard let raw = self.snapshot?.depositPrivateKey else { throw VaultError.locked }
         let publicKey = try P256.KeyAgreement.PrivateKey(rawRepresentation: raw).publicKey.rawRepresentation
-        let vaultID = try store.read().header.vaultID
-        try keys.saveDepositPublicKey(publicKey, vaultID: vaultID)
         try VaultFileStore.atomicWrite(publicKey, to: depositPublicURL)
         try VaultFileStore.preparePrivateDirectory(depositDirectory)
         let urls = try FileManager.default.contentsOfDirectory(at: depositDirectory, includingPropertiesForKeys: nil).filter { $0.pathExtension == "deposit" }
@@ -33,16 +48,22 @@ extension VaultModel {
         if rejected > 0 { notify(L10n.tr("접수한 키 \(rejected)개가 중복 또는 검증 오류로 대기 중입니다. 기존 키는 변경하지 않았습니다.", "\(rejected) deposited keys remain pending because of duplicates or validation errors. Existing keys have not been changed.")) }
     }
 
-    func deposit(_ deposit: SecretDeposit) throws -> String {
+    func deposit(_ deposit: SecretDeposit) async throws -> String {
         _ = try deposit.validated()
         // Existing vault content is never needed to seal a locked deposit.
         if snapshot != nil {
-            try prepareDeposits()
+            let token = generation
+            try await prepareDeposits()
+            guard token == generation else { throw VaultError.locked }
             try mutate { $0 = try deposit.adding(to: $0); $0.record("CLI 새 키 저장") }
             flushBackup()
             return L10n.tr("stored · 금고 저장 완료. 백업 상태는 앱에서, Google Drive 동기화 완료는 Drive에서 확인하세요.", "stored · Saved to the vault. Check backup status in Cellar and Google Drive sync completion in Drive.")
         }
-        let publicKey = try keys.loadDepositPublicKey(vaultID: store.read().header.vaultID)
+        let token = generation
+        let publicKey: Data
+        if isDemo { publicKey = try Data(contentsOf: depositPublicURL) }
+        else { publicKey = try await keys.loadDepositPublicKey(vaultID: store.read().header.vaultID) }
+        guard token == generation else { throw VaultError.locked }
         guard publicKey.count == 64 else { throw VaultError.invalidData }
         try VaultFileStore.preparePrivateDirectory(depositDirectory)
         let pending = try FileManager.default.contentsOfDirectory(at: depositDirectory, includingPropertiesForKeys: nil)
@@ -84,7 +105,7 @@ extension VaultModel {
                 channel.send(CLIEvent(kind: "exit", exitCode: 0))
             case "store", "store-file":
                 guard (request.kind == "store-file") == (request.file != nil), let project = request.project, let environment = request.environment, let variable = request.variable else { throw VaultError.invalidData }
-                let message = try deposit(SecretDeposit(project: project, environment: environment, variable: variable, value: request.value ?? "", file: request.file))
+                let message = try await deposit(SecretDeposit(project: project, environment: environment, variable: variable, value: request.value ?? "", file: request.file))
                 channel.send(CLIEvent(kind: "status", text: message)); channel.send(CLIEvent(kind: "exit", exitCode: 0))
             case "lock":
                 lock()

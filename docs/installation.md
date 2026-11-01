@@ -340,3 +340,9 @@ creation without iCloud, failed recovery-key storage, and device-Keychain failur
 with a successful retry. These tests substitute a Keychain and do not establish
 the separate-user first-run authentication result; that manual check remains
 pending until performed in a separate logged-in account.
+
+## Responsive background work in 0.7.24
+
+Automatic and manual backup, backup inspection, recovery-file reading and validation, key rotation, protected Keychain operations and selected file/image imports run their blocking work away from the UI executor. Progress does not indicate that a backup has been verified: check the saved/verified status. Locking revokes access immediately while an already queued encrypted backup can finish. Quitting gives pending backups up to five seconds; an unavailable cloud folder does not prevent exit, and the locally committed encrypted vault is retained for retry on the next unlock. An interrupted backup is never reported as verified.
+
+CLI output is delivered through a bounded ordered queue. A client that stops reading is disconnected rather than blocking the vault UI. Invalid file types such as named pipes and symlinks are rejected by file import. Existing authentication, encryption and approved-request rules are unchanged.
