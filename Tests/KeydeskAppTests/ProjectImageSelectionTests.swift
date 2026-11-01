@@ -35,7 +35,7 @@ struct ProjectImageSelectionTests {
         let loader = FileSelectionLoader<Data>(read: started.read)
         let task = loader.load(URL(fileURLWithPath: "/synthetic/pending.png")) { displayed = $0 }
         defer { started.release() }
-        try #require(await Task.detached { started.waitUntilEntered() }.value)
+        try #require(try await BlockingRunnerTestSupport.run { started.waitUntilEntered() })
         loader.cancel() // Selecting another image, removing it, or closing the sheet invalidates this read.
         started.release()
         #expect(await task.value == nil)

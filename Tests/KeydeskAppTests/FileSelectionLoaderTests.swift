@@ -24,7 +24,7 @@ struct FileSelectionLoaderTests {
         let loader = FileSelectionLoader<String>(read: gate.read)
         let result = loader.load(URL(fileURLWithPath: "/synthetic/slow-file"))
         defer { gate.release() }
-        try #require(await Task.detached { gate.waitUntilEntered() }.value)
+        try #require(try await BlockingRunnerTestSupport.run { gate.waitUntilEntered() })
         #expect(loader.isLoading && !loader.failed)
         gate.release()
         #expect(await result.value == "slow-file")
@@ -37,7 +37,7 @@ struct FileSelectionLoaderTests {
         var published = false
         let result = loader.load(URL(fileURLWithPath: "/synthetic/old-file")) { _ in published = true }
         defer { gate.release() }
-        try #require(await Task.detached { gate.waitUntilEntered() }.value)
+        try #require(try await BlockingRunnerTestSupport.run { gate.waitUntilEntered() })
         loader.cancel()
         #expect(!loader.isLoading && !loader.failed)
         gate.release()
@@ -54,7 +54,7 @@ struct FileSelectionLoaderTests {
         var published: String?
         let old = loader.load(URL(fileURLWithPath: "/synthetic/old")) { published = $0 }
         defer { gate.release() }
-        try #require(await Task.detached { gate.waitUntilEntered() }.value)
+        try #require(try await BlockingRunnerTestSupport.run { gate.waitUntilEntered() })
         let replacement = loader.load(URL(fileURLWithPath: "/synthetic/new")) { published = $0 }
         #expect(await replacement.value == "new")
         gate.release()

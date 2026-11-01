@@ -55,7 +55,7 @@ struct KeychainResponsivenessTests {
         keys.slowRead = true
         let unlock = Task { await model.unlock() }
         let gate = keys.gate
-        try #require(await Task.detached { gate.waitUntilEntered() }.value)
+        try #require(try await BlockingRunnerTestSupport.run { gate.waitUntilEntered() })
         #expect(model.busy && model.snapshot == nil)
         model.lock()
         gate.resume.signal()
@@ -75,7 +75,7 @@ struct KeychainResponsivenessTests {
         keys.slowRead = true
         let recovery = Task { try await model.recoverDeviceAccess(at: backup, code: code) }
         let gate = keys.gate
-        try #require(await Task.detached { gate.waitUntilEntered() }.value)
+        try #require(try await BlockingRunnerTestSupport.run { gate.waitUntilEntered() })
         try model.addProject("Keep newer edit")
         let revision = model.snapshot?.revision
         gate.resume.signal()
@@ -88,7 +88,7 @@ struct KeychainResponsivenessTests {
     @Test func keychainWorkerKeepsSerializationAndPropagatesFailures() async throws {
         let worker = KeychainWorker(), gate = KeychainTestGate()
         let first = Task { await worker.run { gate.block() } }
-        try #require(await Task.detached { gate.waitUntilEntered() }.value)
+        try #require(try await BlockingRunnerTestSupport.run { gate.waitUntilEntered() })
         let second = Task { await worker.run { !Thread.isMainThread } }
         gate.resume.signal()
         #expect(await first.value)

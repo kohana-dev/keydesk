@@ -28,7 +28,7 @@ struct UnlockBackupResponsivenessTests {
         model.lock()
         let unlock = Task { await model.unlock() }
         // The wait runs off the main actor; the unlock's backup read must let us resume here.
-        let entered = await Task.detached { gate.waitUntilEntered() }.value
+        let entered = try await BlockingRunnerTestSupport.run { gate.waitUntilEntered() }
         try #require(entered)
         #expect(!model.busy && model.snapshot != nil)
         model.lock()
@@ -47,7 +47,7 @@ struct UnlockBackupResponsivenessTests {
         await model.prepareFirstRun(startNew: true)
         model.lock()
         let unlock = Task { await model.unlock() }
-        try #require(await Task.detached { gate.waitUntilEntered() }.value)
+        try #require(try await BlockingRunnerTestSupport.run { gate.waitUntilEntered() })
         try await model.configureBackup(directory: nil)
         gate.resume.signal()
         await unlock.value
